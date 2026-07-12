@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nays Laundry Admin</title>
+</head>
+<body>
+    <h1>Nays Laundry - Tes Koneksi Firebase</h1>
+    <div id="status" style="font-weight: bold;">Menghubungkan ke Firebase...</div>
+
+    <script type="module">
+        // Import Firebase SDK dari CDN resmi
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        // Konfigurasi Firebase milik Anda
+        const firebaseConfig = {
+            apiKey: "AIzaSyDs_DrMlshxHJAyA2l4hu2h4uqS_eG7pSY",
+            authDomain: "nays-laundry.firebaseapp.com",
+            projectId: "nays-laundry",
+            storageBucket: "nays-laundry.firebasestorage.app",
+            messagingSenderId: "285012734396",
+            appId: "1:285012734396:web:63fcf971852a8b4be13bb9"
+        };
+
+        // Inisialisasi Firebase & Firestore
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // Fungsi uji coba menulis data pelanggan pertama
+        async function testKoneksi() {
+            try {
+                const docRef = await addDoc(collection(db, "pelanggan"), {
+                    nama_pelanggan: "Hotel Test Bali",
+                    alamat: "Jl. Sunset Road No. 1",
+                    tanggal_bergabung: new Date()
+                });
+                document.getElementById("status").innerText = "Sukses terhubung! Data uji coba berhasil ditulis ke Firestore dengan ID: " + docRef.id;
+                document.getElementById("status").style.color = "green";
+            } catch (error) {
+                document.getElementById("status").innerText = "Gagal terhubung: " + error.message;
+                document.getElementById("status").style.color = "red";
+                console.error("Error: ", error);
+            }
+        }
+
+        // Jalankan fungsi
+        testKoneksi();
+    </script>
+</body>
+</html>

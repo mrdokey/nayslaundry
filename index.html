@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Nays Laundry - Admin Dashboard</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -12,12 +12,12 @@
         body { font-family: 'Inter', sans-serif; }
     </style>
 </head>
-<body class="bg-slate-50 text-slate-800">
+<body class="bg-slate-50 text-slate-800 select-none">
 
     <div id="app" class="flex flex-col md:flex-row min-h-screen" v-cloak>
         
-        <!-- Sidebar Menu -->
-        <aside class="w-full md:w-64 bg-indigo-900 text-white flex flex-col shadow-lg">
+        <!-- SIDEBAR (Hanya tampil di Tablet/Desktop - Layar md ke atas) -->
+        <aside class="hidden md:flex w-64 bg-indigo-900 text-white flex-col shadow-lg">
             <div class="p-5 border-b border-indigo-800 flex items-center space-x-3">
                 <div class="w-10 h-10 rounded-full bg-white flex items-center justify-center overflow-hidden">
                     <img v-if="profile.logo_url" :src="profile.logo_url" alt="Logo" class="object-cover w-full h-full">
@@ -56,8 +56,37 @@
             </div>
         </aside>
 
+        <!-- BOTTOM NAVIGATION (Hanya tampil di HP - Di bawah layar md) -->
+        <nav class="flex md:hidden fixed bottom-0 left-0 right-0 h-16 bg-indigo-900 text-white border-t border-indigo-800 z-50 justify-around items-center">
+            <button @click="changeTab('dashboard')" 
+                    :class="activeTab === 'dashboard' ? 'text-white font-semibold' : 'text-indigo-300'" 
+                    class="flex flex-col items-center justify-center w-full h-full text-[10px] space-y-1">
+                <span class="text-lg">🏠</span>
+                <span>Dashboard</span>
+            </button>
+            <button @click="changeTab('pelanggan')" 
+                    :class="activeTab === 'pelanggan' || activeTab === 'harga_khusus' ? 'text-white font-semibold' : 'text-indigo-300'" 
+                    class="flex flex-col items-center justify-center w-full h-full text-[10px] space-y-1">
+                <span class="text-lg">👥</span>
+                <span>Pelanggan</span>
+            </button>
+            <button @click="changeTab('layanan')" 
+                    :class="activeTab === 'layanan' ? 'text-white font-semibold' : 'text-indigo-300'" 
+                    class="flex flex-col items-center justify-center w-full h-full text-[10px] space-y-1">
+                <span class="text-lg">⚙️</span>
+                <span>Item</span>
+            </button>
+            <button @click="changeTab('profil')" 
+                    :class="activeTab === 'profil' ? 'text-white font-semibold' : 'text-indigo-300'" 
+                    class="flex flex-col items-center justify-center w-full h-full text-[10px] space-y-1">
+                <span class="text-lg">🏢</span>
+                <span>Profil</span>
+            </button>
+        </nav>
+
         <!-- Main Content Area -->
-        <main class="flex-1 p-6 md:p-10">
+        <!-- pb-24 ditambahkan khusus di mobile agar konten tidak tertutup oleh navigasi bawah -->
+        <main class="flex-1 p-4 md:p-10 pb-24 md:pb-10 overflow-y-auto">
             
             <!-- Tab 1: Dashboard Ringkasan -->
             <section v-if="activeTab === 'dashboard'" class="space-y-6">
@@ -66,7 +95,7 @@
                     <p class="text-sm text-slate-500">Berikut adalah ringkasan operasional laundry Anda hari ini.</p>
                 </header>
 
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
                     <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
                         <div class="text-sm text-slate-500 font-medium">Total Pelanggan</div>
                         <div class="text-3xl font-bold mt-2 text-indigo-600">{{ customers.length }}</div>
@@ -77,7 +106,7 @@
                     </div>
                     <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
                         <div class="text-sm text-slate-500 font-medium">Layanan Aktif</div>
-                        <div class="text-3xl font-bold mt-2 text-indigo-600">Sistem Bulanan</div>
+                        <div class="text-3xl font-bold mt-2 text-indigo-600 font-semibold text-lg">Sistem Bulanan</div>
                     </div>
                     <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
                         <div class="text-sm text-slate-500 font-medium">Status Koneksi</div>
@@ -93,21 +122,21 @@
             <section v-if="activeTab === 'pelanggan'" class="space-y-6">
                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <div>
-                        <h2 class="text-2xl font-bold">Kelola Pelanggan (Hotel/Vila)</h2>
+                        <h2 class="text-2xl font-bold">Kelola Pelanggan</h2>
                         <p class="text-sm text-slate-500">Tambah, ubah, atau atur harga khusus untuk masing-masing customer.</p>
                     </div>
-                    <div class="flex flex-wrap gap-2">
-                        <button @click="importInitialClients" class="bg-slate-200 hover:bg-slate-300 text-slate-700 px-4 py-2.5 rounded-xl text-sm font-medium transition shadow-sm">
-                            📥 Impor 24 Pelanggan Awal
+                    <div class="flex flex-wrap gap-2 w-full sm:w-auto">
+                        <button @click="importInitialClients" class="flex-1 sm:flex-none bg-slate-200 hover:bg-slate-300 text-slate-700 px-4 py-2.5 rounded-xl text-xs font-medium transition shadow-sm">
+                            📥 Impor 24 Pelanggan
                         </button>
-                        <button @click="openAddCustomer" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition shadow-sm">
+                        <button @click="openAddCustomer" class="flex-1 sm:flex-none bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-xl text-xs font-medium transition shadow-sm">
                             + Tambah Pelanggan
                         </button>
                     </div>
                 </div>
 
                 <!-- Form Tambah/Edit Customer -->
-                <div v-if="showCustomerForm" class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 space-y-4">
+                <div v-if="showCustomerForm" class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 space-y-4">
                     <h3 class="text-lg font-bold text-slate-700">{{ isEditing ? 'Ubah Data Pelanggan' : 'Tambah Pelanggan Baru' }}</h3>
                     <form @submit.prevent="saveCustomer" class="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div>
@@ -146,10 +175,10 @@
                                     <td class="p-4 font-semibold text-indigo-900">{{ cust.nama_pelanggan }}</td>
                                     <td class="p-4 text-slate-500">{{ cust.alamat }}</td>
                                     <td class="p-4 text-slate-500">{{ cust.no_telepon }}</td>
-                                    <td class="p-4 flex justify-center space-x-3">
-                                        <button @click="openCustomPrices(cust)" class="text-emerald-600 hover:text-emerald-800 font-semibold">💰 Atur Harga</button>
-                                        <button @click="openEditCustomer(cust)" class="text-indigo-600 hover:text-indigo-800 font-medium">Edit</button>
-                                        <button @click="deleteCustomer(cust.id)" class="text-red-500 hover:text-red-700 font-medium">Hapus</button>
+                                    <td class="p-4 flex flex-col sm:flex-row justify-center items-center gap-2 sm:gap-3">
+                                        <button @click="openCustomPrices(cust)" class="w-full sm:w-auto text-emerald-600 hover:text-emerald-800 font-semibold text-center py-1">💰 Atur Harga</button>
+                                        <button @click="openEditCustomer(cust)" class="w-full sm:w-auto text-indigo-600 hover:text-indigo-800 font-medium text-center py-1">Edit</button>
+                                        <button @click="deleteCustomer(cust.id)" class="w-full sm:w-auto text-red-500 hover:text-red-700 font-medium text-center py-1">Hapus</button>
                                     </td>
                                 </tr>
                                 <tr v-if="customers.length === 0">
@@ -165,16 +194,16 @@
             <section v-if="activeTab === 'harga_khusus'" class="space-y-6">
                 <div class="flex justify-between items-center">
                     <div>
-                        <h2 class="text-2xl font-bold">Atur Harga Khusus</h2>
-                        <p class="text-sm text-slate-500">Menentukan tarif custom untuk <span class="font-semibold text-indigo-600">{{ selectedCustomer.nama_pelanggan }}</span>.</p>
+                        <h2 class="text-xl font-bold">Atur Harga Khusus</h2>
+                        <p class="text-xs text-slate-500">Mengkustomisasi tarif untuk <span class="font-semibold text-indigo-600">{{ selectedCustomer.nama_pelanggan }}</span>.</p>
                     </div>
-                    <button @click="activeTab = 'pelanggan'" class="bg-slate-200 hover:bg-slate-300 text-slate-700 px-4 py-2 rounded-xl text-sm font-medium transition">
+                    <button @click="activeTab = 'pelanggan'" class="bg-slate-200 hover:bg-slate-300 text-slate-700 px-3 py-1.5 rounded-lg text-xs font-medium transition">
                         ⬅️ Kembali
                     </button>
                 </div>
 
-                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 space-y-4">
-                    <p class="text-xs text-slate-500 italic">*Jika kolom harga khusus dikosongkan, sistem otomatis menggunakan Harga Standar.</p>
+                <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 space-y-4">
+                    <p class="text-[11px] text-slate-500 italic">*Jika kolom dikosongkan, sistem memakai Harga Standar.</p>
                     <div class="overflow-x-auto">
                         <table class="w-full text-left border-collapse text-sm">
                             <thead>
@@ -182,26 +211,26 @@
                                     <th class="p-3">Nama Layanan</th>
                                     <th class="p-3">Satuan</th>
                                     <th class="p-3">Harga Standar</th>
-                                    <th class="p-3 w-48">Harga Khusus (Rp)</th>
+                                    <th class="p-3 w-32">Harga Khusus (Rp)</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-slate-100">
                                 <tr v-for="item in services" :key="item.id">
-                                    <td class="p-3 font-medium">{{ item.nama_layanan }}</td>
-                                    <td class="p-3"><span class="px-2 py-1 bg-slate-100 text-slate-600 rounded text-xs font-semibold">{{ item.satuan }}</span></td>
-                                    <td class="p-3 text-slate-500">Rp {{ item.harga_standar.toLocaleString() }}</td>
+                                    <td class="p-3 font-medium text-xs">{{ item.nama_layanan }}</td>
+                                    <td class="p-3"><span class="px-2 py-0.5 bg-slate-100 text-slate-600 rounded text-[10px] font-semibold">{{ item.satuan }}</span></td>
+                                    <td class="p-3 text-slate-500 text-xs">Rp {{ item.harga_standar.toLocaleString() }}</td>
                                     <td class="p-3">
                                         <input type="number" 
                                                v-model.number="tempPrices[item.id]" 
                                                placeholder="Gunakan Standar"
-                                               class="w-full px-3 py-1.5 border rounded-lg text-sm focus:outline-emerald-500 bg-emerald-50/30">
+                                               class="w-full px-2 py-1 border rounded-lg text-xs focus:outline-emerald-500 bg-emerald-50/30">
                                     </td>
                                 </tr>
                             </tbody>
                         </table>
                     </div>
                     <div class="flex justify-end pt-4 border-t">
-                        <button @click="saveCustomPrices" class="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2.5 rounded-xl text-sm font-medium transition shadow-sm">
+                        <button @click="saveCustomPrices" class="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2.5 rounded-xl text-sm font-medium transition shadow-sm">
                             💾 Simpan Semua Harga Khusus
                         </button>
                     </div>
@@ -215,18 +244,18 @@
                         <h2 class="text-2xl font-bold">Master Item Laundry</h2>
                         <p class="text-sm text-slate-500">Kelola daftar item beserta tarif standar (per biji/pcs atau per kg).</p>
                     </div>
-                    <div class="flex flex-wrap gap-2">
-                        <button @click="importInitialServices" class="bg-slate-200 hover:bg-slate-300 text-slate-700 px-4 py-2.5 rounded-xl text-sm font-medium transition shadow-sm">
+                    <div class="flex flex-wrap gap-2 w-full sm:w-auto">
+                        <button @click="importInitialServices" class="flex-1 sm:flex-none bg-slate-200 hover:bg-slate-300 text-slate-700 px-4 py-2.5 rounded-xl text-xs font-medium transition shadow-sm">
                             📥 Impor 25 Master Item
                         </button>
-                        <button @click="openAddService" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition shadow-sm">
+                        <button @click="openAddService" class="flex-1 sm:flex-none bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-xl text-xs font-medium transition shadow-sm">
                             + Tambah Item Baru
                         </button>
                     </div>
                 </div>
 
                 <!-- Form Tambah/Edit Layanan -->
-                <div v-if="showServiceForm" class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 space-y-4">
+                <div v-if="showServiceForm" class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 space-y-4">
                     <h3 class="text-lg font-bold text-slate-700">{{ isEditingService ? 'Ubah Layanan' : 'Tambah Layanan Baru' }}</h3>
                     <form @submit.prevent="saveService" class="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div>
@@ -344,7 +373,6 @@
             onSnapshot 
         } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-        // Konfigurasi Firebase milik Anda
         const firebaseConfig = {
             apiKey: "AIzaSyDs_DrMlshxHJAyA2l4hu2h4uqS_eG7pSY",
             authDomain: "nays-laundry.firebaseapp.com",
@@ -373,14 +401,12 @@
 
                 const customers = ref([]);
                 const services = ref([]);
-                const customPricesList = ref([]); // Menyimpan seluruh data harga khusus
+                const customPricesList = ref([]);
 
-                // Tab switching helper
                 const changeTab = (tab) => {
                     activeTab.value = tab;
                 };
 
-                // Form Customer
                 const showCustomerForm = ref(false);
                 const isEditing = ref(false);
                 const customerForm = ref({
@@ -390,7 +416,6 @@
                     no_telepon: ''
                 });
 
-                // Form Services
                 const showServiceForm = ref(false);
                 const isEditingService = ref(false);
                 const serviceForm = ref({
@@ -400,31 +425,26 @@
                     harga_standar: 0
                 });
 
-                // State untuk Edit Harga Khusus Pelanggan
                 const selectedCustomer = ref(null);
-                const tempPrices = ref({}); // Tempat input sementara untuk harga khusus
+                const tempPrices = ref({});
 
                 onMounted(() => {
-                    // Stream Profil
                     onSnapshot(doc(db, "pengaturan", "profil"), (snap) => {
                         if (snap.exists()) profile.value = snap.data();
                     });
 
-                    // Stream Pelanggan
                     onSnapshot(collection(db, "pelanggan"), (snap) => {
                         const list = [];
                         snap.forEach((doc) => list.push({ id: doc.id, ...doc.data() }));
                         customers.value = list.sort((a, b) => a.nama_pelanggan.localeCompare(b.nama_pelanggan));
                     });
 
-                    // Stream Master Item (Layanan)
                     onSnapshot(collection(db, "layanan"), (snap) => {
                         const list = [];
                         snap.forEach((doc) => list.push({ id: doc.id, ...doc.data() }));
                         services.value = list.sort((a, b) => a.nama_layanan.localeCompare(b.nama_layanan));
                     });
 
-                    // Stream Seluruh Harga Khusus
                     onSnapshot(collection(db, "harga_khusus"), (snap) => {
                         const list = [];
                         snap.forEach((doc) => list.push({ id: doc.id, ...doc.data() }));
@@ -432,7 +452,6 @@
                     });
                 });
 
-                // --- CRUD PELANGGAN ---
                 const saveProfile = async () => {
                     try {
                         await setDoc(doc(db, "pengaturan", "profil"), profile.value, { merge: true });
@@ -505,7 +524,6 @@
                     }
                 };
 
-                // --- CRUD MASTER ITEM (LAYANAN) ---
                 const openAddService = () => {
                     isEditingService.value = false;
                     serviceForm.value = { id: '', nama_layanan: '', satuan: 'Pcs', harga_standar: 0 };
@@ -560,12 +578,11 @@
                     ];
                     if (confirm(`Impor ${items.length} master item laundry ke database?`)) {
                         for (const name of items) {
-                            // Menyesuaikan beberapa satuan yang umumnya kiloan, selebihnya pcs
                             const isKiloan = name.toLowerCase().includes('kiloan');
                             await addDoc(collection(db, "layanan"), {
                                 nama_layanan: name,
                                 satuan: isKiloan ? 'Kg' : 'Pcs',
-                                harga_standar: 0, // Harga standar awal diset 0 agar nanti bisa diubah mandiri oleh user
+                                harga_standar: 0,
                                 tanggal_dibuat: new Date()
                             });
                         }
@@ -573,19 +590,15 @@
                     }
                 };
 
-                // --- MANAJEMEN HARGA KHUSUS (CUSTOM PRICE) ---
                 const openCustomPrices = (customer) => {
                     selectedCustomer.value = customer;
                     tempPrices.value = {};
-
-                    // Muat harga khusus yang sudah tersimpan untuk pelanggan ini ke form sementara
                     services.value.forEach(item => {
                         const savedPrice = customPricesList.value.find(
                             p => p.id_pelanggan === customer.id && p.id_layanan === item.id
                         );
                         tempPrices.value[item.id] = savedPrice ? savedPrice.harga_custom : '';
                     });
-
                     activeTab.value = 'harga_khusus';
                 };
 
@@ -597,14 +610,12 @@
                             const docId = `${custId}_${itemId}`;
 
                             if (val !== '' && val !== null && val !== undefined) {
-                                // Jika ada nilai harga khusus yang diinput, simpan ke Firebase
                                 await setDoc(doc(db, "harga_khusus", docId), {
                                     id_pelanggan: custId,
                                     id_layanan: itemId,
                                     harga_custom: Number(val)
                                 });
                             } else {
-                                // Jika dikosongkan, hapus dokumen harga khusus agar kembali ke harga standar
                                 await deleteDoc(doc(db, "harga_khusus", docId));
                             }
                         }

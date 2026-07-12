@@ -84,14 +84,20 @@
 
             <!-- Tab 2: Kelola Pelanggan (CRUD) -->
             <section v-if="activeTab === 'pelanggan'" class="space-y-6">
-                <div class="flex justify-between items-center">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <div>
                         <h2 class="text-2xl font-bold">Kelola Pelanggan (Hotel/Vila)</h2>
                         <p class="text-sm text-slate-500">Tambah, ubah, atau hapus data customer di Bali.</p>
                     </div>
-                    <button @click="openAddCustomer" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition shadow-sm">
-                        + Tambah Pelanggan
-                    </button>
+                    <div class="flex flex-wrap gap-2">
+                        <!-- Tombol Impor Data Massal Sementara -->
+                        <button @click="importInitialClients" class="bg-slate-200 hover:bg-slate-300 text-slate-700 px-4 py-2.5 rounded-xl text-sm font-medium transition shadow-sm">
+                            📥 Impor 24 Pelanggan Awal
+                        </button>
+                        <button @click="openAddCustomer" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition shadow-sm">
+                            + Tambah Pelanggan
+                        </button>
+                    </div>
                 </div>
 
                 <!-- Form Modal / Card Input Customer -->
@@ -140,7 +146,7 @@
                                     </td>
                                 </tr>
                                 <tr v-if="customers.length === 0">
-                                    <td colspan="4" class="p-8 text-center text-slate-400">Belum ada data pelanggan terdaftar.</td>
+                                    <td colspan="4" class="p-8 text-center text-slate-400">Belum ada data pelanggan terdaftar. Silakan gunakan fitur impor atau tambah manual.</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -148,7 +154,7 @@
                 </div>
             </section>
 
-            <!-- Tab 3: Profil Laundry (Create/Update saja, tanpa Delete) -->
+            <!-- Tab 3: Profil Laundry -->
             <section v-if="activeTab === 'profil'" class="max-w-2xl space-y-6">
                 <div>
                     <h2 class="text-2xl font-bold">Profil Perusahaan</h2>
@@ -220,14 +226,12 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // Ambil fungsi Vue yang dibutuhkan
         const { createApp, ref, onMounted } = Vue;
 
         createApp({
             setup() {
                 const activeTab = ref('dashboard');
                 
-                // State Profil Laundry
                 const profile = ref({
                     nama_laundry: '',
                     alamat: '',
@@ -236,10 +240,7 @@
                     logo_url: ''
                 });
 
-                // State Daftar Pelanggan
                 const customers = ref([]);
-                
-                // State Form Pelanggan
                 const showCustomerForm = ref(false);
                 const isEditing = ref(false);
                 const customerForm = ref({
@@ -249,9 +250,8 @@
                     no_telepon: ''
                 });
 
-                // Memulai pemantauan data real-time saat aplikasi dimuat
+                // Menjalankan pemantauan database
                 onMounted(() => {
-                    // 1. Memantau Profil Laundry (Satu Dokumen)
                     const profileRef = doc(db, "pengaturan", "profil");
                     onSnapshot(profileRef, (docSnap) => {
                         if (docSnap.exists()) {
@@ -259,19 +259,17 @@
                         }
                     });
 
-                    // 2. Memantau Daftar Pelanggan (Koleksi)
                     const customersRef = collection(db, "pelanggan");
                     onSnapshot(customersRef, (querySnapshot) => {
                         const list = [];
                         querySnapshot.forEach((doc) => {
                             list.push({ id: doc.id, ...doc.data() });
                         });
-                        // Mengurutkan pelanggan berdasarkan abjad nama
                         customers.value = list.sort((a, b) => a.nama_pelanggan.localeCompare(b.nama_pelanggan));
                     });
                 });
 
-                // Fungsi: Menyimpan/Memperbarui Profil
+                // Fungsi: Simpan Profil
                 const saveProfile = async () => {
                     try {
                         const profileRef = doc(db, "pengaturan", "profil");
@@ -282,25 +280,24 @@
                     }
                 };
 
-                // Fungsi: Membuka Form Tambah Pelanggan
+                // Fungsi: Form Tambah
                 const openAddCustomer = () => {
                     isEditing.value = false;
                     customerForm.value = { id: '', nama_pelanggan: '', alamat: '', no_telepon: '' };
                     showCustomerForm.value = true;
                 };
 
-                // Fungsi: Membuka Form Edit Pelanggan
+                // Fungsi: Form Edit
                 const openEditCustomer = (customer) => {
                     isEditing.value = true;
                     customerForm.value = { ...customer };
                     showCustomerForm.value = true;
                 };
 
-                // Fungsi: Menyimpan Data Pelanggan (Tambah atau Edit)
+                // Fungsi: Simpan Data Customer
                 const saveCustomer = async () => {
                     try {
                         if (isEditing.value) {
-                            // Update data pelanggan yang sudah ada
                             const docRef = doc(db, "pelanggan", customerForm.value.id);
                             await updateDoc(docRef, {
                                 nama_pelanggan: customerForm.value.nama_pelanggan,
@@ -308,7 +305,6 @@
                                 no_telepon: customerForm.value.no_telepon
                             });
                         } else {
-                            // Tambah data pelanggan baru
                             await addDoc(collection(db, "pelanggan"), {
                                 nama_pelanggan: customerForm.value.nama_pelanggan,
                                 alamat: customerForm.value.alamat,
@@ -318,18 +314,66 @@
                         }
                         showCustomerForm.value = false;
                     } catch (error) {
-                        alert("Gagal memproses data pelanggan: " + error.message);
+                        alert("Gagal memproses data: " + error.message);
                     }
                 };
 
-                // Fungsi: Menghapus Data Pelanggan
+                // Fungsi: Hapus Data Customer
                 const deleteCustomer = async (id) => {
-                    if (confirm("Apakah Anda yakin ingin menghapus pelanggan ini secara permanen?")) {
+                    if (confirm("Apakah Anda yakin ingin menghapus pelanggan ini?")) {
                         try {
                             const docRef = doc(db, "pelanggan", id);
                             await deleteDoc(docRef);
                         } catch (error) {
-                            alert("Gagal menghapus pelanggan: " + error.message);
+                            alert("Gagal menghapus: " + error.message);
+                        }
+                    }
+                };
+
+                // Fungsi Khusus Sementara: Impor 24 Pelanggan Sekaligus
+                const importInitialClients = async () => {
+                    const clientNames = [
+                        "The Lavanya",
+                        "Made 02 Homestay & Villas (kiloan)",
+                        "Djamin Homestay (kiloan)",
+                        "Flowerbud II",
+                        "Zena Restaurant & Villas",
+                        "Avocagolf Villa",
+                        "New Kuta Golf & Resto",
+                        "The Gunung Villas",
+                        "Lemanja",
+                        "BWork (kiloan)",
+                        "Grega Villa",
+                        "Alma Villa",
+                        "Angatu Villa",
+                        "Damien Villa",
+                        "Martin Villa",
+                        "Indahwatu Villa",
+                        "Arra Villa",
+                        "Uluwatu Cottages",
+                        "Kapungkur Villa",
+                        "Ambiente Villa",
+                        "Pulung Villa",
+                        "Kalem Villa",
+                        "Tegal Jinah Guest House and Villas",
+                        "Fox Hotel (Guest Laundry saja)"
+                    ];
+
+                    if (confirm(`Apakah Anda yakin ingin mengimpor ${clientNames.length} pelanggan baru ini sekaligus ke database?`)) {
+                        let successCount = 0;
+                        try {
+                            for (const name of clientNames) {
+                                await addDoc(collection(db, "pelanggan"), {
+                                    nama_pelanggan: name,
+                                    alamat: "Bali", // Alamat bawaan awal
+                                    no_telepon: "-", // Nomor bawaan awal
+                                    tanggal_bergabung: new Date()
+                                });
+                                successCount++;
+                            }
+                            alert(`Sukses mengimpor ${successCount} data pelanggan!`);
+                        } catch (error) {
+                            alert(`Terjadi kesalahan pada impor data ke-${successCount + 1}: ` + error.message);
                         }
                     }
                 };
@@ -345,7 +389,8 @@
                     openAddCustomer,
                     openEditCustomer,
                     saveCustomer,
-                    deleteCustomer
+                    deleteCustomer,
+                    importInitialClients
                 };
             }
         }).mount('#app');

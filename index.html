@@ -30,24 +30,29 @@
             </div>
             
             <nav class="flex-1 p-4 space-y-2">
-                <button @click="activeTab = 'dashboard'" 
+                <button @click="changeTab('dashboard')" 
                         :class="activeTab === 'dashboard' ? 'bg-indigo-800 text-white' : 'text-indigo-200 hover:bg-indigo-800 hover:text-white'"
                         class="w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition text-left text-sm font-medium">
                     <span>🏠 Dashboard</span>
                 </button>
-                <button @click="activeTab = 'pelanggan'" 
-                        :class="activeTab === 'pelanggan' ? 'bg-indigo-800 text-white' : 'text-indigo-200 hover:bg-indigo-800 hover:text-white'"
+                <button @click="changeTab('pelanggan')" 
+                        :class="activeTab === 'pelanggan' || activeTab === 'harga_khusus' ? 'bg-indigo-800 text-white' : 'text-indigo-200 hover:bg-indigo-800 hover:text-white'"
                         class="w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition text-left text-sm font-medium">
                     <span>👥 Kelola Pelanggan</span>
                 </button>
-                <button @click="activeTab = 'profil'" 
+                <button @click="changeTab('layanan')" 
+                        :class="activeTab === 'layanan' ? 'bg-indigo-800 text-white' : 'text-indigo-200 hover:bg-indigo-800 hover:text-white'"
+                        class="w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition text-left text-sm font-medium">
+                    <span>⚙️ Master Item</span>
+                </button>
+                <button @click="changeTab('profil')" 
                         :class="activeTab === 'profil' ? 'bg-indigo-800 text-white' : 'text-indigo-200 hover:bg-indigo-800 hover:text-white'"
                         class="w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition text-left text-sm font-medium">
-                    <span>⚙️ Profil Laundry</span>
+                    <span>🏢 Profil Laundry</span>
                 </button>
             </nav>
             <div class="p-4 border-t border-indigo-800 text-center text-xs text-indigo-300">
-                v1.0.0
+                v1.1.0
             </div>
         </aside>
 
@@ -56,17 +61,19 @@
             
             <!-- Tab 1: Dashboard Ringkasan -->
             <section v-if="activeTab === 'dashboard'" class="space-y-6">
-                <header class="flex justify-between items-center">
-                    <div>
-                        <h2 class="text-2xl font-bold tracking-tight">Selamat Datang</h2>
-                        <p class="text-sm text-slate-500">Berikut adalah ringkasan operasional laundry Anda hari ini.</p>
-                    </div>
+                <header>
+                    <h2 class="text-2xl font-bold tracking-tight">Selamat Datang</h2>
+                    <p class="text-sm text-slate-500">Berikut adalah ringkasan operasional laundry Anda hari ini.</p>
                 </header>
 
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
                     <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
                         <div class="text-sm text-slate-500 font-medium">Total Pelanggan</div>
                         <div class="text-3xl font-bold mt-2 text-indigo-600">{{ customers.length }}</div>
+                    </div>
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                        <div class="text-sm text-slate-500 font-medium">Total Master Item</div>
+                        <div class="text-3xl font-bold mt-2 text-indigo-600">{{ services.length }}</div>
                     </div>
                     <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
                         <div class="text-sm text-slate-500 font-medium">Layanan Aktif</div>
@@ -76,21 +83,20 @@
                         <div class="text-sm text-slate-500 font-medium">Status Koneksi</div>
                         <div class="text-sm font-bold mt-3 text-emerald-600 flex items-center">
                             <span class="w-2.5 h-2.5 bg-emerald-500 rounded-full inline-block mr-2 animate-ping"></span>
-                            Terhubung Real-time ke Firebase
+                            Online (Real-time)
                         </div>
                     </div>
                 </div>
             </section>
 
-            <!-- Tab 2: Kelola Pelanggan (CRUD) -->
+            <!-- Tab 2: Kelola Pelanggan -->
             <section v-if="activeTab === 'pelanggan'" class="space-y-6">
                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <div>
                         <h2 class="text-2xl font-bold">Kelola Pelanggan (Hotel/Vila)</h2>
-                        <p class="text-sm text-slate-500">Tambah, ubah, atau hapus data customer di Bali.</p>
+                        <p class="text-sm text-slate-500">Tambah, ubah, atau atur harga khusus untuk masing-masing customer.</p>
                     </div>
                     <div class="flex flex-wrap gap-2">
-                        <!-- Tombol Impor Data Massal Sementara -->
                         <button @click="importInitialClients" class="bg-slate-200 hover:bg-slate-300 text-slate-700 px-4 py-2.5 rounded-xl text-sm font-medium transition shadow-sm">
                             📥 Impor 24 Pelanggan Awal
                         </button>
@@ -100,21 +106,21 @@
                     </div>
                 </div>
 
-                <!-- Form Modal / Card Input Customer -->
+                <!-- Form Tambah/Edit Customer -->
                 <div v-if="showCustomerForm" class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 space-y-4">
                     <h3 class="text-lg font-bold text-slate-700">{{ isEditing ? 'Ubah Data Pelanggan' : 'Tambah Pelanggan Baru' }}</h3>
                     <form @submit.prevent="saveCustomer" class="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div>
                             <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Nama Hotel / Vila</label>
-                            <input v-model="customerForm.nama_pelanggan" type="text" required placeholder="Masukkan nama hotel/vila" class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-indigo-500">
+                            <input v-model="customerForm.nama_pelanggan" type="text" required class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-indigo-500">
                         </div>
                         <div>
                             <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Nomor Telepon</label>
-                            <input v-model="customerForm.no_telepon" type="text" required placeholder="Contoh: 08123456789" class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-indigo-500">
+                            <input v-model="customerForm.no_telepon" type="text" required class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-indigo-500">
                         </div>
                         <div>
                             <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Alamat Lengkap</label>
-                            <input v-model="customerForm.alamat" type="text" required placeholder="Alamat lengkap di Bali" class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-indigo-500">
+                            <input v-model="customerForm.alamat" type="text" required class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-indigo-500">
                         </div>
                         <div class="md:col-span-3 flex justify-end space-x-2 pt-2">
                             <button type="button" @click="showCustomerForm = false" class="px-4 py-2 text-sm text-slate-500 hover:bg-slate-100 rounded-lg">Batal</button>
@@ -123,7 +129,7 @@
                     </form>
                 </div>
 
-                <!-- Daftar Pelanggan Table -->
+                <!-- Tabel Daftar Pelanggan -->
                 <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
                     <div class="overflow-x-auto">
                         <table class="w-full text-left border-collapse text-sm">
@@ -132,21 +138,22 @@
                                     <th class="p-4">Nama Pelanggan</th>
                                     <th class="p-4">Alamat</th>
                                     <th class="p-4">No. Telepon</th>
-                                    <th class="p-4 text-center">Aksi</th>
+                                    <th class="p-4 text-center">Opsi</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-slate-100">
                                 <tr v-for="cust in customers" :key="cust.id" class="hover:bg-slate-50/50 transition">
-                                    <td class="p-4 font-semibold text-slate-700">{{ cust.nama_pelanggan }}</td>
+                                    <td class="p-4 font-semibold text-indigo-900">{{ cust.nama_pelanggan }}</td>
                                     <td class="p-4 text-slate-500">{{ cust.alamat }}</td>
                                     <td class="p-4 text-slate-500">{{ cust.no_telepon }}</td>
                                     <td class="p-4 flex justify-center space-x-3">
+                                        <button @click="openCustomPrices(cust)" class="text-emerald-600 hover:text-emerald-800 font-semibold">💰 Atur Harga</button>
                                         <button @click="openEditCustomer(cust)" class="text-indigo-600 hover:text-indigo-800 font-medium">Edit</button>
                                         <button @click="deleteCustomer(cust.id)" class="text-red-500 hover:text-red-700 font-medium">Hapus</button>
                                     </td>
                                 </tr>
                                 <tr v-if="customers.length === 0">
-                                    <td colspan="4" class="p-8 text-center text-slate-400">Belum ada data pelanggan terdaftar. Silakan gunakan fitur impor atau tambah manual.</td>
+                                    <td colspan="4" class="p-8 text-center text-slate-400">Belum ada pelanggan terdaftar.</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -154,7 +161,132 @@
                 </div>
             </section>
 
-            <!-- Tab 3: Profil Laundry -->
+            <!-- Tab Sub-Menu: Atur Harga Khusus Pelanggan -->
+            <section v-if="activeTab === 'harga_khusus'" class="space-y-6">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h2 class="text-2xl font-bold">Atur Harga Khusus</h2>
+                        <p class="text-sm text-slate-500">Menentukan tarif custom untuk <span class="font-semibold text-indigo-600">{{ selectedCustomer.nama_pelanggan }}</span>.</p>
+                    </div>
+                    <button @click="activeTab = 'pelanggan'" class="bg-slate-200 hover:bg-slate-300 text-slate-700 px-4 py-2 rounded-xl text-sm font-medium transition">
+                        ⬅️ Kembali
+                    </button>
+                </div>
+
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 space-y-4">
+                    <p class="text-xs text-slate-500 italic">*Jika kolom harga khusus dikosongkan, sistem otomatis menggunakan Harga Standar.</p>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse text-sm">
+                            <thead>
+                                <tr class="bg-slate-50 border-b border-slate-100 text-slate-400 font-semibold uppercase text-xs">
+                                    <th class="p-3">Nama Layanan</th>
+                                    <th class="p-3">Satuan</th>
+                                    <th class="p-3">Harga Standar</th>
+                                    <th class="p-3 w-48">Harga Khusus (Rp)</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100">
+                                <tr v-for="item in services" :key="item.id">
+                                    <td class="p-3 font-medium">{{ item.nama_layanan }}</td>
+                                    <td class="p-3"><span class="px-2 py-1 bg-slate-100 text-slate-600 rounded text-xs font-semibold">{{ item.satuan }}</span></td>
+                                    <td class="p-3 text-slate-500">Rp {{ item.harga_standar.toLocaleString() }}</td>
+                                    <td class="p-3">
+                                        <input type="number" 
+                                               v-model.number="tempPrices[item.id]" 
+                                               placeholder="Gunakan Standar"
+                                               class="w-full px-3 py-1.5 border rounded-lg text-sm focus:outline-emerald-500 bg-emerald-50/30">
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="flex justify-end pt-4 border-t">
+                        <button @click="saveCustomPrices" class="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2.5 rounded-xl text-sm font-medium transition shadow-sm">
+                            💾 Simpan Semua Harga Khusus
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Tab 3: Kelola Master Item (Layanan) -->
+            <section v-if="activeTab === 'layanan'" class="space-y-6">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <div>
+                        <h2 class="text-2xl font-bold">Master Item Laundry</h2>
+                        <p class="text-sm text-slate-500">Kelola daftar item beserta tarif standar (per biji/pcs atau per kg).</p>
+                    </div>
+                    <div class="flex flex-wrap gap-2">
+                        <button @click="importInitialServices" class="bg-slate-200 hover:bg-slate-300 text-slate-700 px-4 py-2.5 rounded-xl text-sm font-medium transition shadow-sm">
+                            📥 Impor 25 Master Item
+                        </button>
+                        <button @click="openAddService" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition shadow-sm">
+                            + Tambah Item Baru
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Form Tambah/Edit Layanan -->
+                <div v-if="showServiceForm" class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 space-y-4">
+                    <h3 class="text-lg font-bold text-slate-700">{{ isEditingService ? 'Ubah Layanan' : 'Tambah Layanan Baru' }}</h3>
+                    <form @submit.prevent="saveService" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Nama Layanan / Item</label>
+                            <input v-model="serviceForm.nama_layanan" type="text" required class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-indigo-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Satuan</label>
+                            <select v-model="serviceForm.satuan" required class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-indigo-500">
+                                <option value="Pcs">Pcs (Satuan)</option>
+                                <option value="Kg">Kg (Kiloan)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Harga Standar (Rp)</label>
+                            <input v-model.number="serviceForm.harga_standar" type="number" required class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-indigo-500">
+                        </div>
+                        <div class="md:col-span-3 flex justify-end space-x-2 pt-2">
+                            <button type="button" @click="showServiceForm = false" class="px-4 py-2 text-sm text-slate-500 hover:bg-slate-100 rounded-lg">Batal</button>
+                            <button type="submit" class="bg-indigo-600 text-white px-5 py-2 text-sm rounded-lg hover:bg-indigo-700 font-medium">Simpan</button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Tabel Daftar Layanan -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse text-sm">
+                            <thead>
+                                <tr class="bg-slate-50 border-b border-slate-100 text-slate-400 font-semibold uppercase text-xs">
+                                    <th class="p-4">Nama Layanan / Item</th>
+                                    <th class="p-4">Satuan</th>
+                                    <th class="p-4">Harga Standar</th>
+                                    <th class="p-4 text-center">Opsi</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100">
+                                <tr v-for="item in services" :key="item.id" class="hover:bg-slate-50/50 transition">
+                                    <td class="p-4 font-semibold text-slate-700">{{ item.nama_layanan }}</td>
+                                    <td class="p-4">
+                                        <span class="px-2.5 py-1 bg-slate-100 text-slate-600 rounded-full text-xs font-semibold">
+                                            {{ item.satuan }}
+                                        </span>
+                                    </td>
+                                    <td class="p-4 text-slate-600 font-medium">Rp {{ item.harga_standar.toLocaleString() }}</td>
+                                    <td class="p-4 flex justify-center space-x-3">
+                                        <button @click="openEditService(item)" class="text-indigo-600 hover:text-indigo-800 font-medium">Edit</button>
+                                        <button @click="deleteService(item.id)" class="text-red-500 hover:text-red-700 font-medium">Hapus</button>
+                                    </td>
+                                </tr>
+                                <tr v-if="services.length === 0">
+                                    <td colspan="4" class="p-8 text-center text-slate-400">Belum ada layanan terdaftar.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Tab 4: Profil Laundry -->
             <section v-if="activeTab === 'profil'" class="max-w-2xl space-y-6">
                 <div>
                     <h2 class="text-2xl font-bold">Profil Perusahaan</h2>
@@ -165,23 +297,23 @@
                     <form @submit.prevent="saveProfile" class="space-y-4">
                         <div>
                             <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Nama Laundry</label>
-                            <input v-model="profile.nama_laundry" type="text" required placeholder="Contoh: Nays Laundry Bali" class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-indigo-500">
+                            <input v-model="profile.nama_laundry" type="text" required class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-indigo-500">
                         </div>
                         <div>
                             <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Nomor Telepon Operasional</label>
-                            <input v-model="profile.no_telepon" type="text" required placeholder="Contoh: 081999xxxxxx" class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-indigo-500">
+                            <input v-model="profile.no_telepon" type="text" required class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-indigo-500">
                         </div>
                         <div>
                             <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Alamat Laundry</label>
-                            <input v-model="profile.alamat" type="text" required placeholder="Alamat fisik laundry" class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-indigo-500">
+                            <input v-model="profile.alamat" type="text" required class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-indigo-500">
                         </div>
                         <div>
                             <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Rekening Pembayaran (Untuk Invoice)</label>
-                            <input v-model="profile.rekening_pembayaran" type="text" required placeholder="Contoh: BCA - 12345678 a/n Nama Anda" class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-indigo-500">
+                            <input v-model="profile.rekening_pembayaran" type="text" required class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-indigo-500">
                         </div>
                         <div>
                             <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">URL Logo Laundry</label>
-                            <input v-model="profile.logo_url" type="text" placeholder="https://domain.com/logo.png (Opsional)" class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-indigo-500">
+                            <input v-model="profile.logo_url" type="text" placeholder="https://domain.com/logo.png" class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-indigo-500">
                         </div>
                         <div class="flex justify-end pt-2">
                             <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-lg text-sm font-medium transition shadow-sm">
@@ -222,7 +354,6 @@
             appId: "1:285012734396:web:63fcf971852a8b4be13bb9"
         };
 
-        // Inisialisasi Firebase & Firestore
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
@@ -241,6 +372,15 @@
                 });
 
                 const customers = ref([]);
+                const services = ref([]);
+                const customPricesList = ref([]); // Menyimpan seluruh data harga khusus
+
+                // Tab switching helper
+                const changeTab = (tab) => {
+                    activeTab.value = tab;
+                };
+
+                // Form Customer
                 const showCustomerForm = ref(false);
                 const isEditing = ref(false);
                 const customerForm = ref({
@@ -250,56 +390,74 @@
                     no_telepon: ''
                 });
 
-                // Menjalankan pemantauan database
+                // Form Services
+                const showServiceForm = ref(false);
+                const isEditingService = ref(false);
+                const serviceForm = ref({
+                    id: '',
+                    nama_layanan: '',
+                    satuan: 'Pcs',
+                    harga_standar: 0
+                });
+
+                // State untuk Edit Harga Khusus Pelanggan
+                const selectedCustomer = ref(null);
+                const tempPrices = ref({}); // Tempat input sementara untuk harga khusus
+
                 onMounted(() => {
-                    const profileRef = doc(db, "pengaturan", "profil");
-                    onSnapshot(profileRef, (docSnap) => {
-                        if (docSnap.exists()) {
-                            profile.value = docSnap.data();
-                        }
+                    // Stream Profil
+                    onSnapshot(doc(db, "pengaturan", "profil"), (snap) => {
+                        if (snap.exists()) profile.value = snap.data();
                     });
 
-                    const customersRef = collection(db, "pelanggan");
-                    onSnapshot(customersRef, (querySnapshot) => {
+                    // Stream Pelanggan
+                    onSnapshot(collection(db, "pelanggan"), (snap) => {
                         const list = [];
-                        querySnapshot.forEach((doc) => {
-                            list.push({ id: doc.id, ...doc.data() });
-                        });
+                        snap.forEach((doc) => list.push({ id: doc.id, ...doc.data() }));
                         customers.value = list.sort((a, b) => a.nama_pelanggan.localeCompare(b.nama_pelanggan));
+                    });
+
+                    // Stream Master Item (Layanan)
+                    onSnapshot(collection(db, "layanan"), (snap) => {
+                        const list = [];
+                        snap.forEach((doc) => list.push({ id: doc.id, ...doc.data() }));
+                        services.value = list.sort((a, b) => a.nama_layanan.localeCompare(b.nama_layanan));
+                    });
+
+                    // Stream Seluruh Harga Khusus
+                    onSnapshot(collection(db, "harga_khusus"), (snap) => {
+                        const list = [];
+                        snap.forEach((doc) => list.push({ id: doc.id, ...doc.data() }));
+                        customPricesList.value = list;
                     });
                 });
 
-                // Fungsi: Simpan Profil
+                // --- CRUD PELANGGAN ---
                 const saveProfile = async () => {
                     try {
-                        const profileRef = doc(db, "pengaturan", "profil");
-                        await setDoc(profileRef, profile.value, { merge: true });
+                        await setDoc(doc(db, "pengaturan", "profil"), profile.value, { merge: true });
                         alert("Profil perusahaan berhasil diperbarui!");
                     } catch (error) {
                         alert("Gagal memperbarui profil: " + error.message);
                     }
                 };
 
-                // Fungsi: Form Tambah
                 const openAddCustomer = () => {
                     isEditing.value = false;
                     customerForm.value = { id: '', nama_pelanggan: '', alamat: '', no_telepon: '' };
                     showCustomerForm.value = true;
                 };
 
-                // Fungsi: Form Edit
                 const openEditCustomer = (customer) => {
                     isEditing.value = true;
                     customerForm.value = { ...customer };
                     showCustomerForm.value = true;
                 };
 
-                // Fungsi: Simpan Data Customer
                 const saveCustomer = async () => {
                     try {
                         if (isEditing.value) {
-                            const docRef = doc(db, "pelanggan", customerForm.value.id);
-                            await updateDoc(docRef, {
+                            await updateDoc(doc(db, "pelanggan", customerForm.value.id), {
                                 nama_pelanggan: customerForm.value.nama_pelanggan,
                                 alamat: customerForm.value.alamat,
                                 no_telepon: customerForm.value.no_telepon
@@ -318,79 +476,172 @@
                     }
                 };
 
-                // Fungsi: Hapus Data Customer
                 const deleteCustomer = async (id) => {
                     if (confirm("Apakah Anda yakin ingin menghapus pelanggan ini?")) {
                         try {
-                            const docRef = doc(db, "pelanggan", id);
-                            await deleteDoc(docRef);
+                            await deleteDoc(doc(db, "pelanggan", id));
                         } catch (error) {
                             alert("Gagal menghapus: " + error.message);
                         }
                     }
                 };
 
-                // Fungsi Khusus Sementara: Impor 24 Pelanggan Sekaligus
                 const importInitialClients = async () => {
                     const clientNames = [
-                        "The Lavanya",
-                        "Made 02 Homestay & Villas (kiloan)",
-                        "Djamin Homestay (kiloan)",
-                        "Flowerbud II",
-                        "Zena Restaurant & Villas",
-                        "Avocagolf Villa",
-                        "New Kuta Golf & Resto",
-                        "The Gunung Villas",
-                        "Lemanja",
-                        "BWork (kiloan)",
-                        "Grega Villa",
-                        "Alma Villa",
-                        "Angatu Villa",
-                        "Damien Villa",
-                        "Martin Villa",
-                        "Indahwatu Villa",
-                        "Arra Villa",
-                        "Uluwatu Cottages",
-                        "Kapungkur Villa",
-                        "Ambiente Villa",
-                        "Pulung Villa",
-                        "Kalem Villa",
-                        "Tegal Jinah Guest House and Villas",
-                        "Fox Hotel (Guest Laundry saja)"
+                        "The Lavanya", "Made 02 Homestay & Villas (kiloan)", "Djamin Homestay (kiloan)",
+                        "Flowerbud II", "Zena Restaurant & Villas", "Avocagolf Villa", "New Kuta Golf & Resto",
+                        "The Gunung Villas", "Lemanja", "BWork (kiloan)", "Grega Villa", "Alma Villa",
+                        "Angatu Villa", "Damien Villa", "Martin Villa", "Indahwatu Villa", "Arra Villa",
+                        "Uluwatu Cottages", "Kapungkur Villa", "Ambiente Villa", "Pulung Villa", "Kalem Villa",
+                        "Tegal Jinah Guest House and Villas", "Fox Hotel (Guest Laundry saja)"
                     ];
-
-                    if (confirm(`Apakah Anda yakin ingin mengimpor ${clientNames.length} pelanggan baru ini sekaligus ke database?`)) {
-                        let successCount = 0;
-                        try {
-                            for (const name of clientNames) {
-                                await addDoc(collection(db, "pelanggan"), {
-                                    nama_pelanggan: name,
-                                    alamat: "Bali", // Alamat bawaan awal
-                                    no_telepon: "-", // Nomor bawaan awal
-                                    tanggal_bergabung: new Date()
-                                });
-                                successCount++;
-                            }
-                            alert(`Sukses mengimpor ${successCount} data pelanggan!`);
-                        } catch (error) {
-                            alert(`Terjadi kesalahan pada impor data ke-${successCount + 1}: ` + error.message);
+                    if (confirm(`Impor ${clientNames.length} pelanggan baru?`)) {
+                        for (const name of clientNames) {
+                            await addDoc(collection(db, "pelanggan"), {
+                                nama_pelanggan: name, alamat: "Bali", no_telepon: "-", tanggal_bergabung: new Date()
+                            });
                         }
+                        alert("Sukses mengimpor data!");
+                    }
+                };
+
+                // --- CRUD MASTER ITEM (LAYANAN) ---
+                const openAddService = () => {
+                    isEditingService.value = false;
+                    serviceForm.value = { id: '', nama_layanan: '', satuan: 'Pcs', harga_standar: 0 };
+                    showServiceForm.value = true;
+                };
+
+                const openEditService = (item) => {
+                    isEditingService.value = true;
+                    serviceForm.value = { ...item };
+                    showServiceForm.value = true;
+                };
+
+                const saveService = async () => {
+                    try {
+                        if (isEditingService.value) {
+                            await updateDoc(doc(db, "layanan", serviceForm.value.id), {
+                                nama_layanan: serviceForm.value.nama_layanan,
+                                satuan: serviceForm.value.satuan,
+                                harga_standar: Number(serviceForm.value.harga_standar)
+                            });
+                        } else {
+                            await addDoc(collection(db, "layanan"), {
+                                nama_layanan: serviceForm.value.nama_layanan,
+                                satuan: serviceForm.value.satuan,
+                                harga_standar: Number(serviceForm.value.harga_standar),
+                                tanggal_dibuat: new Date()
+                            });
+                        }
+                        showServiceForm.value = false;
+                    } catch (error) {
+                        alert("Gagal menyimpan data item: " + error.message);
+                    }
+                };
+
+                const deleteService = async (id) => {
+                    if (confirm("Apakah Anda yakin ingin menghapus item ini?")) {
+                        try {
+                            await deleteDoc(doc(db, "layanan", id));
+                        } catch (error) {
+                            alert("Gagal menghapus: " + error.message);
+                        }
+                    }
+                };
+
+                const importInitialServices = async () => {
+                    const items = [
+                        "Duvet Single", "Sheet Single", "Duvet Double", "Sheet Double", "Pillow Case",
+                        "Kimono", "Bath Towel", "Hand Towel", "Face Towel", "Pool Towel", "Mat",
+                        "Sheet Spa", "Cover Sofa Big", "Cover Sofa Med", "Cushion Cover", "Cover Sofa Round",
+                        "Bolster", "Cushion Cover S", "Napkin", "Spotting", "Bed Pad", "Induv", "Pillow",
+                        "Duvet", "Sheet"
+                    ];
+                    if (confirm(`Impor ${items.length} master item laundry ke database?`)) {
+                        for (const name of items) {
+                            // Menyesuaikan beberapa satuan yang umumnya kiloan, selebihnya pcs
+                            const isKiloan = name.toLowerCase().includes('kiloan');
+                            await addDoc(collection(db, "layanan"), {
+                                nama_layanan: name,
+                                satuan: isKiloan ? 'Kg' : 'Pcs',
+                                harga_standar: 0, // Harga standar awal diset 0 agar nanti bisa diubah mandiri oleh user
+                                tanggal_dibuat: new Date()
+                            });
+                        }
+                        alert("Sukses mengimpor master item!");
+                    }
+                };
+
+                // --- MANAJEMEN HARGA KHUSUS (CUSTOM PRICE) ---
+                const openCustomPrices = (customer) => {
+                    selectedCustomer.value = customer;
+                    tempPrices.value = {};
+
+                    // Muat harga khusus yang sudah tersimpan untuk pelanggan ini ke form sementara
+                    services.value.forEach(item => {
+                        const savedPrice = customPricesList.value.find(
+                            p => p.id_pelanggan === customer.id && p.id_layanan === item.id
+                        );
+                        tempPrices.value[item.id] = savedPrice ? savedPrice.harga_custom : '';
+                    });
+
+                    activeTab.value = 'harga_khusus';
+                };
+
+                const saveCustomPrices = async () => {
+                    try {
+                        const custId = selectedCustomer.value.id;
+                        for (const itemId of Object.keys(tempPrices.value)) {
+                            const val = tempPrices.value[itemId];
+                            const docId = `${custId}_${itemId}`;
+
+                            if (val !== '' && val !== null && val !== undefined) {
+                                // Jika ada nilai harga khusus yang diinput, simpan ke Firebase
+                                await setDoc(doc(db, "harga_khusus", docId), {
+                                    id_pelanggan: custId,
+                                    id_layanan: itemId,
+                                    harga_custom: Number(val)
+                                });
+                            } else {
+                                // Jika dikosongkan, hapus dokumen harga khusus agar kembali ke harga standar
+                                await deleteDoc(doc(db, "harga_khusus", docId));
+                            }
+                        }
+                        alert("Semua harga khusus pelanggan berhasil disimpan!");
+                        activeTab.value = 'pelanggan';
+                    } catch (error) {
+                        alert("Gagal menyimpan harga khusus: " + error.message);
                     }
                 };
 
                 return {
                     activeTab,
+                    changeTab,
                     profile,
                     customers,
+                    services,
                     showCustomerForm,
                     isEditing,
                     customerForm,
+                    showServiceForm,
+                    isEditingService,
+                    serviceForm,
+                    selectedCustomer,
+                    tempPrices,
                     saveProfile,
                     openAddCustomer,
                     openEditCustomer,
                     saveCustomer,
                     deleteCustomer,
-                    importInitialClients
+                    importInitialClients,
+                    openAddService,
+                    openEditService,
+                    saveService,
+                    deleteService,
+                    importInitialServices,
+                    openCustomPrices,
+                    saveCustomPrices
                 };
             }
         }).mount('#app');

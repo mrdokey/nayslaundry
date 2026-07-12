@@ -6,6 +6,8 @@
     <title>Nays Laundry - Admin Dashboard</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- SheetJS (XLSX) CDN untuk Ekspor Excel -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -20,7 +22,7 @@
         <!-- ================= MAIN APP (Hidden when Printing) ================= -->
         <div class="flex flex-col md:flex-row w-full min-h-screen print:hidden">
             
-            <!-- MOBILE TOP BAR (Only visible on Mobile) -->
+            <!-- MOBILE TOP BAR -->
             <header class="flex md:hidden h-16 bg-indigo-900 text-white items-center justify-between px-4 fixed top-0 left-0 right-0 z-40 shadow">
                 <div class="flex items-center space-x-3">
                     <div class="w-8 h-8 rounded-full bg-white flex items-center justify-center overflow-hidden">
@@ -29,10 +31,7 @@
                     </div>
                     <h1 class="font-bold text-sm tracking-wide">{{ profile.nama_laundry || 'Nays Laundry' }}</h1>
                 </div>
-                <!-- Hamburger Button -->
-                <button @click="menuOpen = !menuOpen" class="text-2xl p-2 focus:outline-none">
-                    ☰
-                </button>
+                <button @click="menuOpen = !menuOpen" class="text-2xl p-2 focus:outline-none">☰</button>
             </header>
 
             <!-- MOBILE SLIDE-OUT MENU DRAWER -->
@@ -47,13 +46,14 @@
                     <button @click="changeTab('dashboard')" :class="activeTab === 'dashboard' ? 'bg-indigo-800' : ''" class="w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left text-sm font-medium">🏠 Dashboard</button>
                     <button @click="changeTab('transaksi')" :class="activeTab === 'transaksi' ? 'bg-indigo-800' : ''" class="w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left text-sm font-medium">📝 Transaksi Harian</button>
                     <button @click="changeTab('tagihan')" :class="activeTab === 'tagihan' ? 'bg-indigo-800' : ''" class="w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left text-sm font-medium">💵 Tagihan & Invoice</button>
+                    <button @click="changeTab('laporan')" :class="activeTab === 'laporan' ? 'bg-indigo-800' : ''" class="w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left text-sm font-medium">📈 Laporan Omset</button>
                     <button @click="changeTab('pelanggan')" :class="activeTab === 'pelanggan' || activeTab === 'harga_khusus' ? 'bg-indigo-800' : ''" class="w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left text-sm font-medium">👥 Kelola Pelanggan</button>
                     <button @click="changeTab('layanan')" :class="activeTab === 'layanan' ? 'bg-indigo-800' : ''" class="w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left text-sm font-medium">⚙️ Master Item</button>
                     <button @click="changeTab('profil')" :class="activeTab === 'profil' ? 'bg-indigo-800' : ''" class="w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left text-sm font-medium">🏢 Profil Laundry</button>
                 </nav>
             </aside>
 
-            <!-- DESKTOP SIDEBAR (Static on Desktop) -->
+            <!-- DESKTOP SIDEBAR -->
             <aside class="hidden md:flex w-64 bg-indigo-900 text-white flex-col shadow-lg shrink-0">
                 <div class="p-5 border-b border-indigo-800 flex items-center space-x-3">
                     <div class="w-10 h-10 rounded-full bg-white flex items-center justify-center overflow-hidden">
@@ -69,6 +69,7 @@
                     <button @click="changeTab('dashboard')" :class="activeTab === 'dashboard' ? 'bg-indigo-800 text-white' : 'text-indigo-200 hover:bg-indigo-800'" class="w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left text-sm font-medium">🏠 Dashboard</button>
                     <button @click="changeTab('transaksi')" :class="activeTab === 'transaksi' ? 'bg-indigo-800 text-white' : 'text-indigo-200 hover:bg-indigo-800'" class="w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left text-sm font-medium">📝 Transaksi Harian</button>
                     <button @click="changeTab('tagihan')" :class="activeTab === 'tagihan' ? 'bg-indigo-800 text-white' : 'text-indigo-200 hover:bg-indigo-800'" class="w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left text-sm font-medium">💵 Tagihan & Invoice</button>
+                    <button @click="changeTab('laporan')" :class="activeTab === 'laporan' ? 'bg-indigo-800 text-white' : 'text-indigo-200 hover:bg-indigo-800'" class="w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left text-sm font-medium">📈 Laporan Omset</button>
                     <button @click="changeTab('pelanggan')" :class="activeTab === 'pelanggan' || activeTab === 'harga_khusus' ? 'bg-indigo-800 text-white' : 'text-indigo-200 hover:bg-indigo-800'" class="w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left text-sm font-medium">👥 Kelola Pelanggan</button>
                     <button @click="changeTab('layanan')" :class="activeTab === 'layanan' ? 'bg-indigo-800 text-white' : 'text-indigo-200 hover:bg-indigo-800'" class="w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left text-sm font-medium">⚙️ Master Item</button>
                     <button @click="changeTab('profil')" :class="activeTab === 'profil' ? 'bg-indigo-800 text-white' : 'text-indigo-200 hover:bg-indigo-800'" class="w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left text-sm font-medium">🏢 Profil Laundry</button>
@@ -109,7 +110,7 @@
 
                 <!-- Tab 2: Transaksi Harian -->
                 <section v-if="activeTab === 'transaksi'" class="space-y-6">
-                    <div class="flex justify-between items-center">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                         <div>
                             <h2 class="text-2xl font-bold">Transaksi Harian</h2>
                             <p class="text-sm text-slate-500">Catat kuantitas cucian masuk/keluar dari hotel & vila.</p>
@@ -117,6 +118,11 @@
                         <button v-if="!showTransactionForm" @click="openAddTransaction" class="bg-indigo-600 text-white px-4 py-2.5 rounded-xl text-xs font-semibold hover:bg-indigo-700 transition shadow">
                             + Catat Transaksi Baru
                         </button>
+                    </div>
+
+                    <!-- Kolom Pencarian Transaksi -->
+                    <div v-if="!showTransactionForm" class="w-full max-w-md">
+                        <input v-model="searchQueryTransactions" type="text" placeholder="🔍 Cari nama pelanggan di transaksi..." class="w-full px-4 py-2 border rounded-xl text-sm focus:outline-indigo-500">
                     </div>
 
                     <!-- Form Tambah Transaksi -->
@@ -155,7 +161,7 @@
                     </div>
 
                     <!-- Tabel Log Transaksi -->
-                    <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+                    <div v-if="!showTransactionForm" class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
                         <div class="overflow-x-auto">
                             <table class="w-full text-left text-sm">
                                 <thead class="bg-slate-50 text-slate-400 uppercase text-xs font-semibold border-b border-slate-100">
@@ -168,7 +174,7 @@
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-slate-100">
-                                    <tr v-for="t in transactions" :key="t.id" class="hover:bg-slate-50/50">
+                                    <tr v-for="t in filteredTransactions" :key="t.id" class="hover:bg-slate-50/50">
                                         <td class="p-4 text-slate-600 font-medium">{{ formatDate(t.tanggal) }}</td>
                                         <td class="p-4 font-semibold text-slate-700">{{ getCustomerName(t.id_pelanggan) }}</td>
                                         <td class="p-4 text-xs">
@@ -187,8 +193,8 @@
                                             <button @click="deleteTransaction(t.id, t.status_tagihan)" class="text-red-500 hover:text-red-700 text-xs font-medium">Hapus</button>
                                         </td>
                                     </tr>
-                                    <tr v-if="transactions.length === 0">
-                                        <td colspan="5" class="p-8 text-center text-slate-400">Belum ada catatan transaksi laundry.</td>
+                                    <tr v-if="filteredTransactions.length === 0">
+                                        <td colspan="5" class="p-8 text-center text-slate-400">Tidak ada transaksi ditemukan.</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -198,7 +204,7 @@
 
                 <!-- Tab 3: Tagihan & Invoice -->
                 <section v-if="activeTab === 'tagihan'" class="space-y-6">
-                    <div class="flex justify-between items-center">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                         <div>
                             <h2 class="text-2xl font-bold">Tagihan & Invoice Bulanan</h2>
                             <p class="text-sm text-slate-500">Kelola pembuatan invoice dari rekapitulasi data transaksi pelanggan.</p>
@@ -206,6 +212,11 @@
                         <button v-if="!showInvoiceForm" @click="openAddInvoice" class="bg-indigo-600 text-white px-4 py-2.5 rounded-xl text-xs font-semibold hover:bg-indigo-700 transition shadow">
                             💵 Buat Tagihan Baru
                         </button>
+                    </div>
+
+                    <!-- Kolom Pencarian Invoice -->
+                    <div v-if="!showInvoiceForm" class="w-full max-w-md">
+                        <input v-model="searchQueryInvoices" type="text" placeholder="🔍 Cari nomor invoice atau nama pelanggan..." class="w-full px-4 py-2 border rounded-xl text-sm focus:outline-indigo-500">
                     </div>
 
                     <!-- Form Pembuatan Tagihan Baru -->
@@ -266,7 +277,7 @@
                     </div>
 
                     <!-- Tabel Log Invoice Bulanan -->
-                    <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+                    <div v-if="!showInvoiceForm" class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
                         <div class="overflow-x-auto">
                             <table class="w-full text-left text-sm">
                                 <thead class="bg-slate-50 text-slate-400 uppercase text-xs font-semibold border-b border-slate-100">
@@ -280,20 +291,19 @@
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-slate-100">
-                                    <tr v-for="inv in invoices" :key="inv.id" class="hover:bg-slate-50/50">
+                                    <tr v-for="inv in filteredInvoices" :key="inv.id" class="hover:bg-slate-50/50">
                                         <td class="p-4 font-semibold text-indigo-900">{{ inv.no_invoice }}</td>
                                         <td class="p-4 font-medium text-slate-700">{{ getCustomerName(inv.id_pelanggan) }}</td>
                                         <td class="p-4 text-slate-500">{{ formatMonthYear(inv.periode) }}</td>
                                         <td class="p-4 text-slate-700 font-semibold">Rp {{ inv.total_tagihan.toLocaleString() }}</td>
                                         <td class="p-4">
-                                            <!-- Switch Status Pembayaran -->
                                             <select :value="inv.status_pembayaran" @change="updatePaymentStatus(inv.id, $event.target.value)" 
                                                     :class="{
                                                         'bg-red-100 text-red-800 border-red-200': inv.status_pembayaran === 'belum_lunas',
                                                         'bg-emerald-100 text-emerald-800 border-emerald-200': inv.status_pembayaran === 'lunas_cash',
                                                         'bg-blue-100 text-blue-800 border-blue-200': inv.status_pembayaran === 'lunas_transfer'
                                                     }"
-                                                    class="px-2 py-1 rounded text-xs font-semibold border focus:outline-none">
+                                                    class="px-2 py-1 rounded text-xs font-semibold border border-slate-100 focus:outline-none">
                                                 <option value="belum_lunas">❌ Belum Lunas</option>
                                                 <option value="lunas_cash">💵 Lunas Cash</option>
                                                 <option value="lunas_transfer">💳 Lunas Transfer</option>
@@ -304,8 +314,8 @@
                                             <button @click="deleteInvoice(inv.id)" class="text-red-500 hover:text-red-700 text-xs font-medium">Hapus</button>
                                         </td>
                                     </tr>
-                                    <tr v-if="invoices.length === 0">
-                                        <td colspan="6" class="p-8 text-center text-slate-400">Belum ada tagihan terbit.</td>
+                                    <tr v-if="filteredInvoices.length === 0">
+                                        <td colspan="6" class="p-8 text-center text-slate-400">Tidak ada invoice ditemukan.</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -313,9 +323,86 @@
                     </div>
                 </section>
 
-                <!-- Tab 4: Kelola Pelanggan -->
+                <!-- Tab 4: LAPORAN OMSET & EKSPOR EXCEL -->
+                <section v-if="activeTab === 'laporan'" class="space-y-6">
+                    <div>
+                        <h2 class="text-2xl font-bold">Laporan Omset Pendapatan</h2>
+                        <p class="text-sm text-slate-500">Melihat statistik omset berdasarkan filter klien dan periode bulan.</p>
+                    </div>
+
+                    <!-- Panel Filter Laporan -->
+                    <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex flex-col md:flex-row gap-4 items-end justify-between">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 w-full max-w-xl">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Filter Klien</label>
+                                <select v-model="reportFilterClient" class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-indigo-500">
+                                    <option value="">-- Semua Klien --</option>
+                                    <option v-for="c in customers" :key="c.id" :value="c.id">{{ c.nama_pelanggan }}</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Filter Periode Bulan</label>
+                                <input v-model="reportFilterMonth" type="month" class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-indigo-500">
+                            </div>
+                        </div>
+                        <button @click="exportToExcel" class="w-full md:w-auto bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-xl text-xs font-semibold transition shadow flex items-center justify-center space-x-2">
+                            <span>📊 Download Excel</span>
+                        </button>
+                    </div>
+
+                    <!-- Kartu Ringkasan Omset Terfilter -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div class="bg-indigo-50 p-6 rounded-2xl shadow-sm border border-indigo-100">
+                            <div class="text-xs text-indigo-700 font-semibold uppercase">Total Omset Terbit</div>
+                            <div class="text-2xl font-extrabold mt-2 text-indigo-950">Rp {{ reportTotals.totalOmset.toLocaleString() }}</div>
+                        </div>
+                        <div class="bg-emerald-50 p-6 rounded-2xl shadow-sm border border-emerald-100">
+                            <div class="text-xs text-emerald-700 font-semibold uppercase">Total Sudah Terbayar</div>
+                            <div class="text-2xl font-extrabold mt-2 text-emerald-950">Rp {{ reportTotals.totalTerbayar.toLocaleString() }}</div>
+                        </div>
+                        <div class="bg-rose-50 p-6 rounded-2xl shadow-sm border border-rose-100">
+                            <div class="text-xs text-rose-700 font-semibold uppercase">Total Piutang (Belum Bayar)</div>
+                            <div class="text-2xl font-extrabold mt-2 text-rose-950">Rp {{ reportTotals.totalPiutang.toLocaleString() }}</div>
+                        </div>
+                    </div>
+
+                    <!-- Tabel Laporan -->
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-sm">
+                                <thead class="bg-slate-50 border-b border-slate-100 text-slate-400 font-semibold uppercase text-xs">
+                                    <tr>
+                                        <th class="p-4">No. Invoice</th>
+                                        <th class="p-4">Nama Klien</th>
+                                        <th class="p-4">Periode</th>
+                                        <th class="p-4">Nilai Tagihan</th>
+                                        <th class="p-4">Status Pembayaran</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100">
+                                    <tr v-for="inv in reportInvoices" :key="inv.id" class="hover:bg-slate-50/50">
+                                        <td class="p-4 font-semibold text-indigo-900">{{ inv.no_invoice }}</td>
+                                        <td class="p-4 font-medium">{{ getCustomerName(inv.id_pelanggan) }}</td>
+                                        <td class="p-4 text-slate-500">{{ formatMonthYear(inv.periode) }}</td>
+                                        <td class="p-4 font-semibold">Rp {{ inv.total_tagihan.toLocaleString() }}</td>
+                                        <td class="p-4">
+                                            <span v-if="inv.status_pembayaran === 'belum_lunas'" class="bg-red-100 text-red-800 px-2 py-0.5 rounded text-[10px] font-bold">❌ Belum Lunas</span>
+                                            <span v-else-if="inv.status_pembayaran === 'lunas_cash'" class="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded text-[10px] font-bold">💵 Lunas Cash</span>
+                                            <span v-else-if="inv.status_pembayaran === 'lunas_transfer'" class="bg-blue-100 text-blue-800 px-2 py-0.5 rounded text-[10px] font-bold">💳 Lunas Transfer</span>
+                                        </td>
+                                    </tr>
+                                    <tr v-if="reportInvoices.length === 0">
+                                        <td colspan="5" class="p-8 text-center text-slate-400">Tidak ada data omset pada filter terpilih.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Tab 5: Kelola Pelanggan -->
                 <section v-if="activeTab === 'pelanggan'" class="space-y-6">
-                    <div class="flex justify-between items-center">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                         <div>
                             <h2 class="text-2xl font-bold">Kelola Pelanggan</h2>
                             <p class="text-sm text-slate-500">Tambah, ubah, atau atur harga khusus untuk masing-masing customer.</p>
@@ -323,6 +410,11 @@
                         <button @click="openAddCustomer" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-xl text-xs font-semibold transition shadow">
                             + Tambah Pelanggan
                         </button>
+                    </div>
+
+                    <!-- Kolom Pencarian Pelanggan -->
+                    <div v-if="!showCustomerForm" class="w-full max-w-md">
+                        <input v-model="searchQueryCustomers" type="text" placeholder="🔍 Cari nama pelanggan atau alamat..." class="w-full px-4 py-2 border rounded-xl text-sm focus:outline-indigo-500">
                     </div>
 
                     <!-- Form Tambah/Edit Customer -->
@@ -349,7 +441,7 @@
                     </div>
 
                     <!-- Tabel Daftar Pelanggan -->
-                    <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+                    <div v-if="!showCustomerForm" class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
                         <div class="overflow-x-auto">
                             <table class="w-full text-left text-sm">
                                 <thead class="bg-slate-50 border-b border-slate-100 text-slate-400 font-semibold uppercase text-xs">
@@ -361,7 +453,7 @@
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-slate-100">
-                                    <tr v-for="cust in customers" :key="cust.id" class="hover:bg-slate-50/50">
+                                    <tr v-for="cust in filteredCustomers" :key="cust.id" class="hover:bg-slate-50/50">
                                         <td class="p-4 font-semibold text-indigo-900">{{ cust.nama_pelanggan }}</td>
                                         <td class="p-4 text-slate-500">{{ cust.alamat }}</td>
                                         <td class="p-4 text-slate-500">{{ cust.no_telepon }}</td>
@@ -371,8 +463,8 @@
                                             <button @click="deleteCustomer(cust.id)" class="w-full sm:w-auto text-red-500 hover:text-red-700 font-medium text-center py-1">Hapus</button>
                                         </td>
                                     </tr>
-                                    <tr v-if="customers.length === 0">
-                                        <td colspan="4" class="p-8 text-center text-slate-400">Belum ada pelanggan terdaftar.</td>
+                                    <tr v-if="filteredCustomers.length === 0">
+                                        <td colspan="4" class="p-8 text-center text-slate-400">Tidak ada pelanggan ditemukan.</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -427,7 +519,7 @@
                     </div>
                 </section>
 
-                <!-- Tab 5: Kelola Master Item (Layanan) -->
+                <!-- Tab 6: Kelola Master Item (Layanan) -->
                 <section v-if="activeTab === 'layanan'" class="space-y-6">
                     <div class="flex justify-between items-center">
                         <div>
@@ -500,7 +592,7 @@
                     </div>
                 </section>
 
-                <!-- Tab 6: Profil Laundry -->
+                <!-- Tab 7: Profil Laundry -->
                 <section v-if="activeTab === 'profil'" class="max-w-2xl space-y-6">
                     <div>
                         <h2 class="text-2xl font-bold">Profil Perusahaan</h2>
@@ -540,7 +632,7 @@
             </main>
         </div>
 
-        <!-- ================= PRINTABLE INVOICE VIEW (Hidden from App UI, Only Visible on Print) ================= -->
+        <!-- ================= PRINTABLE INVOICE VIEW ================= -->
         <div v-if="printData" class="hidden print:block w-full max-w-4xl p-8 bg-white text-black text-sm">
             <!-- Kop Surat Invoice -->
             <div class="flex justify-between items-start border-b-2 border-indigo-900 pb-5 mb-6">
@@ -618,570 +710,7 @@
     <!-- Load Vue 3 Global Build -->
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
 
-    <!-- Firebase SDK (Modular CDN) -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { 
-            getFirestore, 
-            doc, 
-            setDoc, 
-            collection, 
-            addDoc, 
-            updateDoc, 
-            deleteDoc, 
-            onSnapshot,
-            query,
-            where,
-            getDocs,
-            writeBatch
-        } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-
-        // Konfigurasi Firebase Anda
-        const firebaseConfig = {
-            apiKey: "AIzaSyDs_DrMlshxHJAyA2l4hu2h4uqS_eG7pSY",
-            authDomain: "nays-laundry.firebaseapp.com",
-            projectId: "nays-laundry",
-            storageBucket: "nays-laundry.firebasestorage.app",
-            messagingSenderId: "285012734396",
-            appId: "1:285012734396:web:63fcf971852a8b4be13bb9"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-
-        const { createApp, ref, onMounted, computed } = Vue;
-
-        createApp({
-            setup() {
-                const activeTab = ref('dashboard');
-                const menuOpen = ref(false); // State hamburger menu drawer
-                
-                const profile = ref({
-                    nama_laundry: '',
-                    alamat: '',
-                    no_telepon: '',
-                    rekening_pembayaran: '',
-                    logo_url: ''
-                });
-
-                const customers = ref([]);
-                const services = ref([]);
-                const customPricesList = ref([]);
-                
-                const transactions = ref([]);
-                const invoices = ref([]);
-
-                // Form States
-                const showCustomerForm = ref(false);
-                const isEditing = ref(false);
-                const customerForm = ref({ id: '', nama_pelanggan: '', alamat: '', no_telepon: '' });
-
-                const showServiceForm = ref(false);
-                const isEditingService = ref(false);
-                const serviceForm = ref({ id: '', nama_layanan: '', satuan: 'Pcs', harga_standar: 0 });
-
-                const showTransactionForm = ref(false);
-                const trxForm = ref({ id_pelanggan: '', tanggal: '', items: {} });
-
-                const showInvoiceForm = ref(false);
-                const invoiceForm = ref({ id_pelanggan: '', periode: '' });
-                const draftInvoiceItems = ref([]);
-                const draftInvoiceTotal = ref(0);
-                const draftTrxIds = ref([]); // ID transaksi yang masuk ke draft ini
-
-                // State cetak PDF
-                const printData = ref(null);
-
-                const changeTab = (tab) => {
-                    activeTab.value = tab;
-                    menuOpen.value = false; // Otomatis tutup drawer di mobile saat pindah tab
-                };
-
-                onMounted(() => {
-                    onSnapshot(doc(db, "pengaturan", "profil"), (snap) => {
-                        if (snap.exists()) profile.value = snap.data();
-                    });
-
-                    onSnapshot(collection(db, "pelanggan"), (snap) => {
-                        const list = [];
-                        snap.forEach((doc) => list.push({ id: doc.id, ...doc.data() }));
-                        customers.value = list.sort((a, b) => a.nama_pelanggan.localeCompare(b.nama_pelanggan));
-                    });
-
-                    onSnapshot(collection(db, "layanan"), (snap) => {
-                        const list = [];
-                        snap.forEach((doc) => list.push({ id: doc.id, ...doc.data() }));
-                        services.value = list.sort((a, b) => a.nama_layanan.localeCompare(b.nama_layanan));
-                    });
-
-                    onSnapshot(collection(db, "harga_khusus"), (snap) => {
-                        const list = [];
-                        snap.forEach((doc) => list.push({ id: doc.id, ...doc.data() }));
-                        customPricesList.value = list;
-                    });
-
-                    onSnapshot(collection(db, "transaksi"), (snap) => {
-                        const list = [];
-                        snap.forEach((doc) => list.push({ id: doc.id, ...doc.data() }));
-                        // Mengurutkan dari transaksi terbaru
-                        transactions.value = list.sort((a, b) => b.tanggal.localeCompare(a.tanggal));
-                    });
-
-                    onSnapshot(collection(db, "tagihan"), (snap) => {
-                        const list = [];
-                        snap.forEach((doc) => list.push({ id: doc.id, ...doc.data() }));
-                        // Urutkan dari tagihan terbaru
-                        invoices.value = list.sort((a, b) => b.tanggal_buat.localeCompare(a.tanggal_buat));
-                    });
-                });
-
-                // --- HELPER DATA ---
-                const getCustomerName = (id) => {
-                    const c = customers.value.find(x => x.id === id);
-                    return c ? c.nama_pelanggan : 'Tanpa Nama';
-                };
-
-                const getCustomerAddress = (id) => {
-                    const c = customers.value.find(x => x.id === id);
-                    return c ? c.alamat : '-';
-                };
-
-                const getServiceName = (id) => {
-                    const s = services.value.find(x => x.id === id);
-                    return s ? s.nama_layanan : 'Item';
-                };
-
-                const getServiceUnit = (id) => {
-                    const s = services.value.find(x => x.id === id);
-                    return s ? s.satuan : 'Pcs';
-                };
-
-                // Mendapatkan harga aktif (custom/standar)
-                const getPrice = (custId, itemId) => {
-                    const custom = customPricesList.value.find(p => p.id_pelanggan === custId && p.id_layanan === itemId);
-                    if (custom && custom.harga_custom !== undefined && custom.harga_custom !== '') {
-                        return Number(custom.harga_custom);
-                    }
-                    const service = services.value.find(s => s.id === itemId);
-                    return service ? Number(service.harga_standar) : 0;
-                };
-
-                const formatDate = (dateString) => {
-                    if (!dateString) return '-';
-                    // Jika format ISO string dari Firebase Timestamp
-                    if (dateString.includes('T')) {
-                        dateString = dateString.split('T')[0];
-                    }
-                    const parts = dateString.split('-');
-                    if (parts.length === 3) {
-                        return `${parts[2]}/${parts[1]}/${parts[0]}`;
-                    }
-                    return dateString;
-                };
-
-                const formatMonthYear = (monthString) => {
-                    if (!monthString) return '-';
-                    const parts = monthString.split('-');
-                    if (parts.length === 2) {
-                        const months = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
-                        return `${months[parseInt(parts[1]) - 1]} ${parts[0]}`;
-                    }
-                    return monthString;
-                };
-
-                // Hitung jumlah transaksi belum ditagih untuk dashboard widget
-                const unbilledTransactionsCount = computed(() => {
-                    return transactions.value.filter(t => t.status_tagihan === 'belum_ditagih').length;
-                });
-
-                // --- CRUD CUSTOMER ---
-                const saveProfile = async () => {
-                    try {
-                        await setDoc(doc(db, "pengaturan", "profil"), profile.value, { merge: true });
-                        alert("Profil perusahaan berhasil diperbarui!");
-                    } catch (error) {
-                        alert("Gagal memperbarui profil: " + error.message);
-                    }
-                };
-
-                const openAddCustomer = () => {
-                    isEditing.value = false;
-                    customerForm.value = { id: '', nama_pelanggan: '', alamat: '', no_telepon: '' };
-                    showCustomerForm.value = true;
-                };
-
-                const openEditCustomer = (customer) => {
-                    isEditing.value = true;
-                    customerForm.value = { ...customer };
-                    showCustomerForm.value = true;
-                };
-
-                const saveCustomer = async () => {
-                    try {
-                        if (isEditing.value) {
-                            await updateDoc(doc(db, "pelanggan", customerForm.value.id), {
-                                nama_pelanggan: customerForm.value.nama_pelanggan,
-                                alamat: customerForm.value.alamat,
-                                no_telepon: customerForm.value.no_telepon
-                            });
-                        } else {
-                            await addDoc(collection(db, "pelanggan"), {
-                                nama_pelanggan: customerForm.value.nama_pelanggan,
-                                alamat: customerForm.value.alamat,
-                                no_telepon: customerForm.value.no_telepon,
-                                tanggal_bergabung: new Date().toISOString()
-                            });
-                        }
-                        showCustomerForm.value = false;
-                    } catch (error) {
-                        alert("Gagal memproses data: " + error.message);
-                    }
-                };
-
-                const deleteCustomer = async (id) => {
-                    if (confirm("Apakah Anda yakin ingin menghapus pelanggan ini?")) {
-                        try {
-                            await deleteDoc(doc(db, "pelanggan", id));
-                        } catch (error) {
-                            alert("Gagal menghapus: " + error.message);
-                        }
-                    }
-                };
-
-                // --- CRUD MASTER ITEM ---
-                const openAddService = () => {
-                    isEditingService.value = false;
-                    serviceForm.value = { id: '', nama_layanan: '', satuan: 'Pcs', harga_standar: 0 };
-                    showServiceForm.value = true;
-                };
-
-                const openEditService = (item) => {
-                    isEditingService.value = true;
-                    serviceForm.value = { ...item };
-                    showServiceForm.value = true;
-                };
-
-                const saveService = async () => {
-                    try {
-                        if (isEditingService.value) {
-                            await updateDoc(doc(db, "layanan", serviceForm.value.id), {
-                                nama_layanan: serviceForm.value.nama_layanan,
-                                satuan: serviceForm.value.satuan,
-                                harga_standar: Number(serviceForm.value.harga_standar)
-                            });
-                        } else {
-                            await addDoc(collection(db, "layanan"), {
-                                nama_layanan: serviceForm.value.nama_layanan,
-                                satuan: serviceForm.value.satuan,
-                                harga_standar: Number(serviceForm.value.harga_standar),
-                                tanggal_dibuat: new Date().toISOString()
-                            });
-                        }
-                        showServiceForm.value = false;
-                    } catch (error) {
-                        alert("Gagal menyimpan data item: " + error.message);
-                    }
-                };
-
-                const deleteService = async (id) => {
-                    if (confirm("Apakah Anda yakin ingin menghapus item ini?")) {
-                        try {
-                            await deleteDoc(doc(db, "layanan", id));
-                        } catch (error) {
-                            alert("Gagal menghapus: " + error.message);
-                        }
-                    }
-                };
-
-                // --- MANAJEMEN HARGA KHUSUS ---
-                const openCustomPrices = (customer) => {
-                    selectedCustomer.value = customer;
-                    tempPrices.value = {};
-                    services.value.forEach(item => {
-                        const savedPrice = customPricesList.value.find(
-                            p => p.id_pelanggan === customer.id && p.id_layanan === item.id
-                        );
-                        tempPrices.value[item.id] = savedPrice ? savedPrice.harga_custom : '';
-                    });
-                    activeTab.value = 'harga_khusus';
-                };
-
-                const saveCustomPrices = async () => {
-                    try {
-                        const custId = selectedCustomer.value.id;
-                        for (const itemId of Object.keys(tempPrices.value)) {
-                            const val = tempPrices.value[itemId];
-                            const docId = `${custId}_${itemId}`;
-
-                            if (val !== '' && val !== null && val !== undefined) {
-                                await setDoc(doc(db, "harga_khusus", docId), {
-                                    id_pelanggan: custId,
-                                    id_layanan: itemId,
-                                    harga_custom: Number(val)
-                                });
-                            } else {
-                                await deleteDoc(doc(db, "harga_khusus", docId));
-                            }
-                        }
-                        alert("Harga khusus pelanggan berhasil disimpan!");
-                        activeTab.value = 'pelanggan';
-                    } catch (error) {
-                        alert("Gagal menyimpan harga khusus: " + error.message);
-                    }
-                };
-
-                // --- TRANSAKSI HARIAN ---
-                const openAddTransaction = () => {
-                    const todayStr = new Date().toISOString().split('T')[0];
-                    trxForm.value = { id_pelanggan: '', tanggal: todayStr, items: {} };
-                    services.value.forEach(item => {
-                        trxForm.value.items[item.id] = '';
-                    });
-                    showTransactionForm.value = true;
-                };
-
-                const saveTransaction = async () => {
-                    if (!trxForm.value.id_pelanggan || !trxForm.value.tanggal) {
-                        alert("Harap pilih pelanggan dan tanggal pengambilan.");
-                        return;
-                    }
-
-                    // Susun rincian item yang kuantitasnya > 0
-                    const itemPayload = [];
-                    for (const itemId of Object.keys(trxForm.value.items)) {
-                        const qty = Number(trxForm.value.items[itemId]);
-                        if (qty > 0) {
-                            itemPayload.push({
-                                id_layanan: itemId,
-                                qty: qty
-                            });
-                        }
-                    }
-
-                    if (itemPayload.length === 0) {
-                        alert("Harap masukkan kuantitas minimal pada satu item.");
-                        return;
-                    }
-
-                    try {
-                        await addDoc(collection(db, "transaksi"), {
-                            id_pelanggan: trxForm.value.id_pelanggan,
-                            tanggal: trxForm.value.tanggal,
-                            items: itemPayload,
-                            status_tagihan: 'belum_ditagih' // Default saat input harian
-                        });
-                        alert("Catatan transaksi berhasil disimpan!");
-                        showTransactionForm.value = false;
-                    } catch (error) {
-                        alert("Gagal menyimpan transaksi: " + error.message);
-                    }
-                };
-
-                const deleteTransaction = async (id, status) => {
-                    if (status === 'sudah_ditagih') {
-                        alert("Transaksi ini tidak bisa dihapus karena sudah digabungkan ke dalam invoice tagihan bulanan.");
-                        return;
-                    }
-                    if (confirm("Apakah Anda yakin ingin menghapus catatan transaksi ini?")) {
-                        try {
-                            await deleteDoc(doc(db, "transaksi", id));
-                        } catch (error) {
-                            alert("Gagal menghapus transaksi: " + error.message);
-                        }
-                    }
-                };
-
-                // --- GENERATE INVOICE BULANAN ---
-                const openAddInvoice = () => {
-                    const currentMonth = new Date().toISOString().slice(0, 7); // Format: "YYYY-MM"
-                    invoiceForm.value = { id_pelanggan: '', periode: currentMonth };
-                    draftInvoiceItems.value = [];
-                    draftInvoiceTotal.value = 0;
-                    draftTrxIds.value = [];
-                    showInvoiceForm.value = true;
-                };
-
-                // Menghitung draf tagihan berdasarkan transaksi yang terkumpul
-                const calculateDraftInvoice = () => {
-                    const custId = invoiceForm.value.id_pelanggan;
-                    const period = invoiceForm.value.periode; // "YYYY-MM"
-
-                    if (!custId || !period) {
-                        draftInvoiceItems.value = [];
-                        draftInvoiceTotal.value = 0;
-                        draftTrxIds.value = [];
-                        return;
-                    }
-
-                    // Cari transaksi pelanggan yang "belum_ditagih" dan berada pada bulan yang ditentukan
-                    const filteredTrx = transactions.value.filter(t => {
-                        return t.id_pelanggan === custId && 
-                               t.status_tagihan === 'belum_ditagih' && 
-                               t.tanggal.startsWith(period);
-                    });
-
-                    // Akumulasi/Gabung kuantitas item sejenis
-                    const mapItems = {};
-                    const trxIds = [];
-
-                    filteredTrx.forEach(t => {
-                        trxIds.push(t.id);
-                        t.items.forEach(item => {
-                            if (!mapItems[item.id_layanan]) {
-                                mapItems[item.id_layanan] = 0;
-                            }
-                            mapItems[item.id_layanan] += item.qty;
-                        });
-                    });
-
-                    // Konversi map menjadi array rincian draf dengan harga aktif
-                    const draftList = [];
-                    let grandTotal = 0;
-
-                    for (const itemId of Object.keys(mapItems)) {
-                        const qty = mapItems[itemId];
-                        const price = getPrice(custId, itemId);
-                        const subtotal = qty * price;
-
-                        draftList.push({
-                            id_layanan: itemId,
-                            nama_layanan: getServiceName(itemId),
-                            satuan: getServiceUnit(itemId),
-                            qty: qty,
-                            harga_satuan: price,
-                            subtotal: subtotal
-                        });
-
-                        grandTotal += subtotal;
-                    }
-
-                    draftInvoiceItems.value = draftList;
-                    draftInvoiceTotal.value = grandTotal;
-                    draftTrxIds.value = trxIds;
-                };
-
-                const saveInvoice = async () => {
-                    if (draftInvoiceItems.value.length === 0) {
-                        alert("Tidak ada draf item transaksi untuk disimpan.");
-                        return;
-                    }
-
-                    try {
-                        const randomId = Math.floor(100 + Math.random() * 900); // 3 digit unik
-                        const cleanPeriod = invoiceForm.value.periode.replace('-', '');
-                        const noInvoice = `INV/${cleanPeriod}/${randomId}`;
-
-                        // 1. Simpan dokumen Invoice baru
-                        await addDoc(collection(db, "tagihan"), {
-                            no_invoice: noInvoice,
-                            id_pelanggan: invoiceForm.value.id_pelanggan,
-                            periode: invoiceForm.value.periode,
-                            tanggal_buat: new Date().toISOString(),
-                            total_tagihan: draftInvoiceTotal.value,
-                            status_pembayaran: 'belum_lunas',
-                            items: draftInvoiceItems.value
-                        });
-
-                        // 2. Tandai semua transaksi yang diakumulasi menjadi "sudah_ditagih"
-                        const batchTrxPromises = draftTrxIds.value.map(id => {
-                            return updateDoc(doc(db, "transaksi", id), {
-                                status_tagihan: 'sudah_ditagih'
-                            });
-                        });
-                        await Promise.all(batchTrxPromises);
-
-                        alert("Tagihan bulanan berhasil diterbitkan!");
-                        showInvoiceForm.value = false;
-                    } catch (error) {
-                        alert("Gagal menerbitkan tagihan: " + error.message);
-                    }
-                };
-
-                const deleteInvoice = async (id) => {
-                    if (confirm("Menghapus invoice tidak mengembalikan status transaksi menjadi belum ditagih. Apakah Anda yakin ingin menghapus invoice ini?")) {
-                        try {
-                            await deleteDoc(doc(db, "tagihan", id));
-                        } catch (error) {
-                            alert("Gagal menghapus tagihan: " + error.message);
-                        }
-                    }
-                };
-
-                // Memperbarui status pembayaran secara instan
-                const updatePaymentStatus = async (id, newStatus) => {
-                    try {
-                        await updateDoc(doc(db, "tagihan", id), {
-                            status_pembayaran: newStatus
-                        });
-                    } catch (error) {
-                        alert("Gagal memperbarui status pembayaran: " + error.message);
-                    }
-                };
-
-                // --- FUNGSI CETAK PDF INVOICE ---
-                const printInvoice = (inv) => {
-                    printData.value = inv;
-                    // Berikan sedikit jeda waktu agar DOM template cetak sempat terisi data di HTML, lalu picu dialog cetak
-                    setTimeout(() => {
-                        window.print();
-                    }, 300);
-                };
-
-                return {
-                    activeTab,
-                    menuOpen,
-                    changeTab,
-                    profile,
-                    customers,
-                    services,
-                    transactions,
-                    invoices,
-                    unbilledTransactionsCount,
-                    showCustomerForm,
-                    isEditing,
-                    customerForm,
-                    showServiceForm,
-                    isEditingService,
-                    serviceForm,
-                    selectedCustomer,
-                    tempPrices,
-                    showTransactionForm,
-                    trxForm,
-                    showInvoiceForm,
-                    invoiceForm,
-                    draftInvoiceItems,
-                    draftInvoiceTotal,
-                    printData,
-                    getCustomerName,
-                    getCustomerAddress,
-                    getServiceName,
-                    getServiceUnit,
-                    getPrice,
-                    formatDate,
-                    formatMonthYear,
-                    saveProfile,
-                    openAddCustomer,
-                    openEditCustomer,
-                    saveCustomer,
-                    deleteCustomer,
-                    openAddService,
-                    openEditService,
-                    saveService,
-                    deleteService,
-                    openCustomPrices,
-                    saveCustomPrices,
-                    openAddTransaction,
-                    saveTransaction,
-                    deleteTransaction,
-                    openAddInvoice,
-                    calculateDraftInvoice,
-                    saveInvoice,
-                    deleteInvoice,
-                    updatePaymentStatus,
-                    printInvoice
-                };
-            }
-        }).mount('#app');
-    </script>
+    <!-- Memanggil Logika Utama Modular -->
+    <script type="module" src="./app.js"></script>
 </body>
 </html>

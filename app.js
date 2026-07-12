@@ -223,7 +223,6 @@ createApp({
                 return;
             }
 
-            // Susun baris data khusus untuk Excel secara informatif
             const dataToExcel = reportInvoices.value.map(inv => {
                 let statusTxt = 'Belum Lunas';
                 if (inv.status_pembayaran === 'lunas_cash') statusTxt = 'Lunas Cash';
@@ -239,17 +238,14 @@ createApp({
                 };
             });
 
-            // Membuat Sheet dari dataset JSON
             const worksheet = XLSX.utils.json_to_sheet(dataToExcel);
             const workbook = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(workbook, worksheet, "Laporan Omset");
 
-            // Mengatur judul file excel
             const clientName = reportFilterClient.value ? getCustomerName(reportFilterClient.value).replace(/\s+/g, '_') : 'Semua_Klien';
             const periodName = reportFilterMonth.value ? reportFilterMonth.value : 'Semua_Periode';
             const filename = `Laporan_Omset_${clientName}_${periodName}.xlsx`;
 
-            // Proses Download
             XLSX.writeFile(workbook, filename);
         };
 
@@ -501,4 +497,141 @@ createApp({
                     qty: qty,
                     harga_satuan: price,
                     subtotal: subtotal
-    
+                });
+
+                grandTotal += subtotal;
+            }
+
+            draftInvoiceItems.value = draftList;
+            draftInvoiceTotal.value = grandTotal;
+            draftTrxIds.value = trxIds;
+        };
+
+        const saveInvoice = async () => {
+            if (draftInvoiceItems.value.length === 0) {
+                alert("Tidak ada draf item transaksi untuk disimpan.");
+                return;
+            }
+
+            try {
+                const randomId = Math.floor(100 + Math.random() * 900);
+                const cleanPeriod = invoiceForm.value.periode.replace('-', '');
+                const noInvoice = `INV/${cleanPeriod}/${randomId}`;
+
+                await addDoc(collection(db, "tagihan"), {
+                    no_invoice: noInvoice,
+                    id_pelanggan: invoiceForm.value.id_pelanggan,
+                    periode: invoiceForm.value.periode,
+                    tanggal_buat: new Date().toISOString(),
+                    total_tagihan: draftInvoiceTotal.value,
+                    status_pembayaran: 'belum_lunas',
+                    items: draftInvoiceItems.value
+                });
+
+                const batchTrxPromises = draftTrxIds.value.map(id => {
+                    return updateDoc(doc(db, "transaksi", id), {
+                        status_tagihan: 'sudah_ditagih'
+                    });
+                });
+                await Promise.all(batchTrxPromises);
+
+                alert("Tagihan bulanan berhasil diterbitkan!");
+                showInvoiceForm.value = false;
+            } catch (error) {
+                alert("Gagal menerbitkan tagihan: " + error.message);
+            }
+        };
+
+        const deleteInvoice = async (id) => {
+            if (confirm("Menghapus invoice tidak mengembalikan status transaksi menjadi belum ditagih. Apakah Anda yakin?")) {
+                try {
+                    await deleteDoc(doc(db, "tagihan", id));
+                } catch (error) {
+                    alert("Gagal menghapus tagihan: " + error.message);
+                }
+            }
+        };
+
+        const updatePaymentStatus = async (id, newStatus) => {
+            try {
+                await updateDoc(doc(db, "tagihan", id), {
+                    status_pembayaran: newStatus
+                });
+            } catch (error) {
+                alert("Gagal memperbarui status pembayaran: " + error.message);
+            }
+        };
+
+        const printInvoice = (inv) => {
+            printData.value = inv;
+            setTimeout(() => {
+                window.print();
+            }, 300);
+        };
+
+        return {
+            activeTab,
+            menuOpen,
+            changeTab,
+            profile,
+            customers,
+            services,
+            transactions,
+            invoices,
+            unbilledTransactionsCount,
+            searchQueryCustomers,
+            searchQueryTransactions,
+            searchQueryInvoices,
+            reportFilterClient,
+            reportFilterMonth,
+            reportInvoices,
+            reportTotals,
+            filteredCustomers,
+            filteredTransactions,
+            filteredInvoices,
+            showCustomerForm,
+            isEditing,
+            customerForm,
+            showServiceForm,
+            isEditingService,
+            serviceForm,
+            selectedCustomer,
+            tempPrices,
+            showTransactionForm,
+            trxForm,
+            showInvoiceForm,
+            invoiceForm,
+            draftInvoiceItems,
+            draftInvoiceTotal,
+            printData,
+            getCustomerName,
+            getCustomerAddress,
+            getServiceName,
+            getServiceUnit,
+            getPrice,
+            formatDate,
+            formatMonthYear,
+            saveProfile,
+            openAddCustomer,
+            openEditCustomer,
+            saveCustomer,
+            deleteCustomer,
+            openAddService,
+            openEditService,
+            saveService,
+            deleteService,
+            openCustomPrices,
+            saveCustomPrices,
+            openAddTransaction,
+            saveTransaction,
+            deleteTransaction,
+            openAddInvoice,
+            calculateDraftInvoice,
+            saveInvoice,
+            deleteInvoice,
+            updatePaymentStatus,
+            printInvoice,
+            exportToExcel
+        };
+    }
+}).mount('#app');

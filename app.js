@@ -3,13 +3,12 @@ import {
     db, doc, setDoc, collection, addDoc, updateDoc, deleteDoc, onSnapshot 
 } from "./firebase-db.js";
 
-// Mengambil fungsi reaktif dari objek Vue global yang diload di HTML
 const { createApp, ref, onMounted, computed } = Vue;
 
 createApp({
     setup() {
         const activeTab = ref('dashboard');
-        const menuOpen = ref(false); // State hamburger menu drawer
+        const menuOpen = ref(false); // Hamburger menu drawer state
         
         const profile = ref({
             nama_laundry: '',
@@ -25,6 +24,15 @@ createApp({
         
         const transactions = ref([]);
         const invoices = ref([]);
+
+        // Fitur Pencarian Instan (State)
+        const searchQueryCustomers = ref('');
+        const searchQueryTransactions = ref('');
+        const searchQueryInvoices = ref('');
+
+        // Fitur Filter Laporan Omset (State)
+        const reportFilterClient = ref('');
+        const reportFilterMonth = ref(new Date().toISOString().slice(0, 7)); // Default: bulan sekarang "YYYY-MM"
 
         // Form States
         const showCustomerForm = ref(false);
@@ -151,6 +159,99 @@ createApp({
         const unbilledTransactionsCount = computed(() => {
             return transactions.value.filter(t => t.status_tagihan === 'belum_ditagih').length;
         });
+
+        // --- PENCARIAN REAKTIF (COMPUTED) ---
+        const filteredCustomers = computed(() => {
+            const q = searchQueryCustomers.value.toLowerCase().trim();
+            if (!q) return customers.value;
+            return customers.value.filter(c => 
+                c.nama_pelanggan.toLowerCase().includes(q) || 
+                c.alamat.toLowerCase().includes(q)
+            );
+        });
+
+        const filteredTransactions = computed(() => {
+            const q = searchQueryTransactions.value.toLowerCase().trim();
+            if (!q) return transactions.value;
+            return transactions.value.filter(t => {
+                const custName = getCustomerName(t.id_pelanggan).toLowerCase();
+                return custName.includes(q);
+            });
+        });
+
+        const filteredInvoices = computed(() => {
+            const q = searchQueryInvoices.value.toLowerCase().trim();
+            if (!q) return invoices.value;
+            return invoices.value.filter(inv => {
+                const noInv = inv.no_invoice.toLowerCase();
+                const custName = getCustomerName(inv.id_pelanggan).toLowerCase();
+                return noInv.includes(q) || custName.includes(q);
+            });
+        });
+
+        // --- LAPORAN OMSET & TOTALAN ---
+        const reportInvoices = computed(() => {
+            return invoices.value.filter(inv => {
+                const matchClient = !reportFilterClient.value || inv.id_pelanggan === reportFilterClient.value;
+                const matchMonth = !reportFilterMonth.value || inv.periode === reportFilterMonth.value;
+                return matchClient && matchMonth;
+            });
+        });
+
+        const reportTotals = computed(() => {
+            let totalOmset = 0;
+            let totalTerbayar = 0;
+            let totalPiutang = 0;
+
+            reportInvoices.value.forEach(inv => {
+                const value = Number(inv.total_tagihan) || 0;
+                totalOmset += value;
+                if (inv.status_pembayaran === 'lunas_cash' || inv.status_pembayaran === 'lunas_transfer') {
+                    totalTerbayar += value;
+                } else {
+                    totalPiutang += value;
+                }
+            });
+
+            return { totalOmset, totalTerbayar, totalPiutang };
+        });
+
+        // --- EKSPOR DATA EXCEL ---
+        const exportToExcel = () => {
+            if (reportInvoices.value.length === 0) {
+                alert("Tidak ada data laporan untuk diunduh pada filter saat ini.");
+                return;
+            }
+
+            // Susun baris data khusus untuk Excel secara informatif
+            const dataToExcel = reportInvoices.value.map(inv => {
+                let statusTxt = 'Belum Lunas';
+                if (inv.status_pembayaran === 'lunas_cash') statusTxt = 'Lunas Cash';
+                if (inv.status_pembayaran === 'lunas_transfer') statusTxt = 'Lunas Transfer';
+
+                return {
+                    "No. Invoice": inv.no_invoice,
+                    "Nama Pelanggan / Klien": getCustomerName(inv.id_pelanggan),
+                    "Periode Tagihan": formatMonthYear(inv.periode),
+                    "Tanggal Terbit": formatDate(inv.tanggal_buat),
+                    "Jumlah Tagihan (IDR)": inv.total_tagihan,
+                    "Status Pembayaran": statusTxt
+                };
+            });
+
+            // Membuat Sheet dari dataset JSON
+            const worksheet = XLSX.utils.json_to_sheet(dataToExcel);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Laporan Omset");
+
+            // Mengatur judul file excel
+            const clientName = reportFilterClient.value ? getCustomerName(reportFilterClient.value).replace(/\s+/g, '_') : 'Semua_Klien';
+            const periodName = reportFilterMonth.value ? reportFilterMonth.value : 'Semua_Periode';
+            const filename = `Laporan_Omset_${clientName}_${periodName}.xlsx`;
+
+            // Proses Download
+            XLSX.writeFile(workbook, filename);
+        };
 
         // --- CRUD CUSTOMER ---
         const saveProfile = async () => {
@@ -482,6 +583,16 @@ createApp({
             transactions,
             invoices,
             unbilledTransactionsCount,
+            searchQueryCustomers,
+            searchQueryTransactions,
+            searchQueryInvoices,
+            reportFilterClient,
+            reportFilterMonth,
+            reportInvoices,
+            reportTotals,
+            filteredCustomers,
+            filteredTransactions,
+            filteredInvoices,
             showCustomerForm,
             isEditing,
             customerForm,
@@ -523,7 +634,8 @@ createApp({
             saveInvoice,
             deleteInvoice,
             updatePaymentStatus,
-            printInvoice
+            printInvoice,
+            exportToExcel
         };
     }
 }).mount('#app');

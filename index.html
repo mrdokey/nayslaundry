@@ -3,16 +3,208 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nays Laundry Admin</title>
+    <title>Nays Laundry - Admin Dashboard</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
 </head>
-<body>
-    <h1>Nays Laundry - Tes Koneksi Firebase</h1>
-    <div id="status" style="font-weight: bold;">Menghubungkan ke Firebase...</div>
+<body class="bg-slate-50 text-slate-800">
 
+    <div id="app" class="flex flex-col md:flex-row min-h-screen" v-cloak>
+        
+        <!-- Sidebar Menu -->
+        <aside class="w-full md:w-64 bg-indigo-900 text-white flex flex-col shadow-lg">
+            <div class="p-5 border-b border-indigo-800 flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-full bg-white flex items-center justify-center overflow-hidden">
+                    <img v-if="profile.logo_url" :src="profile.logo_url" alt="Logo" class="object-cover w-full h-full">
+                    <span v-else class="text-indigo-900 font-bold">NL</span>
+                </div>
+                <div>
+                    <h1 class="font-bold tracking-wide text-sm">{{ profile.nama_laundry || 'Nays Laundry' }}</h1>
+                    <span class="text-xs text-indigo-300">Admin Panel</span>
+                </div>
+            </div>
+            
+            <nav class="flex-1 p-4 space-y-2">
+                <button @click="activeTab = 'dashboard'" 
+                        :class="activeTab === 'dashboard' ? 'bg-indigo-800 text-white' : 'text-indigo-200 hover:bg-indigo-800 hover:text-white'"
+                        class="w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition text-left text-sm font-medium">
+                    <span>🏠 Dashboard</span>
+                </button>
+                <button @click="activeTab = 'pelanggan'" 
+                        :class="activeTab === 'pelanggan' ? 'bg-indigo-800 text-white' : 'text-indigo-200 hover:bg-indigo-800 hover:text-white'"
+                        class="w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition text-left text-sm font-medium">
+                    <span>👥 Kelola Pelanggan</span>
+                </button>
+                <button @click="activeTab = 'profil'" 
+                        :class="activeTab === 'profil' ? 'bg-indigo-800 text-white' : 'text-indigo-200 hover:bg-indigo-800 hover:text-white'"
+                        class="w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition text-left text-sm font-medium">
+                    <span>⚙️ Profil Laundry</span>
+                </button>
+            </nav>
+            <div class="p-4 border-t border-indigo-800 text-center text-xs text-indigo-300">
+                v1.0.0
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="flex-1 p-6 md:p-10">
+            
+            <!-- Tab 1: Dashboard Ringkasan -->
+            <section v-if="activeTab === 'dashboard'" class="space-y-6">
+                <header class="flex justify-between items-center">
+                    <div>
+                        <h2 class="text-2xl font-bold tracking-tight">Selamat Datang</h2>
+                        <p class="text-sm text-slate-500">Berikut adalah ringkasan operasional laundry Anda hari ini.</p>
+                    </div>
+                </header>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                        <div class="text-sm text-slate-500 font-medium">Total Pelanggan</div>
+                        <div class="text-3xl font-bold mt-2 text-indigo-600">{{ customers.length }}</div>
+                    </div>
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                        <div class="text-sm text-slate-500 font-medium">Layanan Aktif</div>
+                        <div class="text-3xl font-bold mt-2 text-indigo-600">Sistem Bulanan</div>
+                    </div>
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                        <div class="text-sm text-slate-500 font-medium">Status Koneksi</div>
+                        <div class="text-sm font-bold mt-3 text-emerald-600 flex items-center">
+                            <span class="w-2.5 h-2.5 bg-emerald-500 rounded-full inline-block mr-2 animate-ping"></span>
+                            Terhubung Real-time ke Firebase
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Tab 2: Kelola Pelanggan (CRUD) -->
+            <section v-if="activeTab === 'pelanggan'" class="space-y-6">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h2 class="text-2xl font-bold">Kelola Pelanggan (Hotel/Vila)</h2>
+                        <p class="text-sm text-slate-500">Tambah, ubah, atau hapus data customer di Bali.</p>
+                    </div>
+                    <button @click="openAddCustomer" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition shadow-sm">
+                        + Tambah Pelanggan
+                    </button>
+                </div>
+
+                <!-- Form Modal / Card Input Customer -->
+                <div v-if="showCustomerForm" class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 space-y-4">
+                    <h3 class="text-lg font-bold text-slate-700">{{ isEditing ? 'Ubah Data Pelanggan' : 'Tambah Pelanggan Baru' }}</h3>
+                    <form @submit.prevent="saveCustomer" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Nama Hotel / Vila</label>
+                            <input v-model="customerForm.nama_pelanggan" type="text" required placeholder="Masukkan nama hotel/vila" class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-indigo-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Nomor Telepon</label>
+                            <input v-model="customerForm.no_telepon" type="text" required placeholder="Contoh: 08123456789" class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-indigo-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Alamat Lengkap</label>
+                            <input v-model="customerForm.alamat" type="text" required placeholder="Alamat lengkap di Bali" class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-indigo-500">
+                        </div>
+                        <div class="md:col-span-3 flex justify-end space-x-2 pt-2">
+                            <button type="button" @click="showCustomerForm = false" class="px-4 py-2 text-sm text-slate-500 hover:bg-slate-100 rounded-lg">Batal</button>
+                            <button type="submit" class="bg-indigo-600 text-white px-5 py-2 text-sm rounded-lg hover:bg-indigo-700 font-medium">Simpan</button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Daftar Pelanggan Table -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse text-sm">
+                            <thead>
+                                <tr class="bg-slate-50 border-b border-slate-100 text-slate-400 font-semibold uppercase text-xs">
+                                    <th class="p-4">Nama Pelanggan</th>
+                                    <th class="p-4">Alamat</th>
+                                    <th class="p-4">No. Telepon</th>
+                                    <th class="p-4 text-center">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100">
+                                <tr v-for="cust in customers" :key="cust.id" class="hover:bg-slate-50/50 transition">
+                                    <td class="p-4 font-semibold text-slate-700">{{ cust.nama_pelanggan }}</td>
+                                    <td class="p-4 text-slate-500">{{ cust.alamat }}</td>
+                                    <td class="p-4 text-slate-500">{{ cust.no_telepon }}</td>
+                                    <td class="p-4 flex justify-center space-x-3">
+                                        <button @click="openEditCustomer(cust)" class="text-indigo-600 hover:text-indigo-800 font-medium">Edit</button>
+                                        <button @click="deleteCustomer(cust.id)" class="text-red-500 hover:text-red-700 font-medium">Hapus</button>
+                                    </td>
+                                </tr>
+                                <tr v-if="customers.length === 0">
+                                    <td colspan="4" class="p-8 text-center text-slate-400">Belum ada data pelanggan terdaftar.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Tab 3: Profil Laundry (Create/Update saja, tanpa Delete) -->
+            <section v-if="activeTab === 'profil'" class="max-w-2xl space-y-6">
+                <div>
+                    <h2 class="text-2xl font-bold">Profil Perusahaan</h2>
+                    <p class="text-sm text-slate-500">Konfigurasi data laundry Anda untuk kebutuhan kop surat dan info rekening invoice.</p>
+                </div>
+
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                    <form @submit.prevent="saveProfile" class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Nama Laundry</label>
+                            <input v-model="profile.nama_laundry" type="text" required placeholder="Contoh: Nays Laundry Bali" class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-indigo-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Nomor Telepon Operasional</label>
+                            <input v-model="profile.no_telepon" type="text" required placeholder="Contoh: 081999xxxxxx" class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-indigo-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Alamat Laundry</label>
+                            <input v-model="profile.alamat" type="text" required placeholder="Alamat fisik laundry" class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-indigo-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Rekening Pembayaran (Untuk Invoice)</label>
+                            <input v-model="profile.rekening_pembayaran" type="text" required placeholder="Contoh: BCA - 12345678 a/n Nama Anda" class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-indigo-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">URL Logo Laundry</label>
+                            <input v-model="profile.logo_url" type="text" placeholder="https://domain.com/logo.png (Opsional)" class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-indigo-500">
+                        </div>
+                        <div class="flex justify-end pt-2">
+                            <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-lg text-sm font-medium transition shadow-sm">
+                                Perbarui Profil
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- Load Vue 3 Global Build -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+
+    <!-- Firebase SDK (Modular CDN) -->
     <script type="module">
-        // Import Firebase SDK dari CDN resmi
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { 
+            getFirestore, 
+            doc, 
+            setDoc, 
+            collection, 
+            addDoc, 
+            updateDoc, 
+            deleteDoc, 
+            onSnapshot 
+        } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         // Konfigurasi Firebase milik Anda
         const firebaseConfig = {
@@ -28,25 +220,135 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // Fungsi uji coba menulis data pelanggan pertama
-        async function testKoneksi() {
-            try {
-                const docRef = await addDoc(collection(db, "pelanggan"), {
-                    nama_pelanggan: "Hotel Test Bali",
-                    alamat: "Jl. Sunset Road No. 1",
-                    tanggal_bergabung: new Date()
-                });
-                document.getElementById("status").innerText = "Sukses terhubung! Data uji coba berhasil ditulis ke Firestore dengan ID: " + docRef.id;
-                document.getElementById("status").style.color = "green";
-            } catch (error) {
-                document.getElementById("status").innerText = "Gagal terhubung: " + error.message;
-                document.getElementById("status").style.color = "red";
-                console.error("Error: ", error);
-            }
-        }
+        // Ambil fungsi Vue yang dibutuhkan
+        const { createApp, ref, onMounted } = Vue;
 
-        // Jalankan fungsi
-        testKoneksi();
+        createApp({
+            setup() {
+                const activeTab = ref('dashboard');
+                
+                // State Profil Laundry
+                const profile = ref({
+                    nama_laundry: '',
+                    alamat: '',
+                    no_telepon: '',
+                    rekening_pembayaran: '',
+                    logo_url: ''
+                });
+
+                // State Daftar Pelanggan
+                const customers = ref([]);
+                
+                // State Form Pelanggan
+                const showCustomerForm = ref(false);
+                const isEditing = ref(false);
+                const customerForm = ref({
+                    id: '',
+                    nama_pelanggan: '',
+                    alamat: '',
+                    no_telepon: ''
+                });
+
+                // Memulai pemantauan data real-time saat aplikasi dimuat
+                onMounted(() => {
+                    // 1. Memantau Profil Laundry (Satu Dokumen)
+                    const profileRef = doc(db, "pengaturan", "profil");
+                    onSnapshot(profileRef, (docSnap) => {
+                        if (docSnap.exists()) {
+                            profile.value = docSnap.data();
+                        }
+                    });
+
+                    // 2. Memantau Daftar Pelanggan (Koleksi)
+                    const customersRef = collection(db, "pelanggan");
+                    onSnapshot(customersRef, (querySnapshot) => {
+                        const list = [];
+                        querySnapshot.forEach((doc) => {
+                            list.push({ id: doc.id, ...doc.data() });
+                        });
+                        // Mengurutkan pelanggan berdasarkan abjad nama
+                        customers.value = list.sort((a, b) => a.nama_pelanggan.localeCompare(b.nama_pelanggan));
+                    });
+                });
+
+                // Fungsi: Menyimpan/Memperbarui Profil
+                const saveProfile = async () => {
+                    try {
+                        const profileRef = doc(db, "pengaturan", "profil");
+                        await setDoc(profileRef, profile.value, { merge: true });
+                        alert("Profil perusahaan berhasil diperbarui!");
+                    } catch (error) {
+                        alert("Gagal memperbarui profil: " + error.message);
+                    }
+                };
+
+                // Fungsi: Membuka Form Tambah Pelanggan
+                const openAddCustomer = () => {
+                    isEditing.value = false;
+                    customerForm.value = { id: '', nama_pelanggan: '', alamat: '', no_telepon: '' };
+                    showCustomerForm.value = true;
+                };
+
+                // Fungsi: Membuka Form Edit Pelanggan
+                const openEditCustomer = (customer) => {
+                    isEditing.value = true;
+                    customerForm.value = { ...customer };
+                    showCustomerForm.value = true;
+                };
+
+                // Fungsi: Menyimpan Data Pelanggan (Tambah atau Edit)
+                const saveCustomer = async () => {
+                    try {
+                        if (isEditing.value) {
+                            // Update data pelanggan yang sudah ada
+                            const docRef = doc(db, "pelanggan", customerForm.value.id);
+                            await updateDoc(docRef, {
+                                nama_pelanggan: customerForm.value.nama_pelanggan,
+                                alamat: customerForm.value.alamat,
+                                no_telepon: customerForm.value.no_telepon
+                            });
+                        } else {
+                            // Tambah data pelanggan baru
+                            await addDoc(collection(db, "pelanggan"), {
+                                nama_pelanggan: customerForm.value.nama_pelanggan,
+                                alamat: customerForm.value.alamat,
+                                no_telepon: customerForm.value.no_telepon,
+                                tanggal_bergabung: new Date()
+                            });
+                        }
+                        showCustomerForm.value = false;
+                    } catch (error) {
+                        alert("Gagal memproses data pelanggan: " + error.message);
+                    }
+                };
+
+                // Fungsi: Menghapus Data Pelanggan
+                const deleteCustomer = async (id) => {
+                    if (confirm("Apakah Anda yakin ingin menghapus pelanggan ini secara permanen?")) {
+                        try {
+                            const docRef = doc(db, "pelanggan", id);
+                            await deleteDoc(docRef);
+                        } catch (error) {
+                            alert("Gagal menghapus pelanggan: " + error.message);
+                        }
+                    }
+                };
+
+                return {
+                    activeTab,
+                    profile,
+                    customers,
+                    showCustomerForm,
+                    isEditing,
+                    customerForm,
+                    saveProfile,
+                    openAddCustomer,
+                    openEditCustomer,
+                    saveCustomer,
+                    deleteCustomer
+                };
+            }
+        }).mount('#app');
     </script>
 </body>
 </html>

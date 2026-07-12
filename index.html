@@ -10,350 +10,609 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Inter', sans-serif; }
+        [v-cloak] { display: none !important; }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-800 select-none">
 
-    <div id="app" class="flex flex-col md:flex-row min-h-screen" v-cloak>
+    <div id="app" class="flex flex-col md:flex-row min-h-screen print:p-0 print:bg-white" v-cloak>
         
-        <!-- SIDEBAR (Hanya tampil di Tablet/Desktop - Layar md ke atas) -->
-        <aside class="hidden md:flex w-64 bg-indigo-900 text-white flex-col shadow-lg">
-            <div class="p-5 border-b border-indigo-800 flex items-center space-x-3">
-                <div class="w-10 h-10 rounded-full bg-white flex items-center justify-center overflow-hidden">
-                    <img v-if="profile.logo_url" :src="profile.logo_url" alt="Logo" class="object-cover w-full h-full">
-                    <span v-else class="text-indigo-900 font-bold">NL</span>
-                </div>
-                <div>
-                    <h1 class="font-bold tracking-wide text-sm">{{ profile.nama_laundry || 'Nays Laundry' }}</h1>
-                    <span class="text-xs text-indigo-300">Admin Panel</span>
-                </div>
-            </div>
+        <!-- ================= MAIN APP (Hidden when Printing) ================= -->
+        <div class="flex flex-col md:flex-row w-full min-h-screen print:hidden">
             
-            <nav class="flex-1 p-4 space-y-2">
-                <button @click="changeTab('dashboard')" 
-                        :class="activeTab === 'dashboard' ? 'bg-indigo-800 text-white' : 'text-indigo-200 hover:bg-indigo-800 hover:text-white'"
-                        class="w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition text-left text-sm font-medium">
-                    <span>🏠 Dashboard</span>
-                </button>
-                <button @click="changeTab('pelanggan')" 
-                        :class="activeTab === 'pelanggan' || activeTab === 'harga_khusus' ? 'bg-indigo-800 text-white' : 'text-indigo-200 hover:bg-indigo-800 hover:text-white'"
-                        class="w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition text-left text-sm font-medium">
-                    <span>👥 Kelola Pelanggan</span>
-                </button>
-                <button @click="changeTab('layanan')" 
-                        :class="activeTab === 'layanan' ? 'bg-indigo-800 text-white' : 'text-indigo-200 hover:bg-indigo-800 hover:text-white'"
-                        class="w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition text-left text-sm font-medium">
-                    <span>⚙️ Master Item</span>
-                </button>
-                <button @click="changeTab('profil')" 
-                        :class="activeTab === 'profil' ? 'bg-indigo-800 text-white' : 'text-indigo-200 hover:bg-indigo-800 hover:text-white'"
-                        class="w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition text-left text-sm font-medium">
-                    <span>🏢 Profil Laundry</span>
-                </button>
-            </nav>
-            <div class="p-4 border-t border-indigo-800 text-center text-xs text-indigo-300">
-                v1.1.0
-            </div>
-        </aside>
-
-        <!-- BOTTOM NAVIGATION (Hanya tampil di HP - Di bawah layar md) -->
-        <nav class="flex md:hidden fixed bottom-0 left-0 right-0 h-16 bg-indigo-900 text-white border-t border-indigo-800 z-50 justify-around items-center">
-            <button @click="changeTab('dashboard')" 
-                    :class="activeTab === 'dashboard' ? 'text-white font-semibold' : 'text-indigo-300'" 
-                    class="flex flex-col items-center justify-center w-full h-full text-[10px] space-y-1">
-                <span class="text-lg">🏠</span>
-                <span>Dashboard</span>
-            </button>
-            <button @click="changeTab('pelanggan')" 
-                    :class="activeTab === 'pelanggan' || activeTab === 'harga_khusus' ? 'text-white font-semibold' : 'text-indigo-300'" 
-                    class="flex flex-col items-center justify-center w-full h-full text-[10px] space-y-1">
-                <span class="text-lg">👥</span>
-                <span>Pelanggan</span>
-            </button>
-            <button @click="changeTab('layanan')" 
-                    :class="activeTab === 'layanan' ? 'text-white font-semibold' : 'text-indigo-300'" 
-                    class="flex flex-col items-center justify-center w-full h-full text-[10px] space-y-1">
-                <span class="text-lg">⚙️</span>
-                <span>Item</span>
-            </button>
-            <button @click="changeTab('profil')" 
-                    :class="activeTab === 'profil' ? 'text-white font-semibold' : 'text-indigo-300'" 
-                    class="flex flex-col items-center justify-center w-full h-full text-[10px] space-y-1">
-                <span class="text-lg">🏢</span>
-                <span>Profil</span>
-            </button>
-        </nav>
-
-        <!-- Main Content Area -->
-        <!-- pb-24 ditambahkan khusus di mobile agar konten tidak tertutup oleh navigasi bawah -->
-        <main class="flex-1 p-4 md:p-10 pb-24 md:pb-10 overflow-y-auto">
-            
-            <!-- Tab 1: Dashboard Ringkasan -->
-            <section v-if="activeTab === 'dashboard'" class="space-y-6">
-                <header>
-                    <h2 class="text-2xl font-bold tracking-tight">Selamat Datang</h2>
-                    <p class="text-sm text-slate-500">Berikut adalah ringkasan operasional laundry Anda hari ini.</p>
-                </header>
-
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-                        <div class="text-sm text-slate-500 font-medium">Total Pelanggan</div>
-                        <div class="text-3xl font-bold mt-2 text-indigo-600">{{ customers.length }}</div>
+            <!-- MOBILE TOP BAR (Only visible on Mobile) -->
+            <header class="flex md:hidden h-16 bg-indigo-900 text-white items-center justify-between px-4 fixed top-0 left-0 right-0 z-40 shadow">
+                <div class="flex items-center space-x-3">
+                    <div class="w-8 h-8 rounded-full bg-white flex items-center justify-center overflow-hidden">
+                        <img v-if="profile.logo_url" :src="profile.logo_url" alt="Logo" class="object-cover w-full h-full">
+                        <span v-else class="text-indigo-900 font-bold text-xs">NL</span>
                     </div>
-                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-                        <div class="text-sm text-slate-500 font-medium">Total Master Item</div>
-                        <div class="text-3xl font-bold mt-2 text-indigo-600">{{ services.length }}</div>
+                    <h1 class="font-bold text-sm tracking-wide">{{ profile.nama_laundry || 'Nays Laundry' }}</h1>
+                </div>
+                <!-- Hamburger Button -->
+                <button @click="menuOpen = !menuOpen" class="text-2xl p-2 focus:outline-none">
+                    ☰
+                </button>
+            </header>
+
+            <!-- MOBILE SLIDE-OUT MENU DRAWER -->
+            <div v-if="menuOpen" @click="menuOpen = false" class="fixed inset-0 bg-black/50 z-40 md:hidden"></div>
+            <aside :class="menuOpen ? 'translate-x-0' : '-translate-x-full'" 
+                   class="fixed inset-y-0 left-0 w-64 bg-indigo-900 text-white z-50 transform transition-transform duration-300 shadow-2xl flex flex-col md:hidden">
+                <div class="p-5 border-b border-indigo-800 flex items-center justify-between">
+                    <span class="font-bold text-sm">Navigasi Menu</span>
+                    <button @click="menuOpen = false" class="text-indigo-300 text-lg">✕</button>
+                </div>
+                <nav class="flex-1 p-4 space-y-2">
+                    <button @click="changeTab('dashboard')" :class="activeTab === 'dashboard' ? 'bg-indigo-800' : ''" class="w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left text-sm font-medium">🏠 Dashboard</button>
+                    <button @click="changeTab('transaksi')" :class="activeTab === 'transaksi' ? 'bg-indigo-800' : ''" class="w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left text-sm font-medium">📝 Transaksi Harian</button>
+                    <button @click="changeTab('tagihan')" :class="activeTab === 'tagihan' ? 'bg-indigo-800' : ''" class="w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left text-sm font-medium">💵 Tagihan & Invoice</button>
+                    <button @click="changeTab('pelanggan')" :class="activeTab === 'pelanggan' || activeTab === 'harga_khusus' ? 'bg-indigo-800' : ''" class="w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left text-sm font-medium">👥 Kelola Pelanggan</button>
+                    <button @click="changeTab('layanan')" :class="activeTab === 'layanan' ? 'bg-indigo-800' : ''" class="w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left text-sm font-medium">⚙️ Master Item</button>
+                    <button @click="changeTab('profil')" :class="activeTab === 'profil' ? 'bg-indigo-800' : ''" class="w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left text-sm font-medium">🏢 Profil Laundry</button>
+                </nav>
+            </aside>
+
+            <!-- DESKTOP SIDEBAR (Static on Desktop) -->
+            <aside class="hidden md:flex w-64 bg-indigo-900 text-white flex-col shadow-lg shrink-0">
+                <div class="p-5 border-b border-indigo-800 flex items-center space-x-3">
+                    <div class="w-10 h-10 rounded-full bg-white flex items-center justify-center overflow-hidden">
+                        <img v-if="profile.logo_url" :src="profile.logo_url" alt="Logo" class="object-cover w-full h-full">
+                        <span v-else class="text-indigo-900 font-bold">NL</span>
                     </div>
-                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-                        <div class="text-sm text-slate-500 font-medium">Layanan Aktif</div>
-                        <div class="text-3xl font-bold mt-2 text-indigo-600 font-semibold text-lg">Sistem Bulanan</div>
+                    <div>
+                        <h1 class="font-bold tracking-wide text-sm">{{ profile.nama_laundry || 'Nays Laundry' }}</h1>
+                        <span class="text-xs text-indigo-300">Admin Panel</span>
                     </div>
-                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-                        <div class="text-sm text-slate-500 font-medium">Status Koneksi</div>
-                        <div class="text-sm font-bold mt-3 text-emerald-600 flex items-center">
-                            <span class="w-2.5 h-2.5 bg-emerald-500 rounded-full inline-block mr-2 animate-ping"></span>
-                            Online (Real-time)
+                </div>
+                <nav class="flex-1 p-4 space-y-2">
+                    <button @click="changeTab('dashboard')" :class="activeTab === 'dashboard' ? 'bg-indigo-800 text-white' : 'text-indigo-200 hover:bg-indigo-800'" class="w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left text-sm font-medium">🏠 Dashboard</button>
+                    <button @click="changeTab('transaksi')" :class="activeTab === 'transaksi' ? 'bg-indigo-800 text-white' : 'text-indigo-200 hover:bg-indigo-800'" class="w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left text-sm font-medium">📝 Transaksi Harian</button>
+                    <button @click="changeTab('tagihan')" :class="activeTab === 'tagihan' ? 'bg-indigo-800 text-white' : 'text-indigo-200 hover:bg-indigo-800'" class="w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left text-sm font-medium">💵 Tagihan & Invoice</button>
+                    <button @click="changeTab('pelanggan')" :class="activeTab === 'pelanggan' || activeTab === 'harga_khusus' ? 'bg-indigo-800 text-white' : 'text-indigo-200 hover:bg-indigo-800'" class="w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left text-sm font-medium">👥 Kelola Pelanggan</button>
+                    <button @click="changeTab('layanan')" :class="activeTab === 'layanan' ? 'bg-indigo-800 text-white' : 'text-indigo-200 hover:bg-indigo-800'" class="w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left text-sm font-medium">⚙️ Master Item</button>
+                    <button @click="changeTab('profil')" :class="activeTab === 'profil' ? 'bg-indigo-800 text-white' : 'text-indigo-200 hover:bg-indigo-800'" class="w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left text-sm font-medium">🏢 Profil Laundry</button>
+                </nav>
+            </aside>
+
+            <!-- CONTENT WINDOW -->
+            <main class="flex-1 p-4 md:p-10 pt-20 md:pt-10 overflow-y-auto">
+                
+                <!-- Tab 1: Dashboard -->
+                <section v-if="activeTab === 'dashboard'" class="space-y-6">
+                    <header>
+                        <h2 class="text-2xl font-bold tracking-tight">Selamat Datang</h2>
+                        <p class="text-sm text-slate-500">Ringkasan data operasional usaha laundry Anda.</p>
+                    </header>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                            <div class="text-xs text-slate-500 font-medium uppercase">Pelanggan</div>
+                            <div class="text-3xl font-bold mt-2 text-indigo-600">{{ customers.length }}</div>
+                        </div>
+                        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                            <div class="text-xs text-slate-500 font-medium uppercase">Daftar Item</div>
+                            <div class="text-3xl font-bold mt-2 text-indigo-600">{{ services.length }}</div>
+                        </div>
+                        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                            <div class="text-xs text-slate-500 font-medium uppercase">Transaksi Blm Ditagih</div>
+                            <div class="text-3xl font-bold mt-2 text-indigo-600">{{ unbilledTransactionsCount }}</div>
+                        </div>
+                        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 col-span-2 md:col-span-1">
+                            <div class="text-xs text-slate-500 font-medium uppercase">Status Koneksi</div>
+                            <div class="text-sm font-semibold mt-3 text-emerald-600 flex items-center">
+                                <span class="w-2.5 h-2.5 bg-emerald-500 rounded-full inline-block mr-2 animate-ping"></span>
+                                Real-time Firebase
+                            </div>
                         </div>
                     </div>
-                </div>
-            </section>
+                </section>
 
-            <!-- Tab 2: Kelola Pelanggan -->
-            <section v-if="activeTab === 'pelanggan'" class="space-y-6">
-                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                    <div>
-                        <h2 class="text-2xl font-bold">Kelola Pelanggan</h2>
-                        <p class="text-sm text-slate-500">Tambah, ubah, atau atur harga khusus untuk masing-masing customer.</p>
-                    </div>
-                    <div class="flex flex-wrap gap-2 w-full sm:w-auto">
-                        <button @click="importInitialClients" class="flex-1 sm:flex-none bg-slate-200 hover:bg-slate-300 text-slate-700 px-4 py-2.5 rounded-xl text-xs font-medium transition shadow-sm">
-                            📥 Impor 24 Pelanggan
+                <!-- Tab 2: Transaksi Harian -->
+                <section v-if="activeTab === 'transaksi'" class="space-y-6">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <h2 class="text-2xl font-bold">Transaksi Harian</h2>
+                            <p class="text-sm text-slate-500">Catat kuantitas cucian masuk/keluar dari hotel & vila.</p>
+                        </div>
+                        <button v-if="!showTransactionForm" @click="openAddTransaction" class="bg-indigo-600 text-white px-4 py-2.5 rounded-xl text-xs font-semibold hover:bg-indigo-700 transition shadow">
+                            + Catat Transaksi Baru
                         </button>
-                        <button @click="openAddCustomer" class="flex-1 sm:flex-none bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-xl text-xs font-medium transition shadow-sm">
+                    </div>
+
+                    <!-- Form Tambah Transaksi -->
+                    <div v-if="showTransactionForm" class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 space-y-4">
+                        <h3 class="text-lg font-bold text-slate-700">Form Pencatatan Laundry</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Pilih Pelanggan</label>
+                                <select v-model="trxForm.id_pelanggan" class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-indigo-500">
+                                    <option value="">-- Pilih Hotel/Vila --</option>
+                                    <option v-for="c in customers" :key="c.id" :value="c.id">{{ c.nama_pelanggan }}</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Tanggal Pengambilan</label>
+                                <input v-model="trxForm.tanggal" type="date" class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-indigo-500">
+                            </div>
+                        </div>
+
+                        <!-- Daftar Item dengan Input Qty -->
+                        <div v-if="trxForm.id_pelanggan" class="space-y-3 pt-3">
+                            <h4 class="font-bold text-sm text-slate-600">Daftar Item Kuantitas Cucian:</h4>
+                            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                                <div v-for="item in services" :key="item.id" class="bg-slate-50 p-3 rounded-xl border border-slate-100 flex flex-col justify-between">
+                                    <div class="text-xs font-semibold text-slate-700">{{ item.nama_layanan }}</div>
+                                    <div class="text-[10px] text-slate-400">Satuan: {{ item.satuan }} | Tarif: Rp {{ getPrice(trxForm.id_pelanggan, item.id).toLocaleString() }}</div>
+                                    <input type="number" min="0" v-model.number="trxForm.items[item.id]" placeholder="0" class="w-full mt-2 px-2 py-1 border rounded text-xs text-center focus:outline-indigo-500">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex justify-end space-x-2 pt-2 border-t">
+                            <button @click="showTransactionForm = false" class="px-4 py-2 text-xs text-slate-500 hover:bg-slate-100 rounded-lg">Batal</button>
+                            <button @click="saveTransaction" class="bg-indigo-600 text-white px-5 py-2 text-xs rounded-lg hover:bg-indigo-700 font-semibold shadow">Simpan Catatan</button>
+                        </div>
+                    </div>
+
+                    <!-- Tabel Log Transaksi -->
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-sm">
+                                <thead class="bg-slate-50 text-slate-400 uppercase text-xs font-semibold border-b border-slate-100">
+                                    <tr>
+                                        <th class="p-4">Tanggal</th>
+                                        <th class="p-4">Pelanggan</th>
+                                        <th class="p-4">Rincian Item (Qty)</th>
+                                        <th class="p-4">Status</th>
+                                        <th class="p-4 text-center">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100">
+                                    <tr v-for="t in transactions" :key="t.id" class="hover:bg-slate-50/50">
+                                        <td class="p-4 text-slate-600 font-medium">{{ formatDate(t.tanggal) }}</td>
+                                        <td class="p-4 font-semibold text-slate-700">{{ getCustomerName(t.id_pelanggan) }}</td>
+                                        <td class="p-4 text-xs">
+                                            <ul class="list-disc pl-4 space-y-0.5 text-slate-600">
+                                                <li v-for="item in t.items" :key="item.id_layanan">
+                                                    {{ getServiceName(item.id_layanan) }}: <span class="font-bold">{{ item.qty }}</span> ({{ getServiceUnit(item.id_layanan) }})
+                                                </li>
+                                            </ul>
+                                        </td>
+                                        <td class="p-4">
+                                            <span :class="t.status_tagihan === 'belum_ditagih' ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'" class="px-2 py-0.5 rounded text-[10px] font-bold">
+                                                {{ t.status_tagihan === 'belum_ditagih' ? 'Belum Ditagih' : 'Sudah Ditagih' }}
+                                            </span>
+                                        </td>
+                                        <td class="p-4 text-center">
+                                            <button @click="deleteTransaction(t.id, t.status_tagihan)" class="text-red-500 hover:text-red-700 text-xs font-medium">Hapus</button>
+                                        </td>
+                                    </tr>
+                                    <tr v-if="transactions.length === 0">
+                                        <td colspan="5" class="p-8 text-center text-slate-400">Belum ada catatan transaksi laundry.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Tab 3: Tagihan & Invoice -->
+                <section v-if="activeTab === 'tagihan'" class="space-y-6">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <h2 class="text-2xl font-bold">Tagihan & Invoice Bulanan</h2>
+                            <p class="text-sm text-slate-500">Kelola pembuatan invoice dari rekapitulasi data transaksi pelanggan.</p>
+                        </div>
+                        <button v-if="!showInvoiceForm" @click="openAddInvoice" class="bg-indigo-600 text-white px-4 py-2.5 rounded-xl text-xs font-semibold hover:bg-indigo-700 transition shadow">
+                            💵 Buat Tagihan Baru
+                        </button>
+                    </div>
+
+                    <!-- Form Pembuatan Tagihan Baru -->
+                    <div v-if="showInvoiceForm" class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 space-y-4">
+                        <h3 class="text-lg font-bold text-slate-700">Generate Invoice Bulanan</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Pilih Pelanggan</label>
+                                <select v-model="invoiceForm.id_pelanggan" @change="calculateDraftInvoice" class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-indigo-500">
+                                    <option value="">-- Pilih Hotel/Vila --</option>
+                                    <option v-for="c in customers" :key="c.id" :value="c.id">{{ c.nama_pelanggan }}</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Periode Invoice (Bulan/Tahun)</label>
+                                <input v-model="invoiceForm.periode" @input="calculateDraftInvoice" type="month" class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-indigo-500">
+                            </div>
+                        </div>
+
+                        <!-- Draft Review Sebelum Disimpan -->
+                        <div v-if="invoiceForm.id_pelanggan && draftInvoiceItems.length > 0" class="border-t pt-4 space-y-3">
+                            <h4 class="font-bold text-sm text-indigo-900">Rincian Draft Akumulasi Transaksi:</h4>
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left text-xs border-collapse">
+                                    <thead>
+                                        <tr class="bg-slate-50 border-b border-slate-100 text-slate-400 font-semibold uppercase">
+                                            <th class="p-2">Nama Item</th>
+                                            <th class="p-2">Kuantitas Terakumulasi</th>
+                                            <th class="p-2">Tarif Dipakai</th>
+                                            <th class="p-2 text-right">Subtotal</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-slate-100">
+                                        <tr v-for="item in draftInvoiceItems" :key="item.id_layanan">
+                                            <td class="p-2">{{ item.nama_layanan }}</td>
+                                            <td class="p-2">{{ item.qty }} {{ item.satuan }}</td>
+                                            <td class="p-2">Rp {{ item.harga_satuan.toLocaleString() }}</td>
+                                            <td class="p-2 text-right font-semibold">Rp {{ item.subtotal.toLocaleString() }}</td>
+                                        </tr>
+                                        <tr class="bg-indigo-50 font-bold text-indigo-950 text-sm">
+                                            <td colspan="3" class="p-3 text-right">Total Tagihan Kumulatif:</td>
+                                            <td class="p-3 text-right">Rp {{ draftInvoiceTotal.toLocaleString() }}</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div v-else-if="invoiceForm.id_pelanggan && draftInvoiceItems.length === 0" class="text-sm text-red-500 italic">
+                            *Tidak ditemukan catatan transaksi laundry yang belum tertagih untuk pelanggan ini pada periode terpilih.
+                        </div>
+
+                        <div class="flex justify-end space-x-2 pt-4 border-t">
+                            <button @click="showInvoiceForm = false" class="px-4 py-2 text-xs text-slate-500 hover:bg-slate-100 rounded-lg">Batal</button>
+                            <button v-if="draftInvoiceItems.length > 0" @click="saveInvoice" class="bg-indigo-600 text-white px-5 py-2 text-xs rounded-lg hover:bg-indigo-700 font-semibold shadow">
+                                Simpan & Terbitkan Tagihan
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Tabel Log Invoice Bulanan -->
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-sm">
+                                <thead class="bg-slate-50 text-slate-400 uppercase text-xs font-semibold border-b border-slate-100">
+                                    <tr>
+                                        <th class="p-4">No. Invoice</th>
+                                        <th class="p-4">Pelanggan</th>
+                                        <th class="p-4">Periode</th>
+                                        <th class="p-4">Total Tagihan</th>
+                                        <th class="p-4">Metode Pembayaran</th>
+                                        <th class="p-4 text-center">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100">
+                                    <tr v-for="inv in invoices" :key="inv.id" class="hover:bg-slate-50/50">
+                                        <td class="p-4 font-semibold text-indigo-900">{{ inv.no_invoice }}</td>
+                                        <td class="p-4 font-medium text-slate-700">{{ getCustomerName(inv.id_pelanggan) }}</td>
+                                        <td class="p-4 text-slate-500">{{ formatMonthYear(inv.periode) }}</td>
+                                        <td class="p-4 text-slate-700 font-semibold">Rp {{ inv.total_tagihan.toLocaleString() }}</td>
+                                        <td class="p-4">
+                                            <!-- Switch Status Pembayaran -->
+                                            <select :value="inv.status_pembayaran" @change="updatePaymentStatus(inv.id, $event.target.value)" 
+                                                    :class="{
+                                                        'bg-red-100 text-red-800 border-red-200': inv.status_pembayaran === 'belum_lunas',
+                                                        'bg-emerald-100 text-emerald-800 border-emerald-200': inv.status_pembayaran === 'lunas_cash',
+                                                        'bg-blue-100 text-blue-800 border-blue-200': inv.status_pembayaran === 'lunas_transfer'
+                                                    }"
+                                                    class="px-2 py-1 rounded text-xs font-semibold border focus:outline-none">
+                                                <option value="belum_lunas">❌ Belum Lunas</option>
+                                                <option value="lunas_cash">💵 Lunas Cash</option>
+                                                <option value="lunas_transfer">💳 Lunas Transfer</option>
+                                            </select>
+                                        </td>
+                                        <td class="p-4 flex justify-center items-center gap-3">
+                                            <button @click="printInvoice(inv)" class="text-indigo-600 hover:text-indigo-800 text-xs font-semibold">📄 Cetak PDF</button>
+                                            <button @click="deleteInvoice(inv.id)" class="text-red-500 hover:text-red-700 text-xs font-medium">Hapus</button>
+                                        </td>
+                                    </tr>
+                                    <tr v-if="invoices.length === 0">
+                                        <td colspan="6" class="p-8 text-center text-slate-400">Belum ada tagihan terbit.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Tab 4: Kelola Pelanggan -->
+                <section v-if="activeTab === 'pelanggan'" class="space-y-6">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <h2 class="text-2xl font-bold">Kelola Pelanggan</h2>
+                            <p class="text-sm text-slate-500">Tambah, ubah, atau atur harga khusus untuk masing-masing customer.</p>
+                        </div>
+                        <button @click="openAddCustomer" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-xl text-xs font-semibold transition shadow">
                             + Tambah Pelanggan
                         </button>
                     </div>
-                </div>
 
-                <!-- Form Tambah/Edit Customer -->
-                <div v-if="showCustomerForm" class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 space-y-4">
-                    <h3 class="text-lg font-bold text-slate-700">{{ isEditing ? 'Ubah Data Pelanggan' : 'Tambah Pelanggan Baru' }}</h3>
-                    <form @submit.prevent="saveCustomer" class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Nama Hotel / Vila</label>
-                            <input v-model="customerForm.nama_pelanggan" type="text" required class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-indigo-500">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Nomor Telepon</label>
-                            <input v-model="customerForm.no_telepon" type="text" required class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-indigo-500">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Alamat Lengkap</label>
-                            <input v-model="customerForm.alamat" type="text" required class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-indigo-500">
-                        </div>
-                        <div class="md:col-span-3 flex justify-end space-x-2 pt-2">
-                            <button type="button" @click="showCustomerForm = false" class="px-4 py-2 text-sm text-slate-500 hover:bg-slate-100 rounded-lg">Batal</button>
-                            <button type="submit" class="bg-indigo-600 text-white px-5 py-2 text-sm rounded-lg hover:bg-indigo-700 font-medium">Simpan</button>
-                        </div>
-                    </form>
-                </div>
-
-                <!-- Tabel Daftar Pelanggan -->
-                <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left border-collapse text-sm">
-                            <thead>
-                                <tr class="bg-slate-50 border-b border-slate-100 text-slate-400 font-semibold uppercase text-xs">
-                                    <th class="p-4">Nama Pelanggan</th>
-                                    <th class="p-4">Alamat</th>
-                                    <th class="p-4">No. Telepon</th>
-                                    <th class="p-4 text-center">Opsi</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-slate-100">
-                                <tr v-for="cust in customers" :key="cust.id" class="hover:bg-slate-50/50 transition">
-                                    <td class="p-4 font-semibold text-indigo-900">{{ cust.nama_pelanggan }}</td>
-                                    <td class="p-4 text-slate-500">{{ cust.alamat }}</td>
-                                    <td class="p-4 text-slate-500">{{ cust.no_telepon }}</td>
-                                    <td class="p-4 flex flex-col sm:flex-row justify-center items-center gap-2 sm:gap-3">
-                                        <button @click="openCustomPrices(cust)" class="w-full sm:w-auto text-emerald-600 hover:text-emerald-800 font-semibold text-center py-1">💰 Atur Harga</button>
-                                        <button @click="openEditCustomer(cust)" class="w-full sm:w-auto text-indigo-600 hover:text-indigo-800 font-medium text-center py-1">Edit</button>
-                                        <button @click="deleteCustomer(cust.id)" class="w-full sm:w-auto text-red-500 hover:text-red-700 font-medium text-center py-1">Hapus</button>
-                                    </td>
-                                </tr>
-                                <tr v-if="customers.length === 0">
-                                    <td colspan="4" class="p-8 text-center text-slate-400">Belum ada pelanggan terdaftar.</td>
-                                </tr>
-                            </tbody>
-                        </table>
+                    <!-- Form Tambah/Edit Customer -->
+                    <div v-if="showCustomerForm" class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 space-y-4">
+                        <h3 class="text-lg font-bold text-slate-700">{{ isEditing ? 'Ubah Data Pelanggan' : 'Tambah Pelanggan Baru' }}</h3>
+                        <form @submit.prevent="saveCustomer" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Nama Hotel / Vila</label>
+                                <input v-model="customerForm.nama_pelanggan" type="text" required class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-indigo-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Nomor Telepon</label>
+                                <input v-model="customerForm.no_telepon" type="text" required class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-indigo-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Alamat Lengkap</label>
+                                <input v-model="customerForm.alamat" type="text" required class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-indigo-500">
+                            </div>
+                            <div class="md:col-span-3 flex justify-end space-x-2 pt-2">
+                                <button type="button" @click="showCustomerForm = false" class="px-4 py-2 text-sm text-slate-500 hover:bg-slate-100 rounded-lg">Batal</button>
+                                <button type="submit" class="bg-indigo-600 text-white px-5 py-2 text-sm rounded-lg hover:bg-indigo-700 font-semibold shadow">Simpan</button>
+                            </div>
+                        </form>
                     </div>
-                </div>
-            </section>
 
-            <!-- Tab Sub-Menu: Atur Harga Khusus Pelanggan -->
-            <section v-if="activeTab === 'harga_khusus'" class="space-y-6">
-                <div class="flex justify-between items-center">
-                    <div>
-                        <h2 class="text-xl font-bold">Atur Harga Khusus</h2>
-                        <p class="text-xs text-slate-500">Mengkustomisasi tarif untuk <span class="font-semibold text-indigo-600">{{ selectedCustomer.nama_pelanggan }}</span>.</p>
+                    <!-- Tabel Daftar Pelanggan -->
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-sm">
+                                <thead class="bg-slate-50 border-b border-slate-100 text-slate-400 font-semibold uppercase text-xs">
+                                    <tr>
+                                        <th class="p-4">Nama Pelanggan</th>
+                                        <th class="p-4">Alamat</th>
+                                        <th class="p-4">No. Telepon</th>
+                                        <th class="p-4 text-center">Opsi</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100">
+                                    <tr v-for="cust in customers" :key="cust.id" class="hover:bg-slate-50/50">
+                                        <td class="p-4 font-semibold text-indigo-900">{{ cust.nama_pelanggan }}</td>
+                                        <td class="p-4 text-slate-500">{{ cust.alamat }}</td>
+                                        <td class="p-4 text-slate-500">{{ cust.no_telepon }}</td>
+                                        <td class="p-4 flex flex-col sm:flex-row justify-center items-center gap-2 sm:gap-3">
+                                            <button @click="openCustomPrices(cust)" class="w-full sm:w-auto text-emerald-600 hover:text-emerald-800 font-semibold text-center py-1">💰 Atur Harga</button>
+                                            <button @click="openEditCustomer(cust)" class="w-full sm:w-auto text-indigo-600 hover:text-indigo-800 font-medium text-center py-1">Edit</button>
+                                            <button @click="deleteCustomer(cust.id)" class="w-full sm:w-auto text-red-500 hover:text-red-700 font-medium text-center py-1">Hapus</button>
+                                        </td>
+                                    </tr>
+                                    <tr v-if="customers.length === 0">
+                                        <td colspan="4" class="p-8 text-center text-slate-400">Belum ada pelanggan terdaftar.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
-                    <button @click="activeTab = 'pelanggan'" class="bg-slate-200 hover:bg-slate-300 text-slate-700 px-3 py-1.5 rounded-lg text-xs font-medium transition">
-                        ⬅️ Kembali
-                    </button>
-                </div>
+                </section>
 
-                <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 space-y-4">
-                    <p class="text-[11px] text-slate-500 italic">*Jika kolom dikosongkan, sistem memakai Harga Standar.</p>
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left border-collapse text-sm">
-                            <thead>
-                                <tr class="bg-slate-50 border-b border-slate-100 text-slate-400 font-semibold uppercase text-xs">
-                                    <th class="p-3">Nama Layanan</th>
-                                    <th class="p-3">Satuan</th>
-                                    <th class="p-3">Harga Standar</th>
-                                    <th class="p-3 w-32">Harga Khusus (Rp)</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-slate-100">
-                                <tr v-for="item in services" :key="item.id">
-                                    <td class="p-3 font-medium text-xs">{{ item.nama_layanan }}</td>
-                                    <td class="p-3"><span class="px-2 py-0.5 bg-slate-100 text-slate-600 rounded text-[10px] font-semibold">{{ item.satuan }}</span></td>
-                                    <td class="p-3 text-slate-500 text-xs">Rp {{ item.harga_standar.toLocaleString() }}</td>
-                                    <td class="p-3">
-                                        <input type="number" 
-                                               v-model.number="tempPrices[item.id]" 
-                                               placeholder="Gunakan Standar"
-                                               class="w-full px-2 py-1 border rounded-lg text-xs focus:outline-emerald-500 bg-emerald-50/30">
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                    <div class="flex justify-end pt-4 border-t">
-                        <button @click="saveCustomPrices" class="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2.5 rounded-xl text-sm font-medium transition shadow-sm">
-                            💾 Simpan Semua Harga Khusus
+                <!-- Tab Sub-Menu: Atur Harga Khusus Pelanggan -->
+                <section v-if="activeTab === 'harga_khusus'" class="space-y-6">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <h2 class="text-xl font-bold">Atur Harga Khusus</h2>
+                            <p class="text-xs text-slate-500">Mengkustomisasi tarif untuk <span class="font-semibold text-indigo-600">{{ selectedCustomer.nama_pelanggan }}</span>.</p>
+                        </div>
+                        <button @click="activeTab = 'pelanggan'" class="bg-slate-200 hover:bg-slate-300 text-slate-700 px-3 py-1.5 rounded-lg text-xs font-medium transition">
+                            ⬅️ Kembali
                         </button>
                     </div>
-                </div>
-            </section>
 
-            <!-- Tab 3: Kelola Master Item (Layanan) -->
-            <section v-if="activeTab === 'layanan'" class="space-y-6">
-                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                    <div>
-                        <h2 class="text-2xl font-bold">Master Item Laundry</h2>
-                        <p class="text-sm text-slate-500">Kelola daftar item beserta tarif standar (per biji/pcs atau per kg).</p>
+                    <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 space-y-4">
+                        <p class="text-[11px] text-slate-500 italic">*Jika kolom dikosongkan, sistem memakai Harga Standar.</p>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse text-sm">
+                                <thead>
+                                    <tr class="bg-slate-50 border-b border-slate-100 text-slate-400 font-semibold uppercase text-xs">
+                                        <th class="p-3">Nama Layanan</th>
+                                        <th class="p-3">Satuan</th>
+                                        <th class="p-3">Harga Standar</th>
+                                        <th class="p-3 w-32">Harga Khusus (Rp)</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100">
+                                    <tr v-for="item in services" :key="item.id">
+                                        <td class="p-3 font-medium text-xs">{{ item.nama_layanan }}</td>
+                                        <td class="p-3"><span class="px-2 py-0.5 bg-slate-100 text-slate-600 rounded text-[10px] font-semibold">{{ item.satuan }}</span></td>
+                                        <td class="p-3 text-slate-500 text-xs">Rp {{ item.harga_standar.toLocaleString() }}</td>
+                                        <td class="p-3">
+                                            <input type="number" 
+                                                   v-model.number="tempPrices[item.id]" 
+                                                   placeholder="Gunakan Standar"
+                                                   class="w-full px-2 py-1 border rounded-lg text-xs focus:outline-emerald-500 bg-emerald-50/30">
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="flex justify-end pt-4 border-t">
+                            <button @click="saveCustomPrices" class="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2.5 rounded-xl text-sm font-medium transition shadow-sm">
+                                💾 Simpan Semua Harga Khusus
+                            </button>
+                        </div>
                     </div>
-                    <div class="flex flex-wrap gap-2 w-full sm:w-auto">
-                        <button @click="importInitialServices" class="flex-1 sm:flex-none bg-slate-200 hover:bg-slate-300 text-slate-700 px-4 py-2.5 rounded-xl text-xs font-medium transition shadow-sm">
-                            📥 Impor 25 Master Item
-                        </button>
-                        <button @click="openAddService" class="flex-1 sm:flex-none bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-xl text-xs font-medium transition shadow-sm">
+                </section>
+
+                <!-- Tab 5: Kelola Master Item (Layanan) -->
+                <section v-if="activeTab === 'layanan'" class="space-y-6">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <h2 class="text-2xl font-bold">Master Item Laundry</h2>
+                            <p class="text-sm text-slate-500">Kelola daftar item beserta tarif standar (per biji/pcs atau per kg).</p>
+                        </div>
+                        <button @click="openAddService" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-xl text-xs font-semibold transition shadow">
                             + Tambah Item Baru
                         </button>
                     </div>
-                </div>
 
-                <!-- Form Tambah/Edit Layanan -->
-                <div v-if="showServiceForm" class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 space-y-4">
-                    <h3 class="text-lg font-bold text-slate-700">{{ isEditingService ? 'Ubah Layanan' : 'Tambah Layanan Baru' }}</h3>
-                    <form @submit.prevent="saveService" class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Nama Layanan / Item</label>
-                            <input v-model="serviceForm.nama_layanan" type="text" required class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-indigo-500">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Satuan</label>
-                            <select v-model="serviceForm.satuan" required class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-indigo-500">
-                                <option value="Pcs">Pcs (Satuan)</option>
-                                <option value="Kg">Kg (Kiloan)</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Harga Standar (Rp)</label>
-                            <input v-model.number="serviceForm.harga_standar" type="number" required class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-indigo-500">
-                        </div>
-                        <div class="md:col-span-3 flex justify-end space-x-2 pt-2">
-                            <button type="button" @click="showServiceForm = false" class="px-4 py-2 text-sm text-slate-500 hover:bg-slate-100 rounded-lg">Batal</button>
-                            <button type="submit" class="bg-indigo-600 text-white px-5 py-2 text-sm rounded-lg hover:bg-indigo-700 font-medium">Simpan</button>
-                        </div>
-                    </form>
-                </div>
+                    <!-- Form Tambah/Edit Layanan -->
+                    <div v-if="showServiceForm" class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 space-y-4">
+                        <h3 class="text-lg font-bold text-slate-700">{{ isEditingService ? 'Ubah Layanan' : 'Tambah Layanan Baru' }}</h3>
+                        <form @submit.prevent="saveService" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Nama Layanan / Item</label>
+                                <input v-model="serviceForm.nama_layanan" type="text" required class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-indigo-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Satuan</label>
+                                <select v-model="serviceForm.satuan" required class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-indigo-500">
+                                    <option value="Pcs">Pcs (Satuan)</option>
+                                    <option value="Kg">Kg (Kiloan)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Harga Standar (Rp)</label>
+                                <input v-model.number="serviceForm.harga_standar" type="number" required class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-indigo-500">
+                            </div>
+                            <div class="md:col-span-3 flex justify-end space-x-2 pt-2">
+                                <button type="button" @click="showServiceForm = false" class="px-4 py-2 text-sm text-slate-500 hover:bg-slate-100 rounded-lg">Batal</button>
+                                <button type="submit" class="bg-indigo-600 text-white px-5 py-2 text-sm rounded-lg hover:bg-indigo-700 font-semibold shadow">Simpan</button>
+                            </div>
+                        </form>
+                    </div>
 
-                <!-- Tabel Daftar Layanan -->
-                <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left border-collapse text-sm">
-                            <thead>
-                                <tr class="bg-slate-50 border-b border-slate-100 text-slate-400 font-semibold uppercase text-xs">
-                                    <th class="p-4">Nama Layanan / Item</th>
-                                    <th class="p-4">Satuan</th>
-                                    <th class="p-4">Harga Standar</th>
-                                    <th class="p-4 text-center">Opsi</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-slate-100">
-                                <tr v-for="item in services" :key="item.id" class="hover:bg-slate-50/50 transition">
-                                    <td class="p-4 font-semibold text-slate-700">{{ item.nama_layanan }}</td>
-                                    <td class="p-4">
-                                        <span class="px-2.5 py-1 bg-slate-100 text-slate-600 rounded-full text-xs font-semibold">
-                                            {{ item.satuan }}
-                                        </span>
-                                    </td>
-                                    <td class="p-4 text-slate-600 font-medium">Rp {{ item.harga_standar.toLocaleString() }}</td>
-                                    <td class="p-4 flex justify-center space-x-3">
-                                        <button @click="openEditService(item)" class="text-indigo-600 hover:text-indigo-800 font-medium">Edit</button>
-                                        <button @click="deleteService(item.id)" class="text-red-500 hover:text-red-700 font-medium">Hapus</button>
-                                    </td>
-                                </tr>
-                                <tr v-if="services.length === 0">
-                                    <td colspan="4" class="p-8 text-center text-slate-400">Belum ada layanan terdaftar.</td>
-                                </tr>
-                            </tbody>
-                        </table>
+                    <!-- Tabel Daftar Layanan -->
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-sm">
+                                <thead class="bg-slate-50 border-b border-slate-100 text-slate-400 font-semibold uppercase text-xs">
+                                    <tr>
+                                        <th class="p-4">Nama Layanan / Item</th>
+                                        <th class="p-4">Satuan</th>
+                                        <th class="p-4">Harga Standar</th>
+                                        <th class="p-4 text-center">Opsi</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100">
+                                    <tr v-for="item in services" :key="item.id" class="hover:bg-slate-50/50">
+                                        <td class="p-4 font-semibold text-slate-700">{{ item.nama_layanan }}</td>
+                                        <td class="p-4">
+                                            <span class="px-2.5 py-1 bg-slate-100 text-slate-600 rounded-full text-xs font-semibold">
+                                                {{ item.satuan }}
+                                            </span>
+                                        </td>
+                                        <td class="p-4 text-slate-600 font-medium">Rp {{ item.harga_standar.toLocaleString() }}</td>
+                                        <td class="p-4 flex justify-center space-x-3">
+                                            <button @click="openEditService(item)" class="text-indigo-600 hover:text-indigo-800 font-medium">Edit</button>
+                                            <button @click="deleteService(item.id)" class="text-red-500 hover:text-red-700 font-medium">Hapus</button>
+                                        </td>
+                                    </tr>
+                                    <tr v-if="services.length === 0">
+                                        <td colspan="4" class="p-8 text-center text-slate-400">Belum ada layanan terdaftar.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Tab 6: Profil Laundry -->
+                <section v-if="activeTab === 'profil'" class="max-w-2xl space-y-6">
+                    <div>
+                        <h2 class="text-2xl font-bold">Profil Perusahaan</h2>
+                        <p class="text-sm text-slate-500">Konfigurasi data laundry Anda untuk kop surat & info rekening invoice.</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                        <form @submit.prevent="saveProfile" class="space-y-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Nama Laundry</label>
+                                <input v-model="profile.nama_laundry" type="text" required class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-indigo-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Nomor Telepon Operasional</label>
+                                <input v-model="profile.no_telepon" type="text" required class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-indigo-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Alamat Laundry</label>
+                                <input v-model="profile.alamat" type="text" required class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-indigo-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Rekening Pembayaran (Untuk Invoice)</label>
+                                <input v-model="profile.rekening_pembayaran" type="text" required class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-indigo-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">URL Logo Laundry</label>
+                                <input v-model="profile.logo_url" type="text" placeholder="https://domain.com/logo.png" class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-indigo-500">
+                            </div>
+                            <div class="flex justify-end pt-2">
+                                <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-lg text-sm font-semibold transition shadow">
+                                    Perbarui Profil
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </section>
+
+            </main>
+        </div>
+
+        <!-- ================= PRINTABLE INVOICE VIEW (Hidden from App UI, Only Visible on Print) ================= -->
+        <div v-if="printData" class="hidden print:block w-full max-w-4xl p-8 bg-white text-black text-sm">
+            <!-- Kop Surat Invoice -->
+            <div class="flex justify-between items-start border-b-2 border-indigo-900 pb-5 mb-6">
+                <div class="flex items-center space-x-4">
+                    <img v-if="profile.logo_url" :src="profile.logo_url" alt="Logo" class="w-16 h-16 object-cover rounded-full">
+                    <div>
+                        <h1 class="text-2xl font-bold text-indigo-900 uppercase">{{ profile.nama_laundry || 'Nays Laundry' }}</h1>
+                        <p class="text-xs text-slate-600">{{ profile.alamat }}</p>
+                        <p class="text-xs text-slate-600">Telp/WA: {{ profile.no_telepon }}</p>
                     </div>
                 </div>
-            </section>
+                <div class="text-right">
+                    <h2 class="text-3xl font-extrabold text-slate-400 uppercase tracking-widest">INVOICE</h2>
+                    <p class="text-xs font-medium text-slate-700 mt-2">Nomor: {{ printData.no_invoice }}</p>
+                    <p class="text-xs text-slate-500">Tanggal: {{ formatDate(printData.tanggal_buat) }}</p>
+                </div>
+            </div>
 
-            <!-- Tab 4: Profil Laundry -->
-            <section v-if="activeTab === 'profil'" class="max-w-2xl space-y-6">
+            <!-- Ditujukan Kepada (Bill To) -->
+            <div class="grid grid-cols-2 gap-6 mb-8">
                 <div>
-                    <h2 class="text-2xl font-bold">Profil Perusahaan</h2>
-                    <p class="text-sm text-slate-500">Konfigurasi data laundry Anda untuk kebutuhan kop surat dan info rekening invoice.</p>
+                    <h3 class="text-xs font-bold text-indigo-900 uppercase tracking-wider mb-2">Ditujukan Kepada:</h3>
+                    <p class="font-bold text-slate-800 text-lg">{{ getCustomerName(printData.id_pelanggan) }}</p>
+                    <p class="text-xs text-slate-600 mt-1">{{ getCustomerAddress(printData.id_pelanggan) }}</p>
                 </div>
-
-                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-                    <form @submit.prevent="saveProfile" class="space-y-4">
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Nama Laundry</label>
-                            <input v-model="profile.nama_laundry" type="text" required class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-indigo-500">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Nomor Telepon Operasional</label>
-                            <input v-model="profile.no_telepon" type="text" required class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-indigo-500">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Alamat Laundry</label>
-                            <input v-model="profile.alamat" type="text" required class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-indigo-500">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Rekening Pembayaran (Untuk Invoice)</label>
-                            <input v-model="profile.rekening_pembayaran" type="text" required class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-indigo-500">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">URL Logo Laundry</label>
-                            <input v-model="profile.logo_url" type="text" placeholder="https://domain.com/logo.png" class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-indigo-500">
-                        </div>
-                        <div class="flex justify-end pt-2">
-                            <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-lg text-sm font-medium transition shadow-sm">
-                                Perbarui Profil
-                            </button>
-                        </div>
-                    </form>
+                <div class="text-right">
+                    <h3 class="text-xs font-bold text-indigo-900 uppercase tracking-wider mb-2">Rincian Periode Tagihan:</h3>
+                    <p class="font-bold text-slate-800 text-lg">{{ formatMonthYear(printData.periode) }}</p>
+                    <p class="text-xs mt-2"><span class="font-semibold text-indigo-900">Metode Pembayaran:</span> Transfer / Cash</p>
                 </div>
-            </section>
+            </div>
 
-        </main>
+            <!-- Daftar Transaksi Rincian Item -->
+            <table class="w-full text-left border-collapse border border-slate-200 text-xs mb-8">
+                <thead>
+                    <tr class="bg-indigo-900 text-white font-semibold">
+                        <th class="p-3 border border-slate-200">Deskripsi Item Laundry</th>
+                        <th class="p-3 border border-slate-200 text-center">Satuan</th>
+                        <th class="p-3 border border-slate-200 text-center">Total Qty</th>
+                        <th class="p-3 border border-slate-200 text-right">Harga Satuan</th>
+                        <th class="p-3 border border-slate-200 text-right">Subtotal</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-200">
+                    <tr v-for="item in printData.items" :key="item.id_layanan">
+                        <td class="p-3 font-semibold text-slate-800">{{ item.nama_layanan }}</td>
+                        <td class="p-3 text-center text-slate-600">{{ item.satuan }}</td>
+                        <td class="p-3 text-center font-bold text-slate-800">{{ item.qty }}</td>
+                        <td class="p-3 text-right text-slate-600">Rp {{ item.harga_satuan.toLocaleString() }}</td>
+                        <td class="p-3 text-right font-bold text-slate-800">Rp {{ item.subtotal.toLocaleString() }}</td>
+                    </tr>
+                    <tr class="bg-slate-50 font-bold text-sm">
+                        <td colspan="4" class="p-4 text-right text-indigo-900 uppercase tracking-wider border border-slate-200">Total Yang Harus Dibayar:</td>
+                        <td class="p-4 text-right text-indigo-900 border border-slate-200">Rp {{ printData.total_tagihan.toLocaleString() }}</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <!-- Footnote Info Pembayaran -->
+            <div class="grid grid-cols-2 gap-6 mt-12 pt-6 border-t border-slate-100">
+                <div>
+                    <h4 class="text-xs font-bold text-indigo-900 uppercase mb-2">Informasi Transfer Rekening:</h4>
+                    <p class="text-xs text-slate-800 font-semibold">{{ profile.rekening_pembayaran || 'Informasi rekening belum diisi' }}</p>
+                    <p class="text-[10px] text-slate-500 italic mt-1">*Mohon kirimkan bukti transfer setelah pembayaran dilakukan.</p>
+                </div>
+                <div class="text-center flex flex-col justify-end items-center">
+                    <p class="text-xs text-slate-500 mb-12">Hormat Kami,</p>
+                    <p class="font-bold text-indigo-900 border-t border-slate-400 pt-1 px-8 uppercase">{{ profile.nama_laundry || 'Nays Laundry' }}</p>
+                </div>
+            </div>
+        </div>
+
     </div>
 
     <!-- Load Vue 3 Global Build -->
@@ -370,9 +629,14 @@
             addDoc, 
             updateDoc, 
             deleteDoc, 
-            onSnapshot 
+            onSnapshot,
+            query,
+            where,
+            getDocs,
+            writeBatch
         } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
+        // Konfigurasi Firebase Anda
         const firebaseConfig = {
             apiKey: "AIzaSyDs_DrMlshxHJAyA2l4hu2h4uqS_eG7pSY",
             authDomain: "nays-laundry.firebaseapp.com",
@@ -385,11 +649,12 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        const { createApp, ref, onMounted } = Vue;
+        const { createApp, ref, onMounted, computed } = Vue;
 
         createApp({
             setup() {
                 const activeTab = ref('dashboard');
+                const menuOpen = ref(false); // State hamburger menu drawer
                 
                 const profile = ref({
                     nama_laundry: '',
@@ -402,31 +667,35 @@
                 const customers = ref([]);
                 const services = ref([]);
                 const customPricesList = ref([]);
+                
+                const transactions = ref([]);
+                const invoices = ref([]);
 
-                const changeTab = (tab) => {
-                    activeTab.value = tab;
-                };
-
+                // Form States
                 const showCustomerForm = ref(false);
                 const isEditing = ref(false);
-                const customerForm = ref({
-                    id: '',
-                    nama_pelanggan: '',
-                    alamat: '',
-                    no_telepon: ''
-                });
+                const customerForm = ref({ id: '', nama_pelanggan: '', alamat: '', no_telepon: '' });
 
                 const showServiceForm = ref(false);
                 const isEditingService = ref(false);
-                const serviceForm = ref({
-                    id: '',
-                    nama_layanan: '',
-                    satuan: 'Pcs',
-                    harga_standar: 0
-                });
+                const serviceForm = ref({ id: '', nama_layanan: '', satuan: 'Pcs', harga_standar: 0 });
 
-                const selectedCustomer = ref(null);
-                const tempPrices = ref({});
+                const showTransactionForm = ref(false);
+                const trxForm = ref({ id_pelanggan: '', tanggal: '', items: {} });
+
+                const showInvoiceForm = ref(false);
+                const invoiceForm = ref({ id_pelanggan: '', periode: '' });
+                const draftInvoiceItems = ref([]);
+                const draftInvoiceTotal = ref(0);
+                const draftTrxIds = ref([]); // ID transaksi yang masuk ke draft ini
+
+                // State cetak PDF
+                const printData = ref(null);
+
+                const changeTab = (tab) => {
+                    activeTab.value = tab;
+                    menuOpen.value = false; // Otomatis tutup drawer di mobile saat pindah tab
+                };
 
                 onMounted(() => {
                     onSnapshot(doc(db, "pengaturan", "profil"), (snap) => {
@@ -450,8 +719,82 @@
                         snap.forEach((doc) => list.push({ id: doc.id, ...doc.data() }));
                         customPricesList.value = list;
                     });
+
+                    onSnapshot(collection(db, "transaksi"), (snap) => {
+                        const list = [];
+                        snap.forEach((doc) => list.push({ id: doc.id, ...doc.data() }));
+                        // Mengurutkan dari transaksi terbaru
+                        transactions.value = list.sort((a, b) => b.tanggal.localeCompare(a.tanggal));
+                    });
+
+                    onSnapshot(collection(db, "tagihan"), (snap) => {
+                        const list = [];
+                        snap.forEach((doc) => list.push({ id: doc.id, ...doc.data() }));
+                        // Urutkan dari tagihan terbaru
+                        invoices.value = list.sort((a, b) => b.tanggal_buat.localeCompare(a.tanggal_buat));
+                    });
                 });
 
+                // --- HELPER DATA ---
+                const getCustomerName = (id) => {
+                    const c = customers.value.find(x => x.id === id);
+                    return c ? c.nama_pelanggan : 'Tanpa Nama';
+                };
+
+                const getCustomerAddress = (id) => {
+                    const c = customers.value.find(x => x.id === id);
+                    return c ? c.alamat : '-';
+                };
+
+                const getServiceName = (id) => {
+                    const s = services.value.find(x => x.id === id);
+                    return s ? s.nama_layanan : 'Item';
+                };
+
+                const getServiceUnit = (id) => {
+                    const s = services.value.find(x => x.id === id);
+                    return s ? s.satuan : 'Pcs';
+                };
+
+                // Mendapatkan harga aktif (custom/standar)
+                const getPrice = (custId, itemId) => {
+                    const custom = customPricesList.value.find(p => p.id_pelanggan === custId && p.id_layanan === itemId);
+                    if (custom && custom.harga_custom !== undefined && custom.harga_custom !== '') {
+                        return Number(custom.harga_custom);
+                    }
+                    const service = services.value.find(s => s.id === itemId);
+                    return service ? Number(service.harga_standar) : 0;
+                };
+
+                const formatDate = (dateString) => {
+                    if (!dateString) return '-';
+                    // Jika format ISO string dari Firebase Timestamp
+                    if (dateString.includes('T')) {
+                        dateString = dateString.split('T')[0];
+                    }
+                    const parts = dateString.split('-');
+                    if (parts.length === 3) {
+                        return `${parts[2]}/${parts[1]}/${parts[0]}`;
+                    }
+                    return dateString;
+                };
+
+                const formatMonthYear = (monthString) => {
+                    if (!monthString) return '-';
+                    const parts = monthString.split('-');
+                    if (parts.length === 2) {
+                        const months = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+                        return `${months[parseInt(parts[1]) - 1]} ${parts[0]}`;
+                    }
+                    return monthString;
+                };
+
+                // Hitung jumlah transaksi belum ditagih untuk dashboard widget
+                const unbilledTransactionsCount = computed(() => {
+                    return transactions.value.filter(t => t.status_tagihan === 'belum_ditagih').length;
+                });
+
+                // --- CRUD CUSTOMER ---
                 const saveProfile = async () => {
                     try {
                         await setDoc(doc(db, "pengaturan", "profil"), profile.value, { merge: true });
@@ -486,7 +829,7 @@
                                 nama_pelanggan: customerForm.value.nama_pelanggan,
                                 alamat: customerForm.value.alamat,
                                 no_telepon: customerForm.value.no_telepon,
-                                tanggal_bergabung: new Date()
+                                tanggal_bergabung: new Date().toISOString()
                             });
                         }
                         showCustomerForm.value = false;
@@ -505,25 +848,7 @@
                     }
                 };
 
-                const importInitialClients = async () => {
-                    const clientNames = [
-                        "The Lavanya", "Made 02 Homestay & Villas (kiloan)", "Djamin Homestay (kiloan)",
-                        "Flowerbud II", "Zena Restaurant & Villas", "Avocagolf Villa", "New Kuta Golf & Resto",
-                        "The Gunung Villas", "Lemanja", "BWork (kiloan)", "Grega Villa", "Alma Villa",
-                        "Angatu Villa", "Damien Villa", "Martin Villa", "Indahwatu Villa", "Arra Villa",
-                        "Uluwatu Cottages", "Kapungkur Villa", "Ambiente Villa", "Pulung Villa", "Kalem Villa",
-                        "Tegal Jinah Guest House and Villas", "Fox Hotel (Guest Laundry saja)"
-                    ];
-                    if (confirm(`Impor ${clientNames.length} pelanggan baru?`)) {
-                        for (const name of clientNames) {
-                            await addDoc(collection(db, "pelanggan"), {
-                                nama_pelanggan: name, alamat: "Bali", no_telepon: "-", tanggal_bergabung: new Date()
-                            });
-                        }
-                        alert("Sukses mengimpor data!");
-                    }
-                };
-
+                // --- CRUD MASTER ITEM ---
                 const openAddService = () => {
                     isEditingService.value = false;
                     serviceForm.value = { id: '', nama_layanan: '', satuan: 'Pcs', harga_standar: 0 };
@@ -549,7 +874,7 @@
                                 nama_layanan: serviceForm.value.nama_layanan,
                                 satuan: serviceForm.value.satuan,
                                 harga_standar: Number(serviceForm.value.harga_standar),
-                                tanggal_dibuat: new Date()
+                                tanggal_dibuat: new Date().toISOString()
                             });
                         }
                         showServiceForm.value = false;
@@ -568,28 +893,7 @@
                     }
                 };
 
-                const importInitialServices = async () => {
-                    const items = [
-                        "Duvet Single", "Sheet Single", "Duvet Double", "Sheet Double", "Pillow Case",
-                        "Kimono", "Bath Towel", "Hand Towel", "Face Towel", "Pool Towel", "Mat",
-                        "Sheet Spa", "Cover Sofa Big", "Cover Sofa Med", "Cushion Cover", "Cover Sofa Round",
-                        "Bolster", "Cushion Cover S", "Napkin", "Spotting", "Bed Pad", "Induv", "Pillow",
-                        "Duvet", "Sheet"
-                    ];
-                    if (confirm(`Impor ${items.length} master item laundry ke database?`)) {
-                        for (const name of items) {
-                            const isKiloan = name.toLowerCase().includes('kiloan');
-                            await addDoc(collection(db, "layanan"), {
-                                nama_layanan: name,
-                                satuan: isKiloan ? 'Kg' : 'Pcs',
-                                harga_standar: 0,
-                                tanggal_dibuat: new Date()
-                            });
-                        }
-                        alert("Sukses mengimpor master item!");
-                    }
-                };
-
+                // --- MANAJEMEN HARGA KHUSUS ---
                 const openCustomPrices = (customer) => {
                     selectedCustomer.value = customer;
                     tempPrices.value = {};
@@ -619,19 +923,220 @@
                                 await deleteDoc(doc(db, "harga_khusus", docId));
                             }
                         }
-                        alert("Semua harga khusus pelanggan berhasil disimpan!");
+                        alert("Harga khusus pelanggan berhasil disimpan!");
                         activeTab.value = 'pelanggan';
                     } catch (error) {
                         alert("Gagal menyimpan harga khusus: " + error.message);
                     }
                 };
 
+                // --- TRANSAKSI HARIAN ---
+                const openAddTransaction = () => {
+                    const todayStr = new Date().toISOString().split('T')[0];
+                    trxForm.value = { id_pelanggan: '', tanggal: todayStr, items: {} };
+                    services.value.forEach(item => {
+                        trxForm.value.items[item.id] = '';
+                    });
+                    showTransactionForm.value = true;
+                };
+
+                const saveTransaction = async () => {
+                    if (!trxForm.value.id_pelanggan || !trxForm.value.tanggal) {
+                        alert("Harap pilih pelanggan dan tanggal pengambilan.");
+                        return;
+                    }
+
+                    // Susun rincian item yang kuantitasnya > 0
+                    const itemPayload = [];
+                    for (const itemId of Object.keys(trxForm.value.items)) {
+                        const qty = Number(trxForm.value.items[itemId]);
+                        if (qty > 0) {
+                            itemPayload.push({
+                                id_layanan: itemId,
+                                qty: qty
+                            });
+                        }
+                    }
+
+                    if (itemPayload.length === 0) {
+                        alert("Harap masukkan kuantitas minimal pada satu item.");
+                        return;
+                    }
+
+                    try {
+                        await addDoc(collection(db, "transaksi"), {
+                            id_pelanggan: trxForm.value.id_pelanggan,
+                            tanggal: trxForm.value.tanggal,
+                            items: itemPayload,
+                            status_tagihan: 'belum_ditagih' // Default saat input harian
+                        });
+                        alert("Catatan transaksi berhasil disimpan!");
+                        showTransactionForm.value = false;
+                    } catch (error) {
+                        alert("Gagal menyimpan transaksi: " + error.message);
+                    }
+                };
+
+                const deleteTransaction = async (id, status) => {
+                    if (status === 'sudah_ditagih') {
+                        alert("Transaksi ini tidak bisa dihapus karena sudah digabungkan ke dalam invoice tagihan bulanan.");
+                        return;
+                    }
+                    if (confirm("Apakah Anda yakin ingin menghapus catatan transaksi ini?")) {
+                        try {
+                            await deleteDoc(doc(db, "transaksi", id));
+                        } catch (error) {
+                            alert("Gagal menghapus transaksi: " + error.message);
+                        }
+                    }
+                };
+
+                // --- GENERATE INVOICE BULANAN ---
+                const openAddInvoice = () => {
+                    const currentMonth = new Date().toISOString().slice(0, 7); // Format: "YYYY-MM"
+                    invoiceForm.value = { id_pelanggan: '', periode: currentMonth };
+                    draftInvoiceItems.value = [];
+                    draftInvoiceTotal.value = 0;
+                    draftTrxIds.value = [];
+                    showInvoiceForm.value = true;
+                };
+
+                // Menghitung draf tagihan berdasarkan transaksi yang terkumpul
+                const calculateDraftInvoice = () => {
+                    const custId = invoiceForm.value.id_pelanggan;
+                    const period = invoiceForm.value.periode; // "YYYY-MM"
+
+                    if (!custId || !period) {
+                        draftInvoiceItems.value = [];
+                        draftInvoiceTotal.value = 0;
+                        draftTrxIds.value = [];
+                        return;
+                    }
+
+                    // Cari transaksi pelanggan yang "belum_ditagih" dan berada pada bulan yang ditentukan
+                    const filteredTrx = transactions.value.filter(t => {
+                        return t.id_pelanggan === custId && 
+                               t.status_tagihan === 'belum_ditagih' && 
+                               t.tanggal.startsWith(period);
+                    });
+
+                    // Akumulasi/Gabung kuantitas item sejenis
+                    const mapItems = {};
+                    const trxIds = [];
+
+                    filteredTrx.forEach(t => {
+                        trxIds.push(t.id);
+                        t.items.forEach(item => {
+                            if (!mapItems[item.id_layanan]) {
+                                mapItems[item.id_layanan] = 0;
+                            }
+                            mapItems[item.id_layanan] += item.qty;
+                        });
+                    });
+
+                    // Konversi map menjadi array rincian draf dengan harga aktif
+                    const draftList = [];
+                    let grandTotal = 0;
+
+                    for (const itemId of Object.keys(mapItems)) {
+                        const qty = mapItems[itemId];
+                        const price = getPrice(custId, itemId);
+                        const subtotal = qty * price;
+
+                        draftList.push({
+                            id_layanan: itemId,
+                            nama_layanan: getServiceName(itemId),
+                            satuan: getServiceUnit(itemId),
+                            qty: qty,
+                            harga_satuan: price,
+                            subtotal: subtotal
+                        });
+
+                        grandTotal += subtotal;
+                    }
+
+                    draftInvoiceItems.value = draftList;
+                    draftInvoiceTotal.value = grandTotal;
+                    draftTrxIds.value = trxIds;
+                };
+
+                const saveInvoice = async () => {
+                    if (draftInvoiceItems.value.length === 0) {
+                        alert("Tidak ada draf item transaksi untuk disimpan.");
+                        return;
+                    }
+
+                    try {
+                        const randomId = Math.floor(100 + Math.random() * 900); // 3 digit unik
+                        const cleanPeriod = invoiceForm.value.periode.replace('-', '');
+                        const noInvoice = `INV/${cleanPeriod}/${randomId}`;
+
+                        // 1. Simpan dokumen Invoice baru
+                        await addDoc(collection(db, "tagihan"), {
+                            no_invoice: noInvoice,
+                            id_pelanggan: invoiceForm.value.id_pelanggan,
+                            periode: invoiceForm.value.periode,
+                            tanggal_buat: new Date().toISOString(),
+                            total_tagihan: draftInvoiceTotal.value,
+                            status_pembayaran: 'belum_lunas',
+                            items: draftInvoiceItems.value
+                        });
+
+                        // 2. Tandai semua transaksi yang diakumulasi menjadi "sudah_ditagih"
+                        const batchTrxPromises = draftTrxIds.value.map(id => {
+                            return updateDoc(doc(db, "transaksi", id), {
+                                status_tagihan: 'sudah_ditagih'
+                            });
+                        });
+                        await Promise.all(batchTrxPromises);
+
+                        alert("Tagihan bulanan berhasil diterbitkan!");
+                        showInvoiceForm.value = false;
+                    } catch (error) {
+                        alert("Gagal menerbitkan tagihan: " + error.message);
+                    }
+                };
+
+                const deleteInvoice = async (id) => {
+                    if (confirm("Menghapus invoice tidak mengembalikan status transaksi menjadi belum ditagih. Apakah Anda yakin ingin menghapus invoice ini?")) {
+                        try {
+                            await deleteDoc(doc(db, "tagihan", id));
+                        } catch (error) {
+                            alert("Gagal menghapus tagihan: " + error.message);
+                        }
+                    }
+                };
+
+                // Memperbarui status pembayaran secara instan
+                const updatePaymentStatus = async (id, newStatus) => {
+                    try {
+                        await updateDoc(doc(db, "tagihan", id), {
+                            status_pembayaran: newStatus
+                        });
+                    } catch (error) {
+                        alert("Gagal memperbarui status pembayaran: " + error.message);
+                    }
+                };
+
+                // --- FUNGSI CETAK PDF INVOICE ---
+                const printInvoice = (inv) => {
+                    printData.value = inv;
+                    // Berikan sedikit jeda waktu agar DOM template cetak sempat terisi data di HTML, lalu picu dialog cetak
+                    setTimeout(() => {
+                        window.print();
+                    }, 300);
+                };
+
                 return {
                     activeTab,
+                    menuOpen,
                     changeTab,
                     profile,
                     customers,
                     services,
+                    transactions,
+                    invoices,
+                    unbilledTransactionsCount,
                     showCustomerForm,
                     isEditing,
                     customerForm,
@@ -640,19 +1145,40 @@
                     serviceForm,
                     selectedCustomer,
                     tempPrices,
+                    showTransactionForm,
+                    trxForm,
+                    showInvoiceForm,
+                    invoiceForm,
+                    draftInvoiceItems,
+                    draftInvoiceTotal,
+                    printData,
+                    getCustomerName,
+                    getCustomerAddress,
+                    getServiceName,
+                    getServiceUnit,
+                    getPrice,
+                    formatDate,
+                    formatMonthYear,
                     saveProfile,
                     openAddCustomer,
                     openEditCustomer,
                     saveCustomer,
                     deleteCustomer,
-                    importInitialClients,
                     openAddService,
                     openEditService,
                     saveService,
                     deleteService,
-                    importInitialServices,
                     openCustomPrices,
-                    saveCustomPrices
+                    saveCustomPrices,
+                    openAddTransaction,
+                    saveTransaction,
+                    deleteTransaction,
+                    openAddInvoice,
+                    calculateDraftInvoice,
+                    saveInvoice,
+                    deleteInvoice,
+                    updatePaymentStatus,
+                    printInvoice
                 };
             }
         }).mount('#app');

@@ -3,96 +3,132 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Nays Laundry - Admin Dashboard</title>
-    <!-- Tailwind CSS CDN -->
+    <title>Nays Laundry</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- SheetJS (XLSX) CDN untuk Ekspor Excel -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Alat Bantu Debugging di HP (Bisa dihapus jika halaman sudah lancar) -->
-    <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
-    <script>eruda.init();</script>
     <style>
         body { font-family: 'Inter', sans-serif; }
         [v-cloak] { display: none !important; }
     </style>
 </head>
-<body class="bg-slate-50 text-slate-800 select-none">
+<body class="bg-slate-50 text-slate-800 text-xs">
 
-    <div id="app" class="flex flex-col md:flex-row min-h-screen print:p-0 print:bg-white" v-cloak>
+    <div id="app" class="flex flex-col min-h-screen print:p-0 print:bg-white" v-cloak>
         
-        <!-- ================= MAIN APP UI (Hidden when Printing) ================= -->
-        <div class="flex flex-col md:flex-row w-full min-h-screen print:hidden">
+        <!-- ================= LOGIN VIEW (Browser Only) ================= -->
+        <div v-if="!isLoggedIn" class="flex items-center justify-center min-h-screen w-full p-4 bg-slate-100 print:hidden">
+            <div class="w-full max-w-sm bg-white p-5 rounded-2xl shadow-md border text-center space-y-4">
+                <div class="flex flex-col items-center">
+                    <div class="w-12 h-12 rounded-full bg-indigo-900 text-white flex items-center justify-center font-bold text-lg mb-1 shadow">NL</div>
+                    <h2 class="text-sm font-bold text-indigo-950">Gateway OTP Login</h2>
+                    <p class="text-[10px] text-slate-400">Gunakan nomor admin +62 812-3654-594</p>
+                </div>
+                <div class="space-y-2 text-left">
+                    <div v-if="!otpSent">
+                        <label class="block text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1">Nomor WhatsApp</label>
+                        <input v-model="phoneNumber" type="tel" placeholder="08123654594" class="w-full px-3 py-1.5 border rounded-lg text-xs">
+                    </div>
+                    <div v-else>
+                        <label class="block text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1">Kode OTP 6-Digit</label>
+                        <input v-model="inputOtp" type="number" placeholder="------" class="w-full px-3 py-1.5 border rounded-lg text-center font-extrabold text-base tracking-widest">
+                    </div>
+                </div>
+                <div class="pt-1">
+                    <button v-if="!otpSent" @click="sendOtpCode" :disabled="isLoadingOtp" class="w-full bg-indigo-900 text-white p-2 rounded-lg font-bold hover:bg-indigo-950 transition shadow">
+                        {{ isLoadingOtp ? 'Mengirim...' : 'Kirim Kode OTP' }}
+                    </button>
+                    <button v-else @click="verifyOtpCode" class="w-full bg-emerald-600 text-white p-2 rounded-lg font-bold hover:bg-emerald-700 transition shadow">
+                        Verifikasi & Masuk
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= MAIN APP UI ================= -->
+        <div v-else class="flex flex-col w-full min-h-screen print:hidden pb-16 md:pb-0">
             
-            <!-- MOBILE TOP BAR -->
-            <header class="flex md:hidden h-16 bg-indigo-900 text-white items-center justify-between px-4 fixed top-0 left-0 right-0 z-40 shadow">
+            <!-- TOP NAVBAR -->
+            <header class="flex h-14 bg-indigo-900 text-white items-center justify-between px-4 fixed top-0 left-0 right-0 z-40 shadow">
                 <div class="flex items-center space-x-2">
                     <img v-if="profile.logo_url" :src="profile.logo_url" class="w-8 h-8 rounded-full object-cover bg-white">
                     <h1 class="font-bold text-xs">{{ profile.nama_laundry || 'Nays Laundry' }}</h1>
                 </div>
+                <!-- Hamburger Menu Button -->
                 <button @click="menuOpen = !menuOpen" class="text-xl p-2">☰</button>
             </header>
 
-            <!-- MOBILE NAV DRAWER -->
-            <div v-if="menuOpen" @click="menuOpen = false" class="fixed inset-0 bg-black/40 z-40 md:hidden"></div>
-            <aside :class="menuOpen ? 'translate-x-0' : '-translate-x-full'" class="fixed inset-y-0 left-0 w-56 bg-indigo-900 text-white z-50 transform transition-transform duration-200 flex flex-col md:hidden">
+            <!-- SLIDE-OUT MENU DRAWER -->
+            <div v-if="menuOpen" @click="menuOpen = false" class="fixed inset-0 bg-black/40 z-40"></div>
+            <aside :class="menuOpen ? 'translate-x-0' : '-translate-x-full'" class="fixed inset-y-0 left-0 w-56 bg-indigo-900 text-white z-50 transform transition-transform duration-200 flex flex-col">
                 <div class="p-4 border-b border-indigo-800 flex justify-between items-center">
-                    <span class="font-bold">Menu</span>
+                    <span class="font-bold">Layanan Menu</span>
                     <button @click="menuOpen = false">✕</button>
                 </div>
-                <nav class="flex-1 p-2 space-y-1 text-sm">
-                    <button @click="changeTab('dashboard')" class="w-full text-left p-2.5 rounded hover:bg-indigo-800 block">🏠 Dashboard</button>
-                    <button @click="changeTab('transaksi')" class="w-full text-left p-2.5 rounded hover:bg-indigo-800 block">📝 Transaksi Harian</button>
-                    <button @click="changeTab('tagihan')" class="w-full text-left p-2.5 rounded hover:bg-indigo-800 block">💵 Tagihan & Invoice</button>
-                    <button @click="changeTab('laporan')" class="w-full text-left p-2.5 rounded hover:bg-indigo-800 block">📈 Laporan Omset</button>
-                    <button @click="changeTab('pelanggan')" class="w-full text-left p-2.5 rounded hover:bg-indigo-800 block">👥 Kelola Pelanggan</button>
-                    <button @click="changeTab('layanan')" class="w-full text-left p-2.5 rounded hover:bg-indigo-800 block">⚙️ Master Item</button>
-                    <button @click="changeTab('profil')" class="w-full text-left p-2.5 rounded hover:bg-indigo-800 block">🏢 Profil Laundry</button>
+                <nav class="flex-1 p-3 space-y-1">
+                    <!-- Semua menu tampil di desktop, menu sekunder di mobile -->
+                    <button v-for="t in ['dashboard', 'transaksi', 'tagihan', 'laporan', 'pelanggan', 'layanan', 'profil']" @click="changeTab(t)" :class="activeTab===t?'bg-indigo-800':''" class="w-full text-left p-2.5 rounded hover:bg-indigo-800 flex items-center space-x-2">
+                        <span class="capitalize">{{ t === 'layanan' ? 'master item' : t }}</span>
+                    </button>
+                    <button v-if="!isApk" @click="logoutAdmin" class="w-full text-left p-2.5 rounded text-rose-300 hover:bg-rose-950 block mt-8 border-t border-indigo-800">🚪 Keluar</button>
                 </nav>
             </aside>
 
-            <!-- DESKTOP SIDEBAR -->
-            <aside class="hidden md:flex w-56 bg-indigo-900 text-white flex-col shrink-0">
-                <div class="p-4 border-b border-indigo-800 flex items-center space-x-2">
-                    <img v-if="profile.logo_url" :src="profile.logo_url" class="w-8 h-8 rounded-full object-cover bg-white">
-                    <span class="font-bold text-xs">{{ profile.nama_laundry || 'Nays Laundry' }}</span>
-                </div>
-                <nav class="flex-1 p-3 space-y-1 text-indigo-100 text-sm">
-                    <button @click="changeTab('dashboard')" :class="activeTab==='dashboard'?'bg-indigo-800 text-white':''" class="w-full text-left p-2.5 rounded hover:bg-indigo-800 block">🏠 Dashboard</button>
-                    <button @click="changeTab('transaksi')" :class="activeTab==='transaksi'?'bg-indigo-800 text-white':''" class="w-full text-left p-2.5 rounded hover:bg-indigo-800 block">📝 Transaksi Harian</button>
-                    <button @click="changeTab('tagihan')" :class="activeTab==='tagihan'?'bg-indigo-800 text-white':''" class="w-full text-left p-2.5 rounded hover:bg-indigo-800 block">💵 Tagihan & Invoice</button>
-                    <button @click="changeTab('laporan')" :class="activeTab==='laporan'?'bg-indigo-800 text-white':''" class="w-full text-left p-2.5 rounded hover:bg-indigo-800 block">📈 Laporan Omset</button>
-                    <button @click="changeTab('pelanggan')" :class="activeTab==='pelanggan'||activeTab==='harga_khusus'?'bg-indigo-800 text-white':''" class="w-full text-left p-2.5 rounded hover:bg-indigo-800 block">👥 Kelola Pelanggan</button>
-                    <button @click="changeTab('layanan')" :class="activeTab==='layanan'?'bg-indigo-800 text-white':''" class="w-full text-left p-2.5 rounded hover:bg-indigo-800 block">⚙️ Master Item</button>
-                    <button @click="changeTab('profil')" :class="activeTab==='profil'?'bg-indigo-800 text-white':''" class="w-full text-left p-2.5 rounded hover:bg-indigo-800 block">🏢 Profil Laundry</button>
-                </nav>
-            </aside>
+            <!-- FLOATING NAVIGATION BAR FOR MOBILE (Only visible on Mobile) -->
+            <nav class="flex md:hidden fixed bottom-0 left-0 right-0 h-14 bg-indigo-900 text-white border-t border-indigo-800 z-30 justify-around items-center shadow-lg">
+                <button @click="changeTab('dashboard')" :class="activeTab==='dashboard'?'text-white font-bold':'text-indigo-300'" class="flex flex-col items-center justify-center w-full h-full text-[9px] space-y-0.5">
+                    <span class="text-base">🏠</span><span>Dashboard</span>
+                </button>
+                <button @click="changeTab('transaksi')" :class="activeTab==='transaksi'?'text-white font-bold':'text-indigo-300'" class="flex flex-col items-center justify-center w-full h-full text-[9px] space-y-0.5">
+                    <span class="text-base">📝</span><span>Transaksi</span>
+                </button>
+                <button @click="changeTab('pelanggan')" :class="activeTab==='pelanggan'?'text-white font-bold':'text-indigo-300'" class="flex flex-col items-center justify-center w-full h-full text-[9px] space-y-0.5">
+                    <span class="text-base">👥</span><span>Customer</span>
+                </button>
+                <button @click="changeTab('layanan')" :class="activeTab==='layanan'?'text-white font-bold':'text-indigo-300'" class="flex flex-col items-center justify-center w-full h-full text-[9px] space-y-0.5">
+                    <span class="text-base">⚙️</span><span>Item</span>
+                </button>
+            </nav>
 
-            <!-- MAIN CONTENT -->
-            <main class="flex-1 p-4 pt-18 md:pt-4 overflow-y-auto">
+            <!-- MAIN CONTAINER -->
+            <main class="flex-1 p-4 pt-18 overflow-y-auto">
                 
                 <!-- TAB: DASHBOARD -->
                 <section v-if="activeTab === 'dashboard'" class="space-y-4">
                     <h2 class="text-base font-bold">Ringkasan Operasional</h2>
                     <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-                        <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
+                        <div class="bg-white p-3.5 rounded-xl border shadow-sm">
                             <span class="text-slate-400">Total Pelanggan</span>
-                            <div class="text-xl font-bold text-indigo-600 mt-1">{{ customers.length }}</div>
+                            <div class="text-xl font-bold text-indigo-600 mt-0.5">{{ customers.length }}</div>
                         </div>
-                        <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
+                        <div class="bg-white p-3.5 rounded-xl border shadow-sm">
                             <span class="text-slate-400">Total Master Item</span>
-                            <div class="text-xl font-bold text-indigo-600 mt-1">{{ services.length }}</div>
+                            <div class="text-xl font-bold text-indigo-600 mt-0.5">{{ services.length }}</div>
                         </div>
-                        <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
-                            <span class="text-slate-400">Belum Ditagih</span>
-                            <div class="text-xl font-bold text-indigo-600 mt-1">{{ unbilledTransactionsCount }}</div>
+                        <div class="bg-white p-3.5 rounded-xl border shadow-sm">
+                            <span class="text-slate-400">Cucian Belum Ditagih</span>
+                            <div class="text-xl font-bold text-indigo-600 mt-0.5">{{ unbilledTransactionsCount }}</div>
                         </div>
-                        <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
+                        <div class="bg-white p-3.5 rounded-xl border shadow-sm">
                             <span class="text-slate-400">Status Koneksi</span>
-                            <div class="text-xs font-semibold text-emerald-600 flex items-center mt-2">
-                                <span class="w-2 h-2 bg-emerald-500 rounded-full inline-block mr-1.5 animate-ping"></span>
+                            <div class="text-xs font-semibold text-emerald-600 flex items-center mt-1.5">
+                                <span class="w-1.5 h-1.5 bg-emerald-500 rounded-full inline-block mr-1.5 animate-ping"></span>
                                 Connected
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- DAFTAR ESTIMASI/TOTAL TAGIHAN SEMENTARA CUSTOMER -->
+                    <div class="bg-white p-4 rounded-xl border shadow-sm">
+                        <h3 class="font-bold text-xs text-indigo-900 uppercase tracking-wide border-b pb-2 mb-2">Estimasi Tagihan Aktif Klien (Belum Ditagih)</h3>
+                        <div class="divide-y text-xs">
+                            <div v-for="c in customers" :key="c.id" v-if="getCustomerUnbilledTotal(c.id) > 0" class="py-2.5 flex justify-between items-center">
+                                <span class="font-semibold text-slate-700">{{ c.nama_pelanggan }}</span>
+                                <span class="font-bold text-indigo-600">Rp {{ getCustomerUnbilledTotal(c.id).toLocaleString() }}</span>
+                            </div>
+                            <!-- Jika semua tagihan bersih -->
+                            <div v-if="!customers.some(c => getCustomerUnbilledTotal(c.id) > 0)" class="py-3 text-center text-slate-400 italic">
+                                Semua transaksi harian sudah bersih tertagihkan.
                             </div>
                         </div>
                     </div>
@@ -101,11 +137,11 @@
                 <!-- TAB: TRANSAKSI HARIAN -->
                 <section v-if="activeTab === 'transaksi'" class="space-y-3">
                     <div class="flex justify-between items-center">
-                        <h2 class="text-base font-bold">Transaksi Harian</h2>
+                        <h2 class="text-base font-bold">Transaksi Laundry</h2>
                         <button v-if="!showTransactionForm" @click="openAddTransaction" class="bg-indigo-600 text-white px-3 py-1.5 rounded-lg font-semibold hover:bg-indigo-700">+ Tambah</button>
                     </div>
 
-                    <input v-if="!showTransactionForm" v-model="searchQueryTransactions" type="text" placeholder="🔍 Cari nama pelanggan..." class="w-full max-w-xs px-3 py-1.5 border rounded-lg text-xs">
+                    <input v-if="!showTransactionForm" v-model="searchQueryTransactions" type="text" placeholder="🔍 Cari nama pelanggan..." class="w-full max-w-xs px-3 py-1.5 border rounded-lg">
 
                     <!-- Form Transaksi -->
                     <div v-if="showTransactionForm" class="bg-white p-4 rounded-xl border border-slate-200 space-y-3">
@@ -128,7 +164,7 @@
                             <h4 class="font-bold text-slate-600">Daftar Item & Kuantitas:</h4>
                             <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
                                 <div v-for="item in services" :key="item.id" class="bg-slate-50 p-2 rounded border flex flex-col justify-between">
-                                    <span class="font-semibold text-slate-700">{{ item.nama_layanan }}</span>
+                                    <span class="font-semibold text-slate-700 leading-tight">{{ item.nama_layanan }}</span>
                                     <span class="text-[9px] text-slate-400">Tarif: Rp {{ getPrice(trxForm.id_pelanggan, item.id).toLocaleString() }}</span>
                                     <input type="number" min="0" v-model.number="trxForm.items[item.id]" placeholder="0" class="w-full mt-1 p-1 border rounded text-center">
                                 </div>
@@ -143,17 +179,17 @@
 
                     <!-- List Transaksi -->
                     <div v-if="!showTransactionForm" class="space-y-2">
-                        <div v-for="t in filteredTransactions" :key="t.id" class="bg-white p-3 rounded-xl border border-slate-100 shadow-sm flex flex-col justify-between gap-2">
+                        <div v-for="t in filteredTransactions" :key="t.id" class="bg-white p-3 rounded-xl border shadow-sm flex flex-col justify-between gap-2">
                             <div class="flex justify-between items-start">
                                 <div>
-                                    <h4 class="font-bold text-slate-800 text-sm">{{ getCustomerName(t.id_pelanggan) }}</h4>
+                                    <h4 class="font-bold text-slate-800 text-xs">{{ getCustomerName(t.id_pelanggan) }}</h4>
                                     <span class="text-slate-400 text-[10px]">{{ formatDate(t.tanggal) }}</span>
                                 </div>
                                 <span :class="t.status_tagihan==='belum_ditagih'?'bg-amber-100 text-amber-800':'bg-emerald-100 text-emerald-800'" class="px-2 py-0.5 rounded text-[9px] font-bold">
                                     {{ t.status_tagihan==='belum_ditagih'?'Belum Ditagih':'Sudah Ditagih' }}
                                 </span>
                             </div>
-                            <div class="text-[11px] text-slate-600 bg-slate-50 p-2 rounded">
+                            <div class="text-[10px] text-slate-600 bg-slate-50 p-2 rounded leading-relaxed">
                                 <span v-for="item in t.items" :key="item.id_layanan" class="inline-block mr-3">
                                     • {{ getServiceName(item.id_layanan) }}: <strong>{{ item.qty }}</strong>
                                 </span>
@@ -162,7 +198,6 @@
                                 <button @click="deleteTransaction(t.id, t.status_tagihan)" class="text-red-500 hover:text-red-700">Hapus</button>
                             </div>
                         </div>
-                        <div v-if="filteredTransactions.length === 0" class="p-6 text-center text-slate-400 bg-white rounded-xl border">Belum ada transaksi harian.</div>
                     </div>
                 </section>
 
@@ -173,7 +208,7 @@
                         <button v-if="!showInvoiceForm" @click="openAddInvoice" class="bg-indigo-600 text-white px-3 py-1.5 rounded-lg font-semibold hover:bg-indigo-700">💵 Buat Tagihan</button>
                     </div>
 
-                    <input v-if="!showInvoiceForm" v-model="searchQueryInvoices" type="text" placeholder="🔍 Cari invoice atau pelanggan..." class="w-full max-w-xs px-3 py-1.5 border rounded-lg text-xs">
+                    <input v-if="!showInvoiceForm" v-model="searchQueryInvoices" type="text" placeholder="🔍 Cari invoice atau pelanggan..." class="w-full max-w-xs px-3 py-1.5 border rounded-lg">
 
                     <!-- Form Invoice -->
                     <div v-if="showInvoiceForm" class="bg-white p-4 rounded-xl border border-slate-200 space-y-3">
@@ -205,9 +240,6 @@
                                 </div>
                             </div>
                         </div>
-                        <div v-else-if="invoiceForm.id_pelanggan && draftInvoiceItems.length === 0" class="text-xs text-red-500 italic">
-                            *Tidak ditemukan catatan transaksi belum tertagih pada periode ini.
-                        </div>
 
                         <div class="flex justify-end space-x-2 pt-2 border-t">
                             <button @click="showInvoiceForm = false" class="px-3 py-1 bg-slate-100 rounded">Batal</button>
@@ -217,21 +249,21 @@
 
                     <!-- List Invoices -->
                     <div v-if="!showInvoiceForm" class="space-y-2">
-                        <div v-for="inv in filteredInvoices" :key="inv.id" class="bg-white p-3 rounded-xl border border-slate-100 shadow-sm space-y-2">
+                        <div v-for="inv in filteredInvoices" :key="inv.id" class="bg-white p-3 rounded-xl border shadow-sm space-y-2">
                             <div class="flex justify-between items-start">
                                 <div>
-                                    <h4 class="font-bold text-slate-800 text-sm">{{ getCustomerName(inv.id_pelanggan) }}</h4>
+                                    <h4 class="font-bold text-slate-800 text-xs">{{ getCustomerName(inv.id_pelanggan) }}</h4>
                                     <p class="text-[10px] text-indigo-900 font-semibold mt-0.5">{{ inv.no_invoice }} | {{ formatMonthYear(inv.periode) }}</p>
                                 </div>
                                 <select :value="inv.status_pembayaran" @change="updatePaymentStatus(inv.id, $event.target.value)" 
                                         :class="{'bg-red-100 text-red-800':inv.status_pembayaran==='belum_lunas','bg-emerald-100 text-emerald-800':inv.status_pembayaran==='lunas_cash','bg-blue-100 text-blue-800':inv.status_pembayaran==='lunas_transfer'}"
-                                        class="px-1.5 py-0.5 rounded text-[10px] font-bold border-0 focus:outline-none">
+                                        class="px-1.5 py-0.5 rounded text-[10px] font-bold border-0 focus:outline-none bg-slate-100">
                                     <option value="belum_lunas">❌ Belum Lunas</option>
                                     <option value="lunas_cash">💵 Lunas Cash</option>
                                     <option value="lunas_transfer">💳 Lunas Transfer</option>
                                 </select>
                             </div>
-                            <div class="flex justify-between items-center pt-1 border-t text-[11px]">
+                            <div class="flex justify-between items-center pt-1.5 border-t text-[11px]">
                                 <span class="font-bold text-slate-700">Total: Rp {{ inv.total_tagihan.toLocaleString() }}</span>
                                 <div class="flex space-x-3">
                                     <button @click="printInvoice(inv)" class="text-indigo-600 font-semibold">📄 Cetak</button>
@@ -246,7 +278,7 @@
                 <section v-if="activeTab === 'laporan'" class="space-y-3">
                     <h2 class="text-base font-bold">Laporan Omset Pendapatan</h2>
                     
-                    <div class="bg-white p-3 rounded-xl border border-slate-100 flex flex-col gap-2">
+                    <div class="bg-white p-3 rounded-xl border flex flex-col gap-2">
                         <div class="grid grid-cols-2 gap-2">
                             <div>
                                 <label class="block text-[10px] font-semibold text-slate-400 mb-1">Filter Klien</label>
@@ -267,23 +299,23 @@
 
                     <!-- Summary Cards -->
                     <div class="grid grid-cols-3 gap-2 text-center">
-                        <div class="bg-indigo-50 p-2.5 rounded-lg border border-indigo-100 shadow-sm">
-                            <span class="text-[9px] text-indigo-700 font-semibold block uppercase">Total Omset</span>
+                        <div class="bg-indigo-50 p-2 rounded-lg border border-indigo-100">
+                            <span class="text-[9px] text-indigo-700 font-semibold block uppercase leading-none mb-1">Total Omset</span>
                             <span class="font-bold text-indigo-950 text-xs">Rp {{ reportTotals.totalOmset.toLocaleString() }}</span>
                         </div>
-                        <div class="bg-emerald-50 p-2.5 rounded-lg border border-emerald-100 shadow-sm">
-                            <span class="text-[9px] text-emerald-700 font-semibold block uppercase">Terbayar</span>
+                        <div class="bg-emerald-50 p-2 rounded-lg border border-emerald-100">
+                            <span class="text-[9px] text-emerald-700 font-semibold block uppercase leading-none mb-1">Terbayar</span>
                             <span class="font-bold text-emerald-950 text-xs">Rp {{ reportTotals.totalTerbayar.toLocaleString() }}</span>
                         </div>
-                        <div class="bg-rose-50 p-2.5 rounded-lg border border-rose-100 shadow-sm">
-                            <span class="text-[9px] text-rose-700 font-semibold block uppercase">Piutang</span>
+                        <div class="bg-rose-50 p-2 rounded-lg border border-rose-100">
+                            <span class="text-[9px] text-rose-700 font-semibold block uppercase leading-none mb-1">Piutang</span>
                             <span class="font-bold text-rose-950 text-xs">Rp {{ reportTotals.totalPiutang.toLocaleString() }}</span>
                         </div>
                     </div>
 
                     <!-- List Laporan -->
                     <div class="space-y-1.5">
-                        <div v-for="inv in reportInvoices" :key="inv.id" class="bg-white p-3 rounded-lg border border-slate-100 flex justify-between items-center shadow-sm">
+                        <div v-for="inv in reportInvoices" :key="inv.id" class="bg-white p-3 rounded-lg border flex justify-between items-center shadow-sm">
                             <div>
                                 <h4 class="font-bold text-slate-800">{{ getCustomerName(inv.id_pelanggan) }}</h4>
                                 <span class="text-[10px] text-slate-400 block">{{ inv.no_invoice }} | {{ formatMonthYear(inv.periode) }}</span>
@@ -302,7 +334,7 @@
                 <section v-if="activeTab === 'pelanggan'" class="space-y-3">
                     <div class="flex justify-between items-center">
                         <h2 class="text-base font-bold">Kelola Pelanggan</h2>
-                        <button @click="openAddCustomer" class="bg-indigo-600 text-white px-3 py-1.5 rounded-lg font-semibold hover:bg-indigo-700 shadow">+ Tambah</button>
+                        <button @click="openAddCustomer" class="bg-indigo-600 text-white px-3 py-1.5 rounded-lg font-semibold hover:bg-indigo-700">+ Tambah</button>
                     </div>
 
                     <input v-if="!showCustomerForm" v-model="searchQueryCustomers" type="text" placeholder="🔍 Cari pelanggan..." class="w-full max-w-xs px-3 py-1.5 border rounded-lg text-xs">
@@ -332,12 +364,12 @@
 
                     <!-- List Pelanggan -->
                     <div v-if="!showCustomerForm" class="space-y-2">
-                        <div v-for="cust in filteredCustomers" :key="cust.id" class="bg-white p-3 rounded-xl border border-slate-100 flex justify-between items-center shadow-sm">
+                        <div v-for="cust in filteredCustomers" :key="cust.id" class="bg-white p-3 rounded-xl border flex justify-between items-center shadow-sm">
                             <div>
-                                <h4 class="font-bold text-slate-800 text-sm">{{ cust.nama_pelanggan }}</h4>
+                                <h4 class="font-bold text-slate-800 text-xs">{{ cust.nama_pelanggan }}</h4>
                                 <span class="text-slate-400 text-[10px] block mt-0.5">📍 {{ cust.alamat }} | Telp: {{ cust.no_telepon }}</span>
                             </div>
-                            <div class="flex space-x-2">
+                            <div class="flex space-x-1.5 shrink-0">
                                 <button @click="openCustomPrices(cust)" class="bg-emerald-50 text-emerald-600 p-1.5 rounded font-bold">💰 Tarif</button>
                                 <button @click="openEditCustomer(cust)" class="bg-indigo-50 text-indigo-600 p-1.5 rounded">Edit</button>
                                 <button @click="deleteCustomer(cust.id)" class="bg-rose-50 text-rose-500 p-1.5 rounded">Hapus</button>
@@ -349,15 +381,15 @@
                 <!-- TAB: HARGA KHUSUS -->
                 <section v-if="activeTab === 'harga_khusus'" class="space-y-4">
                     <div class="flex justify-between items-center">
-                        <h2 class="text-lg font-bold">Tarif Khusus: <span class="text-indigo-600">{{ selectedCustomer.nama_pelanggan }}</span></h2>
+                        <h2 class="text-sm font-bold">Tarif Khusus: <span class="text-indigo-600">{{ selectedCustomer.nama_pelanggan }}</span></h2>
                         <button @click="activeTab = 'pelanggan'" class="bg-slate-200 text-slate-700 px-3 py-1.5 rounded-lg text-xs font-semibold">⬅️ Kembali</button>
                     </div>
 
                     <div class="bg-white p-4 rounded-xl border border-slate-100 space-y-4 text-xs">
                         <p class="text-slate-400 italic">*Kosongkan jika ingin memakai Harga Standar.</p>
                         <div class="overflow-x-auto">
-                            <table class="w-full text-left border-collapse">
-                                <thead class="bg-slate-50 border-b text-slate-400 font-semibold uppercase text-[10px]">
+                            <table class="w-full text-left border-collapse text-[11px]">
+                                <thead class="bg-slate-50 border-b text-slate-400 font-semibold uppercase text-[9px]">
                                     <tr>
                                         <th class="p-2">Nama Layanan</th>
                                         <th class="p-2">Satuan</th>
@@ -367,18 +399,18 @@
                                 </thead>
                                 <tbody class="divide-y divide-slate-100">
                                     <tr v-for="item in services" :key="item.id">
-                                        <td class="p-2 font-medium">{{ item.nama_layanan }}</td>
-                                        <td class="p-2"><span class="px-2 py-0.5 bg-slate-100 text-slate-600 rounded text-[9px] font-semibold">{{ item.satuan }}</span></td>
+                                        <td class="p-2 font-medium leading-tight">{{ item.nama_layanan }}</td>
+                                        <td class="p-2"><span class="px-2 py-0.5 bg-slate-100 text-slate-600 rounded text-[9px] font-semibold uppercase">{{ item.satuan }}</span></td>
                                         <td class="p-2 text-slate-500">Rp {{ item.harga_standar.toLocaleString() }}</td>
                                         <td class="p-2">
-                                            <input type="number" v-model.number="tempPrices[item.id]" placeholder="Standar" class="w-full px-2 py-1 border rounded focus:outline-emerald-500 bg-emerald-50/20">
+                                            <input type="number" v-model.number="tempPrices[item.id]" placeholder="Standar" class="w-full p-1 border rounded bg-slate-50">
                                         </td>
                                     </tr>
                                 </tbody>
                             </table>
                         </div>
                         <div class="flex justify-end pt-3 border-t">
-                            <button @click="saveCustomPrices" class="bg-emerald-600 text-white px-5 py-2 rounded-lg font-semibold">💾 Simpan Semua Tarif</button>
+                            <button @click="saveCustomPrices" class="bg-emerald-600 text-white px-5 py-2 rounded-lg font-semibold shadow">💾 Simpan Semua Tarif</button>
                         </div>
                     </div>
                 </section>
@@ -410,7 +442,7 @@
                                 <input v-model.number="serviceForm.harga_standar" type="number" required class="w-full p-2 border rounded">
                             </div>
                             <div class="md:col-span-3 flex justify-end space-x-2 pt-2">
-                                <button type="button" @click="showServiceForm = false" class="px-3 py-1 text-xs text-slate-500 hover:bg-slate-100 rounded">Batal</button>
+                                <button type="button" @click="showServiceForm = false" class="px-3 py-1 bg-slate-100 rounded">Batal</button>
                                 <button type="submit" class="bg-indigo-600 text-white px-4 py-1 rounded font-semibold shadow">Simpan</button>
                             </div>
                         </form>
@@ -418,14 +450,14 @@
 
                     <!-- List Item -->
                     <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                        <div v-for="item in services" :key="item.id" class="bg-white p-3 rounded-xl border border-slate-100 shadow-sm flex flex-col justify-between gap-1.5">
+                        <div v-for="item in services" :key="item.id" class="bg-white p-3 rounded-xl border shadow-sm flex flex-col justify-between gap-1.5">
                             <div>
-                                <h4 class="font-bold text-slate-800 text-sm">{{ item.nama_layanan }}</h4>
+                                <h4 class="font-bold text-slate-800 text-xs">{{ item.nama_layanan }}</h4>
                                 <span class="px-2 py-0.5 bg-slate-100 text-slate-600 rounded text-[9px] font-bold uppercase inline-block mt-0.5">{{ item.satuan }}</span>
                             </div>
                             <div class="flex justify-between items-center pt-1.5 border-t">
                                 <span class="font-bold text-slate-600">Rp {{ item.harga_standar.toLocaleString() }}</span>
-                                <div class="space-x-2">
+                                <div class="space-x-2 shrink-0">
                                     <button @click="openEditService(item)" class="text-indigo-600">Edit</button>
                                     <button @click="deleteService(item.id)" class="text-red-500">Hapus</button>
                                 </div>
@@ -437,7 +469,7 @@
                 <!-- TAB: PROFIL LAUNDRY -->
                 <section v-if="activeTab === 'profil'" class="max-w-md space-y-4">
                     <h2 class="text-base font-bold">Profil Perusahaan</h2>
-                    <div class="bg-white p-4 rounded-xl border border-slate-100">
+                    <div class="bg-white p-4 rounded-xl border">
                         <form @submit.prevent="saveProfile" class="space-y-3">
                             <div>
                                 <label class="block font-semibold text-slate-400 mb-0.5">Nama Laundry</label>

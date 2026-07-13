@@ -48,8 +48,7 @@
             </div>
         </div>
 
-        <!-- ================= MAIN APP UI (Responsive Layout) ================= -->
-        <!-- flex-col untuk HP, md:flex-row otomatis mendatar untuk Tablet / iPad / Desktop -->
+        <!-- ================= MAIN APP UI ================= -->
         <div v-else class="flex flex-col md:flex-row w-full min-h-screen print:hidden">
             
             <!-- FLOATING ACTION BUTTON (FAB) FOR MOBILE -->
@@ -59,7 +58,7 @@
                 +
             </button>
 
-            <!-- MOBILE TOP NAVBAR (Hidden on Tablet/Desktop) -->
+            <!-- MOBILE TOP NAVBAR -->
             <header class="flex md:hidden h-14 bg-indigo-900 text-white items-center justify-between px-4 fixed top-0 left-0 right-0 z-40 shadow">
                 <div class="flex items-center space-x-2">
                     <img v-if="profile.logo_url" :src="profile.logo_url" class="w-8 h-8 rounded-full object-cover bg-white">
@@ -68,7 +67,7 @@
                 <button @click="menuOpen = !menuOpen" class="text-xl p-2">☰</button>
             </header>
 
-            <!-- MOBILE MENU DRAWER (Hamburger Slide-out) -->
+            <!-- MOBILE MENU DRAWER -->
             <div v-if="menuOpen" @click="menuOpen = false" class="fixed inset-0 bg-black/40 z-40"></div>
             <aside :class="menuOpen ? 'translate-x-0' : '-translate-x-full'" class="fixed inset-y-0 left-0 w-56 bg-indigo-900 text-white z-50 transform transition-transform duration-200 flex flex-col">
                 <div class="p-4 border-b border-indigo-800 flex justify-between items-center">
@@ -97,7 +96,7 @@
                 </nav>
             </aside>
 
-            <!-- FLOATING NAVIGATION BAR FOR MOBILE (Hidden on Tablet) -->
+            <!-- FLOATING NAVIGATION BAR FOR MOBILE -->
             <nav class="flex md:hidden fixed bottom-0 left-0 right-0 h-14 bg-indigo-900 text-white border-t border-indigo-800 z-30 justify-around items-center shadow-lg">
                 <button @click="changeTab('dashboard')" :class="activeTab==='dashboard'?'text-white font-bold':'text-indigo-300'" class="flex flex-col items-center justify-center w-full h-full text-[9px] space-y-0.5">
                     <span class="text-base">🏠</span><span>Dashboard</span>
@@ -113,7 +112,7 @@
                 </button>
             </nav>
 
-            <!-- MAIN CONTAINER (Jarak atas dinaikkan menjadi pt-24 di mobile agar tidak mepet header) -->
+            <!-- MAIN CONTAINER -->
             <main class="flex-1 p-4 pt-24 pb-20 md:pt-4 md:pb-4 overflow-y-auto">
                 
                 <!-- TAB: DASHBOARD -->
@@ -167,7 +166,7 @@
 
                     <input v-if="!showTransactionForm" v-model="searchQueryTransactions" type="text" placeholder="🔍 Cari nama pelanggan..." class="w-full max-w-xs px-3 py-1.5 border rounded-lg text-xs">
 
-                    <!-- Form Transaksi -->
+                    <!-- Form Transaksi (Cart-Style Dropdown Pencarian Baru) -->
                     <div v-if="showTransactionForm" class="bg-white p-4 rounded-xl border border-slate-200 space-y-3">
                         <h3 class="font-bold text-slate-700">Form Pencatatan Laundry</h3>
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -184,13 +183,46 @@
                             </div>
                         </div>
 
-                        <div v-if="trxForm.id_pelanggan" class="space-y-2">
-                            <h4 class="font-bold text-slate-600">Daftar Item & Kuantitas:</h4>
-                            <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                                <div v-for="item in services" :key="item.id" class="bg-slate-50 p-2 rounded border flex flex-col justify-between">
-                                    <span class="font-semibold text-slate-700 leading-tight">{{ item.nama_layanan }}</span>
-                                    <span class="text-[9px] text-slate-400">Tarif: Rp {{ getPrice(trxForm.id_pelanggan, item.id).toLocaleString() }}</span>
-                                    <input type="number" min="0" v-model.number="trxForm.items[item.id]" placeholder="0" class="w-full mt-1 p-1 border rounded text-center text-xs">
+                        <!-- Panel Tambah Item ala Cart (Dropdown + Fitur Cari) -->
+                        <div v-if="trxForm.id_pelanggan" class="border p-3 rounded-lg bg-slate-50 space-y-2">
+                            <h4 class="font-bold text-xs text-indigo-900 uppercase">Tambah Item ke Daftar:</h4>
+                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 items-end">
+                                <div class="relative">
+                                    <label class="block text-[10px] font-semibold text-slate-500 mb-0.5">Cari & Pilih Item</label>
+                                    <input type="text" v-model="itemSearchQuery" placeholder="Ketik nama item..." class="w-full p-2 border rounded text-xs bg-white focus:outline-indigo-500">
+                                    <!-- Search Dropdown List -->
+                                    <div v-if="itemSearchQuery && selectedItemId === ''" class="absolute left-0 right-0 max-h-40 overflow-y-auto bg-white border rounded shadow-lg z-50 mt-1">
+                                        <button v-for="item in filteredSearchItems" :key="item.id" @click="selectSearchItem(item)" type="button" class="w-full text-left px-3 py-2 text-xs hover:bg-slate-100 border-b last:border-0 block text-slate-700">
+                                            {{ item.nama_layanan }} (Rp {{ getPrice(trxForm.id_pelanggan, item.id).toLocaleString() }})
+                                        </button>
+                                        <div v-if="filteredSearchItems.length === 0" class="p-2 text-center text-slate-400">Item tidak ditemukan</div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] font-semibold text-slate-500 mb-0.5">Jumlah (Qty)</label>
+                                    <input type="number" v-model.number="selectedItemQty" placeholder="0" class="w-full p-2 border rounded text-xs text-center bg-white focus:outline-indigo-500">
+                                </div>
+                                <button type="button" @click="addTrxItem" class="bg-indigo-600 hover:bg-indigo-700 text-white p-2 rounded font-bold text-xs shadow">
+                                    ➕ Masukkan ke Daftar
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Daftar Item Sementara (Cart View) -->
+                        <div v-if="trxForm.items.length > 0" class="space-y-1.5">
+                            <h4 class="font-bold text-xs text-slate-600">Daftar Item Sementara:</h4>
+                            <div class="space-y-1">
+                                <div v-for="(item, index) in trxForm.items" :key="item.id_layanan" class="flex justify-between items-center bg-slate-50 p-2 rounded border">
+                                    <div>
+                                        <span class="font-semibold text-slate-800">{{ getServiceName(item.id_layanan) }}</span>
+                                        <span class="text-[9px] text-slate-400 block">
+                                            {{ item.qty }} {{ getServiceUnit(item.id_layanan) }} x Rp {{ getPrice(trxForm.id_pelanggan, item.id_layanan).toLocaleString() }}
+                                        </span>
+                                    </div>
+                                    <div class="flex items-center space-x-3">
+                                        <span class="font-bold text-slate-800">Rp {{ (item.qty * getPrice(trxForm.id_pelanggan, item.id_layanan)).toLocaleString() }}</span>
+                                        <button @click="removeTrxItem(index)" type="button" class="text-rose-500 hover:text-rose-700 font-bold text-sm">✕</button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -201,7 +233,7 @@
                         </div>
                     </div>
 
-                    <!-- List Transaksi -->
+                    <!-- List Transaksi Log -->
                     <div v-if="!showTransactionForm" class="space-y-2">
                         <div v-for="t in filteredTransactions" :key="t.id" class="bg-white p-3 rounded-xl border shadow-sm flex flex-col justify-between gap-2">
                             <div class="flex justify-between items-start">
@@ -441,7 +473,7 @@
                     </div>
                 </section>
 
-                <!-- TAB: KELOLA MASTER ITEM (Tombol Impor Sudah Dibersihkan) -->
+                <!-- TAB: KELOLA MASTER ITEM -->
                 <section v-if="activeTab === 'layanan'" class="space-y-3">
                     <div class="flex justify-between items-center">
                         <h2 class="text-base font-bold">Master Item Laundry</h2>
@@ -492,7 +524,7 @@
                     </div>
                 </section>
 
-                <!-- TAB: PROFIL LAUNDRY (Form Alamat & Rincian Bank Lengkap) -->
+                <!-- TAB: PROFIL LAUNDRY -->
                 <section v-if="activeTab === 'profil'" class="max-w-md space-y-4">
                     <h2 class="text-base font-bold">Profil Perusahaan</h2>
                     <div class="bg-white p-4 rounded-xl border">
@@ -612,7 +644,6 @@
                 </div>
             </div>
 
-            <!-- TOS DINAMIS YANG DIINPUT DARI MENU PROFIL LAUNDRY -->
             <div v-if="profile.tos" class="mt-8 border-t pt-4 text-[8px] text-slate-400 leading-tight">
                 <p class="font-bold text-slate-500 mb-1">Syarat & Ketentuan (Terms of Service):</p>
                 <p class="whitespace-pre-line pl-2">{{ profile.tos }}</p>

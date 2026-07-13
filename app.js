@@ -68,9 +68,14 @@ createApp({
         const isEditingService = ref(false);
         const serviceForm = ref({ id: '', nama_layanan: '', satuan: 'Pcs', harga_standar: 0 });
 
-        // Form States Transaksi
+        // Form States Transaksi (Ubah Struktur Items menjadi Array agar Dinamis)
         const showTransactionForm = ref(false);
-        const trxForm = ref({ id_pelanggan: '', tanggal: '', items: {} });
+        const trxForm = ref({ id_pelanggan: '', tanggal: '', items: [] });
+
+        // State Pencarian Item dalam Form Transaksi
+        const itemSearchQuery = ref('');
+        const selectedItemId = ref('');
+        const selectedItemQty = ref('');
 
         // Form States Invoice
         const showInvoiceForm = ref(false);
@@ -153,7 +158,6 @@ createApp({
 
         // Mendapatkan harga aktif (custom/standar)
         const getPrice = (custId, itemId) => {
-            const custom = customPricesList.value.find(p => p.id_pelanggan === customer.id && p.id_layanan === item.id); // Terkoreksi: p.id_pelanggan === custId && p.id_layanan === itemId
             const priceFound = customPricesList.value.find(p => p.id_pelanggan === custId && p.id_layanan === itemId);
             if (priceFound && priceFound.harga_custom !== undefined && priceFound.harga_custom !== '') {
                 return Number(priceFound.harga_custom);
@@ -480,60 +484,75 @@ createApp({
             }
         };
 
-        // --- PENCATATAN TRANSAKSI HARIAN ---
+        // --- PENCATATAN TRANSAKSI HARIAN (CART-STYLE) ---
         const openAddTransaction = () => {
             const todayStr = new Date().toISOString().split('T')[0];
-            trxForm.value = { id_pelanggan: '', tanggal: todayStr, items: {} };
-            services.value.forEach(item => {
-                trxForm.value.items[item.id] = '';
-            });
+            trxForm.value = { id_pelanggan: '', tanggal: todayStr, items: [] }; // Reset sebagai array kosong
+            itemSearchQuery.value = '';
+            selectedItemId.value = '';
+            selectedItemQty.value = '';
             showTransactionForm.value = true;
         };
 
-        const saveTransaction = async () => {
-            if (!trxForm.value.id_pelanggan || !trxForm.value.tanggal) {
-                alert("Harap pilih pelanggan dan tanggal pengambilan.");
-                return;
+        const filteredSearchItems = computed(() => {
+            const q = itemSearchQuery.value.toLowerCase().trim();
+            if (!q) return services.value;
+            return services.value.filter(s => s.nama_layanan.toLowerCase().includes(q));
+        });
+
+        const selectSearchItem = (item) => {
+            selectedItemId.value = item.id;
+            itemSearchQuery.value = item.nama_layanan; // Tampilkan nama barang di input pencarian
+        };
+
+        const addTrxItem = () => {
+            if (!selectedItemId.value) {
+                alert("Harap pilih item laundry terlebih dahulu."); return;
+            }
+            if (!selectedItemQty.value || Number(selectedItemQty.value) <= 0) {
+                alert("Harap masukkan kuantitas yang valid."); return;
             }
 
-            const itemPayload = [];
-            for (const itemId of Object.keys(trxForm.value.items)) {
-                const qty = Number(trxForm.value.items[itemId]);
-                if (qty > 0) {
-                    itemPayload.push({ id_layanan: itemId, qty: qty });
-                }
-            }
-
-            if (itemPayload.length === 0) {
-                alert("Harap masukkan kuantitas minimal pada satu item.");
-                return;
-            }
-
-            try {
-                await addDoc(collection(db, "transaksi"), {
-                    id_pelanggan: trxForm.value.id_pelanggan,
-                    tanggal: trxForm.value.tanggal,
-                    items: itemPayload,
-                    status_tagihan: 'belum_ditagih'
+            // Cari apakah barang sudah ada di list cart sementara
+            const existing = trxForm.value.items.find(x => x.id_layanan === selectedItemId.value);
+            if (existing) {
+                existing.qty += Number(selectedItemQty.value);
+            } else {
+                trxForm.value.items.push({
+                    id_layanan: selectedItemId.value,
+                    qty: Number(selectedItemQty.value)
                 });
-                alert("Catatan transaksi berhasil disimpan!");
-                showTransactionForm.value = false;
-            } catch (error) {
-                alert("Gagal menyimpan transaksi: " + error.message);
             }
+
+            // Reset form input pencarian item
+            selectedItemId.value = '';
+            selectedItemQty.value = '';
+            itemSearchQuery.value = '';
+        };
+
+        const removeTrxItem = (index) => {
+            trxForm.value.items.splice(index, 1);
+        };
+
+        const saveTransaction = async () => {
+            if (!trxForm.value.id_pelanggan || !trxForm.value.tanggal) { alert("Harap isi lengkap."); return; }
+            if (trxForm.value.items.length === 0) { alert("Harap tambahkan minimal satu item ke daftar."); return; }
+            try {
+                await addDoc(collection(db, "transaksi"), { 
+                    id_pelanggan: trxForm.value.id_pelanggan, 
+                    tanggal: trxForm.value.tanggal, 
+                    items: trxForm.value.items, 
+                    status_tagihan: 'belum_ditagih' 
+                });
+                alert("Transaksi tersimpan!");
+                showTransactionForm.value = false;
+            } catch (e) { alert("Error: " + e.message); }
         };
 
         const deleteTransaction = async (id, status) => {
-            if (status === 'sudah_ditagih') {
-                alert("Transaksi ini tidak bisa dihapus karena sudah digabungkan ke dalam invoice tagihan bulanan.");
-                return;
-            }
-            if (confirm("Apakah Anda yakin ingin menghapus catatan transaksi ini?")) {
-                try {
-                    await deleteDoc(doc(db, "transaksi", id));
-                } catch (error) {
-                    alert("Gagal menghapus transaksi: " + error.message);
-                }
+            if (status === 'sudah_ditagih') { alert("Sudah masuk invoice."); return; }
+            if (confirm("Hapus transaksi?")) {
+                try { await deleteDoc(doc(db, "transaksi", id)); } catch (e) { alert("Error: " + e.message); }
             }
         };
 
@@ -550,121 +569,66 @@ createApp({
         const calculateDraftInvoice = () => {
             const custId = invoiceForm.value.id_pelanggan;
             const period = invoiceForm.value.periode;
-
             if (!custId || !period) {
-                draftInvoiceItems.value = [];
-                draftInvoiceTotal.value = 0;
-                draftTrxIds.value = [];
-                return;
+                draftInvoiceItems.value = []; draftInvoiceTotal.value = 0; draftTrxIds.value = []; return;
             }
-
-            const filteredTrx = transactions.value.filter(t => {
-                return t.id_pelanggan === custId && 
-                       t.status_tagihan === 'belum_ditagih' && 
-                       t.tanggal.startsWith(period);
-            });
-
+            const filtered = transactions.value.filter(t => t.id_pelanggan === custId && t.status_tagihan === 'belum_ditagih' && t.tanggal.startsWith(period));
             const mapItems = {};
             const trxIds = [];
-
-            filteredTrx.forEach(t => {
+            filtered.forEach(t => {
                 trxIds.push(t.id);
                 t.items.forEach(item => {
-                    if (!mapItems[item.id_layanan]) {
-                        mapItems[item.id_layanan] = 0;
-                    }
+                    if (!mapItems[item.id_layanan]) mapItems[item.id_layanan] = 0;
                     mapItems[item.id_layanan] += item.qty;
                 });
             });
-
-            const draftList = [];
+            const list = [];
             let grandTotal = 0;
-
             for (const itemId of Object.keys(mapItems)) {
                 const qty = mapItems[itemId];
                 const price = getPrice(custId, itemId);
-                const subtotal = qty * price;
-
-                draftList.push({
-                    id_layanan: itemId,
-                    nama_layanan: getServiceName(itemId),
-                    satuan: getServiceUnit(itemId),
-                    qty: qty,
-                    harga_satuan: price,
-                    subtotal: subtotal
-                });
-
-                grandTotal += subtotal;
+                const sub = qty * price;
+                list.push({ id_layanan: itemId, nama_layanan: getServiceName(itemId), satuan: getServiceUnit(itemId), qty, harga_satuan: price, subtotal: sub });
+                grandTotal += sub;
             }
-
-            draftInvoiceItems.value = draftList;
+            draftInvoiceItems.value = list;
             draftInvoiceTotal.value = grandTotal;
             draftTrxIds.value = trxIds;
         };
 
         const saveInvoice = async () => {
-            if (draftInvoiceItems.value.length === 0) {
-                alert("Draf kosong.");
-                return;
-            }
-
+            if (draftInvoiceItems.value.length === 0) { alert("Draf kosong."); return; }
             try {
                 const randomId = Math.floor(100 + Math.random() * 900);
                 const cleanPeriod = invoiceForm.value.periode.replace('-', '');
                 const noInvoice = `INV/${cleanPeriod}/${randomId}`;
-
                 await addDoc(collection(db, "tagihan"), {
-                    no_invoice: noInvoice,
-                    id_pelanggan: invoiceForm.value.id_pelanggan,
-                    periode: invoiceForm.value.periode,
-                    tanggal_buat: new Date().toISOString(),
-                    total_tagihan: draftInvoiceTotal.value,
-                    status_pembayaran: 'belum_lunas',
-                    items: draftInvoiceItems.value
+                    no_invoice: noInvoice, id_pelanggan: invoiceForm.value.id_pelanggan, periode: invoiceForm.value.periode,
+                    tanggal_buat: new Date().toISOString(), total_tagihan: draftInvoiceTotal.value, status_pembayaran: 'belum_lunas', items: draftInvoiceItems.value
                 });
-
-                const batchTrxPromises = draftTrxIds.value.map(id => {
-                    return updateDoc(doc(db, "transaksi", id), {
-                        status_tagihan: 'sudah_ditagih'
-                    });
-                });
-                await Promise.all(batchTrxPromises);
-
-                alert("Tagihan bulanan berhasil diterbitkan!");
+                const batch = draftTrxIds.value.map(id => updateDoc(doc(db, "transaksi", id), { status_tagihan: 'sudah_ditagih' }));
+                await Promise.all(batch);
+                alert("Tagihan bulanan terbit!");
                 showInvoiceForm.value = false;
-            } catch (error) {
-                alert("Gagal menerbitkan tagihan: " + error.message);
-            }
+            } catch (e) { alert("Error: " + e.message); }
         };
 
         const deleteInvoice = async (id) => {
             if (confirm("Menghapus invoice tidak mengembalikan status transaksi menjadi belum ditagih. Apakah Anda yakin?")) {
-                try {
-                    await deleteDoc(doc(db, "tagihan", id));
-                } catch (error) {
-                    alert("Gagal menghapus tagihan: " + error.message);
-                }
+                try { await deleteDoc(doc(db, "tagihan", id)); } catch (e) { alert("Error: " + e.message); }
             }
         };
 
         const updatePaymentStatus = async (id, newStatus) => {
-            try {
-                await updateDoc(doc(db, "tagihan", id), {
-                    status_pembayaran: newStatus
-                });
-            } catch (error) {
-                alert("Gagal memperbarui status pembayaran: " + error.message);
-            }
+            try { await updateDoc(doc(db, "tagihan", id), { status_pembayaran: newStatus }); } catch (e) { alert("Error: " + e.message); }
         };
 
         const printInvoice = (inv) => {
             printData.value = inv;
-            setTimeout(() => {
-                window.print();
-            }, 300);
+            setTimeout(() => { window.print(); }, 300);
         };
 
-        // --- SISTEM IMPOR OTOMATIS GUEST LAUNDRY ---
+        // --- SISTEM IMPOR GUEST LAUNDRY ---
         const importGuestServices = async () => {
             const guestItems = [
                 { name: "Shirt/Blouse", price: 5000 },
@@ -686,7 +650,6 @@ createApp({
                 { name: "Topi", price: 5000 },
                 { name: "Baby Clothes/Baju Bayi", price: 3000 }
             ];
-
             if (confirm(`Apakah Anda yakin ingin mengimpor ${guestItems.length} item Guest Laundry?`)) {
                 let count = 0;
                 try {
@@ -705,80 +668,20 @@ createApp({
         };
 
         return {
-            activeTab,
-            menuOpen,
-            changeTab,
-            isLoggedIn,
-            isApk,
-            phoneNumber,
-            otpSent,
-            inputOtp,
-            isLoadingOtp,
-            profile,
-            customers,
-            services,
-            transactions,
-            invoices,
-            unbilledTransactionsCount,
-            searchQueryCustomers,
-            searchQueryTransactions,
-            searchQueryInvoices,
-            reportFilterClient,
-            reportFilterMonth,
-            reportInvoices,
-            reportTotals,
-            filteredCustomers,
-            filteredTransactions,
-            filteredInvoices,
-            showCustomerForm,
-            isEditing,
-            customerForm,
-            showServiceForm,
-            isEditingService,
-            serviceForm,
-            selectedCustomer,
-            tempPrices,
-            showTransactionForm,
-            trxForm,
-            showInvoiceForm,
-            invoiceForm,
-            draftInvoiceItems,
-            draftInvoiceTotal,
-            printData,
-            getCustomerName,
-            getCustomerAddress,
-            getServiceName,
-            getServiceUnit,
-            getPrice,
-            formatDate,
-            formatMonthYear,
-            sendOtpCode,
-            verifyOtpCode,
-            logoutAdmin,
-            saveProfile,
-            openAddCustomer,
-            openEditCustomer,
-            saveCustomer,
-            deleteCustomer,
-            openAddService,
-            openEditService,
-            saveService,
-            deleteService,
-            openCustomPrices,
-            saveCustomPrices,
-            openAddTransaction,
-            saveTransaction,
-            deleteTransaction,
-            openAddInvoice,
-            calculateDraftInvoice,
-            saveInvoice,
-            deleteInvoice,
-            updatePaymentStatus,
-            printInvoice,
-            exportToExcel,
-            getCustomerUnbilledTotal,
-            hasUnbilledCustomers,
-            importGuestServices
+            activeTab, menuOpen, changeTab, isLoggedIn, isApk, phoneNumber, otpSent, inputOtp, isLoadingOtp,
+            profile, customers, services, transactions, invoices, unbilledTransactionsCount,
+            searchQueryCustomers, searchQueryTransactions, searchQueryInvoices,
+            reportFilterClient, reportFilterMonth, reportInvoices, reportTotals,
+            filteredCustomers, filteredTransactions, filteredInvoices,
+            showCustomerForm, isEditing, customerForm, showServiceForm, isEditingService, serviceForm,
+            selectedCustomer, tempPrices, showTransactionForm, trxForm, showInvoiceForm, invoiceForm,
+            draftInvoiceItems, draftInvoiceTotal, printData,
+            itemSearchQuery, selectedItemId, selectedItemQty, filteredSearchItems, selectSearchItem, addTrxItem, removeTrxItem,
+            getCustomerName, getCustomerAddress, getServiceName, getServiceUnit, getPrice, formatDate, formatMonthYear,
+            sendOtpCode, verifyOtpCode, logoutAdmin, saveProfile, openAddCustomer, openEditCustomer, saveCustomer, deleteCustomer,
+            openAddService, openEditService, saveService, deleteService, openCustomPrices, saveCustomPrices,
+            openAddTransaction, saveTransaction, deleteTransaction, openAddInvoice, calculateDraftInvoice, saveInvoice, deleteInvoice,
+            updatePaymentStatus, printInvoice, exportToExcel, getCustomerUnbilledTotal, hasUnbilledCustomers, importGuestServices
         };
     }
 }).mount('#app');

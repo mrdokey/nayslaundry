@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Nays Laundry</title>
+    <title>Nays Laundry - Admin Dashboard</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- SheetJS (XLSX) CDN untuk Ekspor Excel -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Wajib Dipasang: Konsol Debugger Penguji di HP -->
+    <!-- Alat Bantu Debugger di HP -->
     <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
     <script>eruda.init();</script>
     <style>
@@ -18,11 +18,11 @@
         [v-cloak] { display: none !important; }
     </style>
 </head>
-<body class="bg-slate-50 text-slate-800 text-xs">
+<body class="bg-slate-50 text-slate-800 select-none">
 
     <div id="app" class="flex flex-col min-h-screen print:p-0 print:bg-white" v-cloak>
         
-        <!-- ================= LOGIN VIEW (Browser Only) ================= -->
+        <!-- ================= OTP LOGIN GATEWAY (Only for Browser) ================= -->
         <div v-if="!isLoggedIn" class="flex items-center justify-center min-h-screen w-full p-4 bg-slate-100 print:hidden">
             <div class="w-full max-w-sm bg-white p-5 rounded-2xl shadow-md border text-center space-y-4">
                 <div class="flex flex-col items-center">
@@ -79,7 +79,7 @@
                 </nav>
             </aside>
 
-            <!-- FLOATING NAVIGATION BAR FOR MOBILE (Only visible on Mobile) -->
+            <!-- FLOATING NAVIGATION BAR FOR MOBILE -->
             <nav class="flex md:hidden fixed bottom-0 left-0 right-0 h-14 bg-indigo-900 text-white border-t border-indigo-800 z-30 justify-around items-center shadow-lg">
                 <button @click="changeTab('dashboard')" :class="activeTab==='dashboard'?'text-white font-bold':'text-indigo-300'" class="flex flex-col items-center justify-center w-full h-full text-[9px] space-y-0.5">
                     <span class="text-base">🏠</span><span>Dashboard</span>
@@ -123,20 +123,22 @@
                         </div>
                     </div>
 
-                    <!-- Cukup ganti bagian KODE DASHBOARD ini di dalam index.html Anda -->
-<div class="bg-white p-4 rounded-xl border shadow-sm">
-    <h3 class="font-bold text-xs text-indigo-900 uppercase tracking-wide border-b pb-2 mb-2">Estimasi Tagihan Aktif Klien (Belum Ditagih)</h3>
-    <div class="divide-y text-xs">
-        <div v-for="c in customers" :key="c.id" v-if="getCustomerUnbilledTotal(c.id) > 0" class="py-2.5 flex justify-between items-center">
-            <span class="font-semibold text-slate-700">{{ c.nama_pelanggan }}</span>
-            <span class="font-bold text-indigo-600">Rp {{ getCustomerUnbilledTotal(c.id).toLocaleString() }}</span>
-        </div>
-        <!-- Diganti menggunakan hasUnbilledCustomers agar bebas error compiler Vue -->
-        <div v-if="!hasUnbilledCustomers" class="py-3 text-center text-slate-400 italic">
-            Semua transaksi harian sudah bersih tertagihkan.
-        </div>
-    </div>
-</div>
+                    <!-- DAFTAR ESTIMASI/TOTAL TAGIHAN SEMENTARA CUSTOMER -->
+                    <div class="bg-white p-4 rounded-xl border shadow-sm">
+                        <h3 class="font-bold text-xs text-indigo-900 uppercase tracking-wide border-b pb-2 mb-2">Estimasi Tagihan Aktif Klien (Belum Ditagih)</h3>
+                        <div class="divide-y text-xs">
+                            <!-- Memisahkan v-for dan v-if menggunakan tag <template> agar bebas dari tabrakan prioritas render Vue 3 -->
+                            <template v-for="c in customers" :key="c.id">
+                                <div v-if="getCustomerUnbilledTotal(c.id) > 0" class="py-2.5 flex justify-between items-center">
+                                    <span class="font-semibold text-slate-700">{{ c.nama_pelanggan }}</span>
+                                    <span class="font-bold text-indigo-600">Rp {{ getCustomerUnbilledTotal(c.id).toLocaleString() }}</span>
+                                </div>
+                            </template>
+                            <div v-if="!hasUnbilledCustomers" class="py-3 text-center text-slate-400 italic">
+                                Semua transaksi harian sudah bersih tertagihkan.
+                            </div>
+                        </div>
+                    </div>
                 </section>
 
                 <!-- TAB: TRANSAKSI HARIAN -->
@@ -213,7 +215,7 @@
                         <button v-if="!showInvoiceForm" @click="openAddInvoice" class="bg-indigo-600 text-white px-3 py-1.5 rounded-lg font-semibold hover:bg-indigo-700">💵 Buat Tagihan</button>
                     </div>
 
-                    <input v-if="!showInvoiceForm" v-model="searchQueryInvoices" type="text" placeholder="🔍 Cari invoice atau pelanggan..." class="w-full max-w-xs px-3 py-1.5 border rounded-lg">
+                    <input v-if="!showInvoiceForm" v-model="searchQueryInvoices" type="text" placeholder="🔍 Cari invoice atau pelanggan..." class="w-full max-w-xs px-3 py-1.5 border rounded-lg text-xs">
 
                     <!-- Form Invoice -->
                     <div v-if="showInvoiceForm" class="bg-white p-4 rounded-xl border border-slate-200 space-y-3">

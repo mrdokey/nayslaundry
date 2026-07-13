@@ -123,19 +123,20 @@
                         </div>
                     </div>
 
-                    <!-- DAFTAR ESTIMASI/TOTAL TAGIHAN SEMENTARA CUSTOMER -->
-                    <div class="bg-white p-4 rounded-xl border shadow-sm">
-                        <h3 class="font-bold text-xs text-indigo-900 uppercase tracking-wide border-b pb-2 mb-2">Estimasi Tagihan Aktif Klien (Belum Ditagih)</h3>
-                        <div class="divide-y text-xs">
-                            <div v-for="c in customers" :key="c.id" v-if="getCustomerUnbilledTotal(c.id) > 0" class="py-2.5 flex justify-between items-center">
-                                <span class="font-semibold text-slate-700">{{ c.nama_pelanggan }}</span>
-                                <span class="font-bold text-indigo-600">Rp {{ getCustomerUnbilledTotal(c.id).toLocaleString() }}</span>
-                            </div>
-                            <div v-if="!customers.some(c => getCustomerUnbilledTotal(c.id) > 0)" class="py-3 text-center text-slate-400 italic">
-                                Semua transaksi harian sudah bersih tertagihkan.
-                            </div>
-                        </div>
-                    </div>
+                    <!-- Cukup ganti bagian KODE DASHBOARD ini di dalam index.html Anda -->
+<div class="bg-white p-4 rounded-xl border shadow-sm">
+    <h3 class="font-bold text-xs text-indigo-900 uppercase tracking-wide border-b pb-2 mb-2">Estimasi Tagihan Aktif Klien (Belum Ditagih)</h3>
+    <div class="divide-y text-xs">
+        <div v-for="c in customers" :key="c.id" v-if="getCustomerUnbilledTotal(c.id) > 0" class="py-2.5 flex justify-between items-center">
+            <span class="font-semibold text-slate-700">{{ c.nama_pelanggan }}</span>
+            <span class="font-bold text-indigo-600">Rp {{ getCustomerUnbilledTotal(c.id).toLocaleString() }}</span>
+        </div>
+        <!-- Diganti menggunakan hasUnbilledCustomers agar bebas error compiler Vue -->
+        <div v-if="!hasUnbilledCustomers" class="py-3 text-center text-slate-400 italic">
+            Semua transaksi harian sudah bersih tertagihkan.
+        </div>
+    </div>
+</div>
                 </section>
 
                 <!-- TAB: TRANSAKSI HARIAN -->

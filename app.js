@@ -19,6 +19,15 @@ createApp({
         const inputOtp = ref('');
         const isLoadingOtp = ref(false);
 
+        // DETEKSI BYPASS APK DI BARIS PALING ATAS AGAR INSTAN
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('apk') === 'true') {
+            isApk.value = true;
+            isLoggedIn.value = true; // Langsung masuk bypass login
+        } else if (localStorage.getItem('nays_logged_in') === 'true') {
+            isLoggedIn.value = true; // Sesi login browser aman
+        }
+
         // --- STATE OPERASIONAL LAUNDRY ---
         const profile = ref({ nama_laundry: '', alamat: '', no_telepon: '', rekening_pembayaran: '', logo_url: '' });
         const customers = ref([]);
@@ -71,15 +80,6 @@ createApp({
 
         // --- SISTEM PEMANTAUAN REAL-TIME (onMounted) ---
         onMounted(() => {
-            // Deteksi jalur khusus APK Android menggunakan query ?apk=true
-            const urlParams = new URLSearchParams(window.location.search);
-            if (urlParams.get('apk') === 'true') {
-                isApk.value = true;
-                isLoggedIn.value = true; // Langsung masuk tanpa login
-            } else if (localStorage.getItem('nays_logged_in') === 'true') {
-                isLoggedIn.value = true; // Restore sesi login browser
-            }
-
             // Stream Profil Perusahaan
             onSnapshot(doc(db, "pengaturan", "profil"), (snap) => {
                 if (snap.exists()) profile.value = snap.data();
@@ -121,7 +121,7 @@ createApp({
             });
         });
 
-        // --- FUNGSI PENDUKUNG DATA (DEDUPLICATED) ---
+        // --- FUNGSI PENDUKUNG DATA ---
         const getCustomerName = (id) => {
             const c = customers.value.find(x => x.id === id);
             return c ? c.nama_pelanggan : 'Tanpa Nama';
@@ -185,6 +185,11 @@ createApp({
             });
             return total;
         };
+
+        // Memeriksa apakah ada minimal satu pelanggan yang memiliki estimasi tagihan aktif
+        const hasUnbilledCustomers = computed(() => {
+            return customers.value.some(c => getCustomerUnbilledTotal(c.id) > 0);
+        });
 
         // Hitung total transaksi aktif belum ditagih untuk dashboard widget
         const unbilledTransactionsCount = computed(() => {
@@ -299,7 +304,8 @@ createApp({
 
             isLoadingOtp.value = true;
             try {
-                await fetch(waApiUrl);
+                // Menambahkan mode 'no-cors' agar browser lolos dari pemblokiran CORS WA Gateway
+                await fetch(waApiUrl, { mode: 'no-cors' });
                 generatedOtp.value = otp;
                 otpSent.value = true;
                 alert("Kode OTP terkirim!");
@@ -435,9 +441,7 @@ createApp({
             selectedCustomer.value = customer;
             tempPrices.value = {};
             services.value.forEach(item => {
-                const savedPrice = customPricesList.value.find(
-                    p => p.id_pelanggan === customer.id && p.id_layanan === item.id
-                );
+                const savedPrice = customPricesList.value.find(p => p.id_pelanggan === customer.id && p.id_layanan === item.id);
                 tempPrices.value[item.id] = savedPrice ? savedPrice.harga_custom : '';
             });
             activeTab.value = 'harga_khusus';
@@ -591,7 +595,7 @@ createApp({
 
         const saveInvoice = async () => {
             if (draftInvoiceItems.value.length === 0) {
-                alert("Tidak ada draf item transaksi untuk disimpan.");
+                alert("Draf kosong.");
                 return;
             }
 
@@ -723,7 +727,8 @@ createApp({
             updatePaymentStatus,
             printInvoice,
             exportToExcel,
-            getCustomerUnbilledTotal
+            getCustomerUnbilledTotal,
+            hasUnbilledCustomers
         };
     }
 }).mount('#app');

@@ -25,6 +25,10 @@ createApp({
         const transactions = ref([]);
         const invoices = ref([]);
 
+        // Deklarasi State untuk Edit Harga Khusus Pelanggan (YANG SEBELUMNYA TERLEWAT)
+        const selectedCustomer = ref(null);
+        const tempPrices = ref({}); 
+
         // Fitur Pencarian Instan (State)
         const searchQueryCustomers = ref('');
         const searchQueryTransactions = ref('');

@@ -655,6 +655,48 @@ createApp({
             }, 300);
         };
 
+        // --- SISTEM IMPOR OTOMATIS GUEST LAUNDRY ---
+        const importGuestServices = async () => {
+            const guestItems = [
+                { name: "Shirt/Blouse", price: 5000 },
+                { name: "T-Shirt", price: 4000 },
+                { name: "Polo/Long Sleeved T-Shirt", price: 5000 },
+                { name: "Sweater/Hoodie", price: 5000 },
+                { name: "Under Shirt/Tank Top", price: 3000 },
+                { name: "Shorts/Skirt", price: 5000 },
+                { name: "Trousers/Long Skirt", price: 7000 },
+                { name: "Jeans", price: 8000 },
+                { name: "Briefs/Boxer/Panties", price: 3000 },
+                { name: "Bra", price: 4000 },
+                { name: "Swimsuit", price: 4000 },
+                { name: "Socks/Kaos Kaki", price: 2500 },
+                { name: "Long Dress", price: 9000 },
+                { name: "Pajamas/Baju Tidur", price: 7000 },
+                { name: "Sarong/Sarung", price: 3000 },
+                { name: "Scarf/Selendang", price: 3000 },
+                { name: "Topi", price: 5000 },
+                { name: "Baby Clothes/Baju Bayi", price: 3000 }
+            ];
+
+            if (confirm(`Apakah Anda yakin ingin mengimpor ${guestItems.length} item Guest Laundry dengan tarif standarnya ke database?`)) {
+                let successCount = 0;
+                try {
+                    for (const item of guestItems) {
+                        await addDoc(collection(db, "layanan"), {
+                            nama_layanan: item.name,
+                            satuan: "Pcs",
+                            harga_standar: Number(item.price),
+                            tanggal_dibuat: new Date().toISOString()
+                        });
+                        successCount++;
+                    }
+                    alert(`Sukses mengimpor ${successCount} item Guest Laundry!`);
+                } catch (error) {
+                    alert("Gagal mengimpor: " + error.message);
+                }
+            }
+        };
+
         return {
             activeTab,
             menuOpen,
@@ -728,7 +770,8 @@ createApp({
             printInvoice,
             exportToExcel,
             getCustomerUnbilledTotal,
-            hasUnbilledCustomers
+            hasUnbilledCustomers,
+            importGuestServices
         };
     }
 }).mount('#app');

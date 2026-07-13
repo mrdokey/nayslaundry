@@ -3,20 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Nays Laundry - Admin</title>
+    <title>Nays Laundry - Admin Dashboard</title>
+    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- SheetJS (XLSX) CDN untuk Ekspor Excel -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-    <style>[v-cloak] { display: none !important; }</style>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Alat Bantu Debugging di HP (Bisa dihapus jika halaman sudah lancar) -->
+    <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
+    <script>eruda.init();</script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        [v-cloak] { display: none !important; }
+    </style>
 </head>
-<body class="bg-slate-50 text-slate-800 text-xs">
+<body class="bg-slate-50 text-slate-800 select-none">
 
     <div id="app" class="flex flex-col md:flex-row min-h-screen print:p-0 print:bg-white" v-cloak>
         
         <!-- ================= MAIN APP UI (Hidden when Printing) ================= -->
         <div class="flex flex-col md:flex-row w-full min-h-screen print:hidden">
             
-            <!-- MOBILE NAVBAR -->
-            <header class="flex md:hidden h-14 bg-indigo-900 text-white items-center justify-between px-4 fixed top-0 left-0 right-0 z-40 shadow">
+            <!-- MOBILE TOP BAR -->
+            <header class="flex md:hidden h-16 bg-indigo-900 text-white items-center justify-between px-4 fixed top-0 left-0 right-0 z-40 shadow">
                 <div class="flex items-center space-x-2">
                     <img v-if="profile.logo_url" :src="profile.logo_url" class="w-8 h-8 rounded-full object-cover bg-white">
                     <h1 class="font-bold text-xs">{{ profile.nama_laundry || 'Nays Laundry' }}</h1>
@@ -31,8 +41,14 @@
                     <span class="font-bold">Menu</span>
                     <button @click="menuOpen = false">✕</button>
                 </div>
-                <nav class="flex-1 p-2 space-y-1">
-                    <button v-for="t in ['dashboard', 'transaksi', 'tagihan', 'laporan', 'pelanggan', 'layanan', 'profil']" @click="changeTab(t)" class="w-full text-left p-2.5 rounded capitalize hover:bg-indigo-800">{{ t }}</button>
+                <nav class="flex-1 p-2 space-y-1 text-sm">
+                    <button @click="changeTab('dashboard')" class="w-full text-left p-2.5 rounded hover:bg-indigo-800 block">🏠 Dashboard</button>
+                    <button @click="changeTab('transaksi')" class="w-full text-left p-2.5 rounded hover:bg-indigo-800 block">📝 Transaksi Harian</button>
+                    <button @click="changeTab('tagihan')" class="w-full text-left p-2.5 rounded hover:bg-indigo-800 block">💵 Tagihan & Invoice</button>
+                    <button @click="changeTab('laporan')" class="w-full text-left p-2.5 rounded hover:bg-indigo-800 block">📈 Laporan Omset</button>
+                    <button @click="changeTab('pelanggan')" class="w-full text-left p-2.5 rounded hover:bg-indigo-800 block">👥 Kelola Pelanggan</button>
+                    <button @click="changeTab('layanan')" class="w-full text-left p-2.5 rounded hover:bg-indigo-800 block">⚙️ Master Item</button>
+                    <button @click="changeTab('profil')" class="w-full text-left p-2.5 rounded hover:bg-indigo-800 block">🏢 Profil Laundry</button>
                 </nav>
             </aside>
 
@@ -42,8 +58,14 @@
                     <img v-if="profile.logo_url" :src="profile.logo_url" class="w-8 h-8 rounded-full object-cover bg-white">
                     <span class="font-bold text-xs">{{ profile.nama_laundry || 'Nays Laundry' }}</span>
                 </div>
-                <nav class="flex-1 p-3 space-y-1 text-indigo-100">
-                    <button v-for="t in ['dashboard', 'transaksi', 'tagihan', 'laporan', 'pelanggan', 'layanan', 'profil']" @click="changeTab(t)" :class="activeTab===t?'bg-indigo-800 text-white':''" class="w-full text-left p-2.5 rounded capitalize hover:bg-indigo-800">{{ t === 'layanan' ? 'master item' : t }}</button>
+                <nav class="flex-1 p-3 space-y-1 text-indigo-100 text-sm">
+                    <button @click="changeTab('dashboard')" :class="activeTab==='dashboard'?'bg-indigo-800 text-white':''" class="w-full text-left p-2.5 rounded hover:bg-indigo-800 block">🏠 Dashboard</button>
+                    <button @click="changeTab('transaksi')" :class="activeTab==='transaksi'?'bg-indigo-800 text-white':''" class="w-full text-left p-2.5 rounded hover:bg-indigo-800 block">📝 Transaksi Harian</button>
+                    <button @click="changeTab('tagihan')" :class="activeTab==='tagihan'?'bg-indigo-800 text-white':''" class="w-full text-left p-2.5 rounded hover:bg-indigo-800 block">💵 Tagihan & Invoice</button>
+                    <button @click="changeTab('laporan')" :class="activeTab==='laporan'?'bg-indigo-800 text-white':''" class="w-full text-left p-2.5 rounded hover:bg-indigo-800 block">📈 Laporan Omset</button>
+                    <button @click="changeTab('pelanggan')" :class="activeTab==='pelanggan'||activeTab==='harga_khusus'?'bg-indigo-800 text-white':''" class="w-full text-left p-2.5 rounded hover:bg-indigo-800 block">👥 Kelola Pelanggan</button>
+                    <button @click="changeTab('layanan')" :class="activeTab==='layanan'?'bg-indigo-800 text-white':''" class="w-full text-left p-2.5 rounded hover:bg-indigo-800 block">⚙️ Master Item</button>
+                    <button @click="changeTab('profil')" :class="activeTab==='profil'?'bg-indigo-800 text-white':''" class="w-full text-left p-2.5 rounded hover:bg-indigo-800 block">🏢 Profil Laundry</button>
                 </nav>
             </aside>
 
@@ -54,19 +76,19 @@
                 <section v-if="activeTab === 'dashboard'" class="space-y-4">
                     <h2 class="text-base font-bold">Ringkasan Operasional</h2>
                     <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-                        <div class="bg-white p-4 rounded-xl border border-slate-100">
+                        <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
                             <span class="text-slate-400">Total Pelanggan</span>
                             <div class="text-xl font-bold text-indigo-600 mt-1">{{ customers.length }}</div>
                         </div>
-                        <div class="bg-white p-4 rounded-xl border border-slate-100">
+                        <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
                             <span class="text-slate-400">Total Master Item</span>
                             <div class="text-xl font-bold text-indigo-600 mt-1">{{ services.length }}</div>
                         </div>
-                        <div class="bg-white p-4 rounded-xl border border-slate-100">
+                        <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
                             <span class="text-slate-400">Belum Ditagih</span>
                             <div class="text-xl font-bold text-indigo-600 mt-1">{{ unbilledTransactionsCount }}</div>
                         </div>
-                        <div class="bg-white p-4 rounded-xl border border-slate-100">
+                        <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
                             <span class="text-slate-400">Status Koneksi</span>
                             <div class="text-xs font-semibold text-emerald-600 flex items-center mt-2">
                                 <span class="w-2 h-2 bg-emerald-500 rounded-full inline-block mr-1.5 animate-ping"></span>
@@ -83,10 +105,11 @@
                         <button v-if="!showTransactionForm" @click="openAddTransaction" class="bg-indigo-600 text-white px-3 py-1.5 rounded-lg font-semibold hover:bg-indigo-700">+ Tambah</button>
                     </div>
 
-                    <input v-if="!showTransactionForm" v-model="searchQueryTransactions" type="text" placeholder="🔍 Cari nama pelanggan..." class="w-full max-w-xs px-3 py-1.5 border rounded-lg">
+                    <input v-if="!showTransactionForm" v-model="searchQueryTransactions" type="text" placeholder="🔍 Cari nama pelanggan..." class="w-full max-w-xs px-3 py-1.5 border rounded-lg text-xs">
 
                     <!-- Form Transaksi -->
                     <div v-if="showTransactionForm" class="bg-white p-4 rounded-xl border border-slate-200 space-y-3">
+                        <h3 class="font-bold text-slate-700">Form Pencatatan Laundry</h3>
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div>
                                 <label class="block font-semibold text-slate-500 mb-1">Pelanggan</label>
@@ -118,7 +141,7 @@
                         </div>
                     </div>
 
-                    <!-- List Transaksi (Card-Based untuk Mobile/Desktop) -->
+                    <!-- List Transaksi -->
                     <div v-if="!showTransactionForm" class="space-y-2">
                         <div v-for="t in filteredTransactions" :key="t.id" class="bg-white p-3 rounded-xl border border-slate-100 shadow-sm flex flex-col justify-between gap-2">
                             <div class="flex justify-between items-start">
@@ -150,10 +173,11 @@
                         <button v-if="!showInvoiceForm" @click="openAddInvoice" class="bg-indigo-600 text-white px-3 py-1.5 rounded-lg font-semibold hover:bg-indigo-700">💵 Buat Tagihan</button>
                     </div>
 
-                    <input v-if="!showInvoiceForm" v-model="searchQueryInvoices" type="text" placeholder="🔍 Cari invoice atau pelanggan..." class="w-full max-w-xs px-3 py-1.5 border rounded-lg">
+                    <input v-if="!showInvoiceForm" v-model="searchQueryInvoices" type="text" placeholder="🔍 Cari invoice atau pelanggan..." class="w-full max-w-xs px-3 py-1.5 border rounded-lg text-xs">
 
                     <!-- Form Invoice -->
                     <div v-if="showInvoiceForm" class="bg-white p-4 rounded-xl border border-slate-200 space-y-3">
+                        <h3 class="font-bold text-slate-700">Generate Invoice Bulanan</h3>
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div>
                                 <label class="block font-semibold text-slate-500 mb-1">Pelanggan</label>
@@ -181,6 +205,9 @@
                                 </div>
                             </div>
                         </div>
+                        <div v-else-if="invoiceForm.id_pelanggan && draftInvoiceItems.length === 0" class="text-xs text-red-500 italic">
+                            *Tidak ditemukan catatan transaksi belum tertagih pada periode ini.
+                        </div>
 
                         <div class="flex justify-end space-x-2 pt-2 border-t">
                             <button @click="showInvoiceForm = false" class="px-3 py-1 bg-slate-100 rounded">Batal</button>
@@ -198,7 +225,7 @@
                                 </div>
                                 <select :value="inv.status_pembayaran" @change="updatePaymentStatus(inv.id, $event.target.value)" 
                                         :class="{'bg-red-100 text-red-800':inv.status_pembayaran==='belum_lunas','bg-emerald-100 text-emerald-800':inv.status_pembayaran==='lunas_cash','bg-blue-100 text-blue-800':inv.status_pembayaran==='lunas_transfer'}"
-                                        class="px-2 py-0.5 rounded text-[10px] font-bold border-0 focus:outline-none">
+                                        class="px-1.5 py-0.5 rounded text-[10px] font-bold border-0 focus:outline-none">
                                     <option value="belum_lunas">❌ Belum Lunas</option>
                                     <option value="lunas_cash">💵 Lunas Cash</option>
                                     <option value="lunas_transfer">💳 Lunas Transfer</option>
@@ -240,15 +267,15 @@
 
                     <!-- Summary Cards -->
                     <div class="grid grid-cols-3 gap-2 text-center">
-                        <div class="bg-indigo-50 p-2.5 rounded-lg border border-indigo-100">
+                        <div class="bg-indigo-50 p-2.5 rounded-lg border border-indigo-100 shadow-sm">
                             <span class="text-[9px] text-indigo-700 font-semibold block uppercase">Total Omset</span>
                             <span class="font-bold text-indigo-950 text-xs">Rp {{ reportTotals.totalOmset.toLocaleString() }}</span>
                         </div>
-                        <div class="bg-emerald-50 p-2.5 rounded-lg border border-emerald-100">
+                        <div class="bg-emerald-50 p-2.5 rounded-lg border border-emerald-100 shadow-sm">
                             <span class="text-[9px] text-emerald-700 font-semibold block uppercase">Terbayar</span>
                             <span class="font-bold text-emerald-950 text-xs">Rp {{ reportTotals.totalTerbayar.toLocaleString() }}</span>
                         </div>
-                        <div class="bg-rose-50 p-2.5 rounded-lg border border-rose-100">
+                        <div class="bg-rose-50 p-2.5 rounded-lg border border-rose-100 shadow-sm">
                             <span class="text-[9px] text-rose-700 font-semibold block uppercase">Piutang</span>
                             <span class="font-bold text-rose-950 text-xs">Rp {{ reportTotals.totalPiutang.toLocaleString() }}</span>
                         </div>
@@ -256,7 +283,7 @@
 
                     <!-- List Laporan -->
                     <div class="space-y-1.5">
-                        <div v-for="inv in reportInvoices" :key="inv.id" class="bg-white p-3 rounded-lg border border-slate-100 flex justify-between items-center">
+                        <div v-for="inv in reportInvoices" :key="inv.id" class="bg-white p-3 rounded-lg border border-slate-100 flex justify-between items-center shadow-sm">
                             <div>
                                 <h4 class="font-bold text-slate-800">{{ getCustomerName(inv.id_pelanggan) }}</h4>
                                 <span class="text-[10px] text-slate-400 block">{{ inv.no_invoice }} | {{ formatMonthYear(inv.periode) }}</span>
@@ -275,10 +302,10 @@
                 <section v-if="activeTab === 'pelanggan'" class="space-y-3">
                     <div class="flex justify-between items-center">
                         <h2 class="text-base font-bold">Kelola Pelanggan</h2>
-                        <button @click="openAddCustomer" class="bg-indigo-600 text-white px-3 py-1.5 rounded-lg font-semibold hover:bg-indigo-700">+ Tambah</button>
+                        <button @click="openAddCustomer" class="bg-indigo-600 text-white px-3 py-1.5 rounded-lg font-semibold hover:bg-indigo-700 shadow">+ Tambah</button>
                     </div>
 
-                    <input v-if="!showCustomerForm" v-model="searchQueryCustomers" type="text" placeholder="🔍 Cari pelanggan..." class="w-full max-w-xs px-3 py-1.5 border rounded-lg">
+                    <input v-if="!showCustomerForm" v-model="searchQueryCustomers" type="text" placeholder="🔍 Cari pelanggan..." class="w-full max-w-xs px-3 py-1.5 border rounded-lg text-xs">
 
                     <!-- Form Input Pelanggan -->
                     <div v-if="showCustomerForm" class="bg-white p-4 rounded-xl border border-slate-200 space-y-3">
@@ -298,12 +325,12 @@
                             </div>
                             <div class="md:col-span-3 flex justify-end space-x-2 pt-2">
                                 <button type="button" @click="showCustomerForm = false" class="px-3 py-1 bg-slate-100 rounded">Batal</button>
-                                <button type="submit" class="bg-indigo-600 text-white px-4 py-1 rounded font-semibold">Simpan</button>
+                                <button type="submit" class="bg-indigo-600 text-white px-4 py-1 rounded font-semibold shadow">Simpan</button>
                             </div>
                         </form>
                     </div>
 
-                    <!-- List Pelanggan (Card) -->
+                    <!-- List Pelanggan -->
                     <div v-if="!showCustomerForm" class="space-y-2">
                         <div v-for="cust in filteredCustomers" :key="cust.id" class="bg-white p-3 rounded-xl border border-slate-100 flex justify-between items-center shadow-sm">
                             <div>
@@ -319,11 +346,48 @@
                     </div>
                 </section>
 
+                <!-- TAB: HARGA KHUSUS -->
+                <section v-if="activeTab === 'harga_khusus'" class="space-y-4">
+                    <div class="flex justify-between items-center">
+                        <h2 class="text-lg font-bold">Tarif Khusus: <span class="text-indigo-600">{{ selectedCustomer.nama_pelanggan }}</span></h2>
+                        <button @click="activeTab = 'pelanggan'" class="bg-slate-200 text-slate-700 px-3 py-1.5 rounded-lg text-xs font-semibold">⬅️ Kembali</button>
+                    </div>
+
+                    <div class="bg-white p-4 rounded-xl border border-slate-100 space-y-4 text-xs">
+                        <p class="text-slate-400 italic">*Kosongkan jika ingin memakai Harga Standar.</p>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse">
+                                <thead class="bg-slate-50 border-b text-slate-400 font-semibold uppercase text-[10px]">
+                                    <tr>
+                                        <th class="p-2">Nama Layanan</th>
+                                        <th class="p-2">Satuan</th>
+                                        <th class="p-2">Harga Standar</th>
+                                        <th class="p-2 w-32">Harga Khusus (Rp)</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100">
+                                    <tr v-for="item in services" :key="item.id">
+                                        <td class="p-2 font-medium">{{ item.nama_layanan }}</td>
+                                        <td class="p-2"><span class="px-2 py-0.5 bg-slate-100 text-slate-600 rounded text-[9px] font-semibold">{{ item.satuan }}</span></td>
+                                        <td class="p-2 text-slate-500">Rp {{ item.harga_standar.toLocaleString() }}</td>
+                                        <td class="p-2">
+                                            <input type="number" v-model.number="tempPrices[item.id]" placeholder="Standar" class="w-full px-2 py-1 border rounded focus:outline-emerald-500 bg-emerald-50/20">
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="flex justify-end pt-3 border-t">
+                            <button @click="saveCustomPrices" class="bg-emerald-600 text-white px-5 py-2 rounded-lg font-semibold">💾 Simpan Semua Tarif</button>
+                        </div>
+                    </div>
+                </section>
+
                 <!-- TAB: KELOLA MASTER ITEM -->
                 <section v-if="activeTab === 'layanan'" class="space-y-3">
                     <div class="flex justify-between items-center">
                         <h2 class="text-base font-bold">Master Item Laundry</h2>
-                        <button @click="openAddService" class="bg-indigo-600 text-white px-3 py-1.5 rounded-lg font-semibold hover:bg-indigo-700">+ Tambah</button>
+                        <button @click="openAddService" class="bg-indigo-600 text-white px-3 py-1.5 rounded-lg font-semibold hover:bg-indigo-700 shadow">+ Tambah</button>
                     </div>
 
                     <!-- Form Item -->
@@ -346,8 +410,8 @@
                                 <input v-model.number="serviceForm.harga_standar" type="number" required class="w-full p-2 border rounded">
                             </div>
                             <div class="md:col-span-3 flex justify-end space-x-2 pt-2">
-                                <button type="button" @click="showServiceForm = false" class="px-3 py-1 bg-slate-100 rounded">Batal</button>
-                                <button type="submit" class="bg-indigo-600 text-white px-4 py-1 rounded font-semibold">Simpan</button>
+                                <button type="button" @click="showServiceForm = false" class="px-3 py-1 text-xs text-slate-500 hover:bg-slate-100 rounded">Batal</button>
+                                <button type="submit" class="bg-indigo-600 text-white px-4 py-1 rounded font-semibold shadow">Simpan</button>
                             </div>
                         </form>
                     </div>
@@ -405,9 +469,9 @@
             </main>
         </div>
 
-        <!-- ================= PRINTABLE INVOICE VIEW (Cetak PDF) ================= -->
+        <!-- ================= PRINTABLE INVOICE VIEW ================= -->
         <div v-if="printData" class="hidden print:block w-full max-w-4xl p-8 bg-white text-black text-sm">
-            <div class="flex justify-between items-start border-b-2 border-indigo-900 pb-4 mb-6">
+            <div class="flex justify-between items-start border-b-2 border-indigo-900 pb-5 mb-6">
                 <div class="flex items-center space-x-3">
                     <img v-if="profile.logo_url" :src="profile.logo_url" class="w-14 h-16 object-cover rounded-full bg-slate-50 p-1">
                     <div>

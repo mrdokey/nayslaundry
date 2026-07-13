@@ -29,7 +29,6 @@ createApp({
         }
 
         // --- STATE OPERASIONAL LAUNDRY ---
-        // Menambahkan bidang TOS (Terms of Service) dinamis di profil
         const profile = ref({ 
             nama_laundry: '', 
             alamat: '', 
@@ -154,9 +153,10 @@ createApp({
 
         // Mendapatkan harga aktif (custom/standar)
         const getPrice = (custId, itemId) => {
-            const custom = customPricesList.value.find(p => p.id_pelanggan === custId && p.id_layanan === itemId);
-            if (custom && custom.harga_custom !== undefined && custom.harga_custom !== '') {
-                return Number(custom.harga_custom);
+            const custom = customPricesList.value.find(p => p.id_pelanggan === customer.id && p.id_layanan === item.id); // Terkoreksi: p.id_pelanggan === custId && p.id_layanan === itemId
+            const priceFound = customPricesList.value.find(p => p.id_pelanggan === custId && p.id_layanan === itemId);
+            if (priceFound && priceFound.harga_custom !== undefined && priceFound.harga_custom !== '') {
+                return Number(priceFound.harga_custom);
             }
             const service = services.value.find(s => s.id === itemId);
             return service ? Number(service.harga_standar) : 0;
@@ -302,8 +302,8 @@ createApp({
             if (phone.startsWith('0')) { phone = '62' + phone.substring(1); }
             else if (!phone.startsWith('62')) { phone = '62' + phone; }
 
-            // Batasi login hanya untuk nomor klien Anda
-            if (phone !== '628123654594') {
+            // Batasi login hanya untuk nomor klien Anda DAN nomor kontrol Anda
+            if (phone !== '628123654594' && phone !== '62895428400665') {
                 alert("Akses ditolak. Nomor WhatsApp tidak terdaftar sebagai Admin.");
                 return;
             }
@@ -314,7 +314,6 @@ createApp({
 
             isLoadingOtp.value = true;
             try {
-                // Menambahkan mode 'no-cors' agar browser lolos dari pemblokiran CORS WA Gateway
                 await fetch(waApiUrl, { mode: 'no-cors' });
                 generatedOtp.value = otp;
                 otpSent.value = true;
@@ -665,6 +664,46 @@ createApp({
             }, 300);
         };
 
+        // --- SISTEM IMPOR OTOMATIS GUEST LAUNDRY ---
+        const importGuestServices = async () => {
+            const guestItems = [
+                { name: "Shirt/Blouse", price: 5000 },
+                { name: "T-Shirt", price: 4000 },
+                { name: "Polo/Long Sleeved T-Shirt", price: 5000 },
+                { name: "Sweater/Hoodie", price: 5000 },
+                { name: "Under Shirt/Tank Top", price: 3000 },
+                { name: "Shorts/Skirt", price: 5000 },
+                { name: "Trousers/Long Skirt", price: 7000 },
+                { name: "Jeans", price: 8000 },
+                { name: "Briefs/Boxer/Panties", price: 3000 },
+                { name: "Bra", price: 4000 },
+                { name: "Swimsuit", price: 4000 },
+                { name: "Socks/Kaos Kaki", price: 2500 },
+                { name: "Long Dress", price: 9000 },
+                { name: "Pajamas/Baju Tidur", price: 7000 },
+                { name: "Sarong/Sarung", price: 3000 },
+                { name: "Scarf/Selendang", price: 3000 },
+                { name: "Topi", price: 5000 },
+                { name: "Baby Clothes/Baju Bayi", price: 3000 }
+            ];
+
+            if (confirm(`Apakah Anda yakin ingin mengimpor ${guestItems.length} item Guest Laundry?`)) {
+                let count = 0;
+                try {
+                    for (const item of guestItems) {
+                        await addDoc(collection(db, "layanan"), {
+                            nama_layanan: item.name,
+                            satuan: "Pcs",
+                            harga_standar: Number(item.price),
+                            tanggal_dibuat: new Date().toISOString()
+                        });
+                        count++;
+                    }
+                    alert(`Sukses mengimpor ${count} item Guest Laundry!`);
+                } catch (err) { alert("Error: " + err.message); }
+            }
+        };
+
         return {
             activeTab,
             menuOpen,
@@ -738,7 +777,8 @@ createApp({
             printInvoice,
             exportToExcel,
             getCustomerUnbilledTotal,
-            hasUnbilledCustomers
+            hasUnbilledCustomers,
+            importGuestServices
         };
     }
 }).mount('#app');

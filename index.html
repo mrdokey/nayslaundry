@@ -4,8 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Nays Laundry</title>
+    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- SheetJS (XLSX) CDN untuk Ekspor Excel -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Inter', sans-serif; }
@@ -48,7 +51,7 @@
         <!-- ================= MAIN APP UI ================= -->
         <div v-else class="flex flex-col w-full min-h-screen print:hidden pb-16 md:pb-0">
             
-            <!-- FLOATING ACTION BUTTON (FAB) ON MOBILE (Only visible inside core CRUD tabs) -->
+            <!-- FLOATING ACTION BUTTON (FAB) ON MOBILE (Pemicu Tambah Data Cepat ala AppSheet) -->
             <button v-if="['transaksi', 'pelanggan', 'layanan'].includes(activeTab) && !showTransactionForm && !showCustomerForm && !showServiceForm" 
                     @click="activeTab === 'transaksi' ? openAddTransaction() : (activeTab === 'pelanggan' ? openAddCustomer() : openAddService())"
                     class="md:hidden fixed bottom-20 right-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full w-12 h-12 flex items-center justify-center shadow-lg z-40 text-xl font-bold">
@@ -206,7 +209,6 @@
                         </div>
                     </div>
                 </section>
-
                 <!-- TAB: TAGIHAN & INVOICE -->
                 <section v-if="activeTab === 'tagihan'" class="space-y-3">
                     <div class="flex justify-between items-center">
@@ -491,10 +493,8 @@
                             </div>
                             <div>
                                 <label class="block font-semibold text-slate-400 mb-0.5">Alamat</label>
-                                <!-- Mengubah bidang alamat menjadi TEXTAREA agar bisa Enter baris baru -->
                                 <textarea v-model="profile.alamat" rows="2" class="w-full p-2 border rounded focus:outline-indigo-500"></textarea>
                             </div>
-                            <!-- BIDANG DETIL REKENING DIUBAH MENJADI 3 KOLOM INDEPENDEN -->
                             <div class="grid grid-cols-3 gap-2">
                                 <div>
                                     <label class="block font-semibold text-slate-400 mb-0.5">Nama Bank</label>
@@ -530,7 +530,6 @@
                     <img v-if="profile.logo_url" :src="profile.logo_url" class="w-14 h-16 object-cover rounded-full bg-slate-50 p-1">
                     <div>
                         <h1 class="text-xl font-bold text-indigo-900 uppercase leading-none">{{ profile.nama_laundry || 'Nays Laundry' }}</h1>
-                        <!-- Alamat mendukung Enter baris baru di PDF cetak -->
                         <p class="text-[10px] text-slate-500 mt-1 whitespace-pre-line">{{ profile.alamat }}</p>
                         <p class="text-[10px] text-slate-500">Telp: {{ profile.no_telepon }}</p>
                     </div>
@@ -582,7 +581,6 @@
 
             <div class="grid grid-cols-2 gap-4 mt-8 pt-4 border-t border-slate-100">
                 <div>
-                    <!-- Detil Bank Terpisah yang Lebih Lengkap -->
                     <h4 class="text-[10px] font-bold text-indigo-900 uppercase mb-0.5">Informasi Rekening Pembayaran:</h4>
                     <p class="text-xs text-slate-800 font-semibold leading-relaxed">
                         Bank: {{ profile.bank_cabang || '-' }}<br>
@@ -596,7 +594,6 @@
                 </div>
             </div>
 
-            <!-- DOKUMEN TERMS OF SERVICE (TOS) UNTUK KEAMANAN BISNIS ANDA -->
             <div class="mt-8 border-t pt-4 text-[8px] text-slate-400 leading-tight">
                 <p class="font-bold text-slate-500 mb-1">Syarat & Ketentuan (Terms of Service):</p>
                 <ol class="list-decimal pl-4 space-y-0.5">

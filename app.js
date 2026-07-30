@@ -168,7 +168,25 @@ createApp({
     @update-status="updatePaymentStatus" 
     @print="printInvoice" />
                     <LaporanView v-if="activeTab === 'laporan'" :customers="customers" :report-invoices="reportInvoices" :report-totals="reportTotals" :filter-client="reportFilterClient" :filter-month="reportFilterMonth" :get-customer-name="getCustomerName" :format-month-year="formatMonthYear" @update:filter-client="reportFilterClient = $event" @update:filter-month="reportFilterMonth = $event" @export="exportToExcel" />
-                    <PelangganView v-if="activeTab === 'pelanggan' || activeTab === 'harga_khusus'" :active-tab="activeTab" :customers="filteredCustomers" :services="services" :selected-customer="selectedCustomer" :temp-prices="tempPrices" :search-query="searchQueryCustomers" :show-form="showCustomerForm" :is-editing="isEditing" :customer-form="customerForm" @update:search-query="searchQueryCustomers = $event" @open-add="openAddCustomer" @open-edit="openEditCustomer" @open-custom="openCustomPrices" @close-form="showCustomerForm = false" @save="saveCustomer" @delete="deleteCustomer" @save-custom="saveCustomPrices" @back-to-list="activeTab = 'pelanggan'" />
+                    <PelangganView v-if="activeTab === 'pelanggan' || activeTab === 'harga_khusus'" 
+    :active-tab="activeTab" 
+    :customers="filteredCustomers" 
+    :services="services" 
+    :selected-customer="selectedCustomer" 
+    :temp-prices="tempPrices" 
+    :search-query="searchQueryCustomers" 
+    :show-form="showCustomerForm" 
+    :is-editing="isEditing" 
+    :customer-form="customerForm" 
+    @update:search-query="searchQueryCustomers = $event" 
+    @open-add="openAddCustomer" 
+    @open-edit="openEditCustomer" 
+    @open-custom="handleOpenCustom" 
+    @close-form="showCustomerForm = false" 
+    @save="saveCustomer" 
+    @delete="deleteCustomer" 
+    @save-custom="handleSaveCustom" 
+    @back-to-list="activeTab = 'pelanggan'" />
                     <MasterItemView v-if="activeTab === 'layanan'" :services="services" :show-form="showServiceForm" :is-editing="isEditingService" :service-form="serviceForm" @open-add="openAddService" @open-edit="openEditService" @close-form="showServiceForm = false" @save="saveService" @delete="deleteService" @import-guest="importGuestServices" />
                     <ProfilView v-if="activeTab === 'profil'" :profile="profile" @save="saveProfile" />
                 </main>
@@ -193,6 +211,16 @@ createApp({
         
         const menuOpen = ref(false);
         const sidebarCollapsed = ref(false);
+
+      const handleOpenCustom = (c) => {
+    pelanggan.openCustomPrices(c);
+    activeTab.value = 'harga_khusus';
+};
+
+const handleSaveCustom = async () => {
+    await pelanggan.saveCustomPrices();
+    activeTab.value = 'pelanggan';
+};
 
         // MEMATIKAN SCROLL BODY & HTML DUA-DUANYA UNTUK SELULER
         watch(menuOpen, (val) => {

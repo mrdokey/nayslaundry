@@ -29,9 +29,17 @@ export default {
                             <label class="block text-xs font-semibold text-slate-500 mb-1">Alamat Lengkap</label>
                             <input v-model="customerForm.alamat" type="text" required class="w-full p-2 border rounded text-xs">
                         </div>
-                        <div class="md:col-span-3 flex justify-end space-x-2 pt-2 border-t">
-                            <button type="button" @click="$emit('closeForm')" class="px-3 py-1 bg-slate-100 rounded text-xs">Batal</button>
-                            <button type="submit" class="bg-indigo-600 text-white px-4 py-1 rounded font-semibold text-xs shadow">Simpan</button>
+                        <div class="md:col-span-3 flex justify-between items-center pt-2 border-t">
+                            <!-- Tombol Hapus Pelanggan Dipindahkan ke Dalam Form Edit -->
+                            <div>
+                                <button v-if="isEditing" type="button" @click="$emit('delete', customerForm.id)" class="text-red-500 hover:text-red-700 font-semibold text-xs border border-red-200 px-3 py-1 rounded bg-red-50">
+                                    🗑️ Hapus Pelanggan Ini
+                                </button>
+                            </div>
+                            <div class="flex space-x-2">
+                                <button type="button" @click="$emit('closeForm')" class="px-3 py-1 bg-slate-100 rounded text-xs">Batal</button>
+                                <button type="submit" class="bg-indigo-600 text-white px-4 py-1 rounded font-semibold text-xs shadow">Simpan</button>
+                            </div>
                         </div>
                     </form>
                 </div>
@@ -44,13 +52,9 @@ export default {
                             <span class="text-slate-400 text-[10px] block mt-0.5">📍 {{ cust.alamat }} | Telp: {{ cust.no_telepon }}</span>
                         </div>
                         <div class="flex space-x-1.5 shrink-0 text-xs">
-                            <button @click="$emit('openCustom', cust)" class="bg-emerald-50 text-emerald-600 p-1.5 rounded font-bold">💰 Tarif</button>
-                            <button @click="$emit('openEdit', cust)" class="bg-indigo-50 text-indigo-600 p-1.5 rounded">Edit</button>
-                            <button @click="$emit('delete', cust.id)" class="bg-rose-50 text-rose-500 p-1.5 rounded">Hapus</button>
+                            <button @click="$emit('openCustom', cust)" class="bg-emerald-50 text-emerald-600 p-1.5 rounded font-bold hover:bg-emerald-100">💰 Tarif</button>
+                            <button @click="$emit('openEdit', cust)" class="bg-indigo-50 text-indigo-600 p-1.5 rounded hover:bg-indigo-100">Edit</button>
                         </div>
-                    </div>
-                    <div v-if="customers.length === 0" class="p-8 text-center text-slate-400 bg-white rounded-xl border">
-                        Belum ada pelanggan terdaftar.
                     </div>
                 </div>
             </section>

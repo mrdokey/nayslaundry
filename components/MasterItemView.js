@@ -1,12 +1,11 @@
 export default {
     name: 'MasterItemView',
     props: ['services', 'showForm', 'isEditing', 'serviceForm'],
-    emits: ['openAdd', 'openEdit', 'closeForm', 'save', 'delete', 'importGuest'],
+    emits: ['openAdd', 'openEdit', 'closeForm', 'save', 'delete'],
     setup(props) {
         const searchQuery = Vue.ref('');
-        const expandedCategories = Vue.ref([]); // Default tertutup (array kosong)
+        const expandedCategories = Vue.ref([]);
 
-        // Otomatis mengelompokkan barang berdasarkan nama untuk data lama
         const getServiceCategory = (item) => {
             if (item.kategori && item.kategori.trim() !== '') return item.kategori;
             const name = (item.nama_layanan || '').toLowerCase();
@@ -17,13 +16,11 @@ export default {
             return 'Linen Kamar';
         };
 
-        // Mengambil daftar nama kategori unik yang sudah ada
         const existingCategories = Vue.computed(() => {
             const set = new Set(props.services.map(s => getServiceCategory(s)));
             return Array.from(set).sort();
         });
 
-        // Mengelompokkan item berdasarkan kategori & menyaring hasil pencarian
         const groupedServices = Vue.computed(() => {
             const q = searchQuery.value.toLowerCase().trim();
             const filtered = !q ? props.services : props.services.filter(s => 
@@ -42,42 +39,29 @@ export default {
 
         const toggleCategory = (cat) => {
             const idx = expandedCategories.value.indexOf(cat);
-            if (idx > -1) {
-                expandedCategories.value.splice(idx, 1);
-            } else {
-                expandedCategories.value.push(cat);
-            }
+            if (idx > -1) expandedCategories.value.splice(idx, 1);
+            else expandedCategories.value.push(cat);
         };
 
         const isCategoryExpanded = (cat) => {
-            if (searchQuery.value.trim() !== '') return true; // Otomatis terbuka saat mengetik pencarian
+            if (searchQuery.value.trim() !== '') return true;
             return expandedCategories.value.includes(cat);
         };
 
-        return {
-            searchQuery,
-            existingCategories,
-            groupedServices,
-            toggleCategory,
-            isCategoryExpanded
-        };
+        return { searchQuery, existingCategories, groupedServices, toggleCategory, isCategoryExpanded };
     },
     template: `
         <section class="space-y-3">
             <div class="flex justify-between items-center">
                 <h2 class="text-base font-bold">Master Item Laundry</h2>
-                <div class="flex space-x-2">
-                    <button @click="$emit('importGuest')" class="bg-slate-200 text-slate-700 px-3 py-1.5 rounded-lg font-semibold text-[10px]">📥 Impor 18 Item Guest</button>
-                    <button @click="$emit('openAdd')" class="hidden md:block bg-indigo-600 text-white px-3 py-1.5 rounded-lg font-semibold hover:bg-indigo-700 shadow text-xs">+ Tambah Item</button>
-                </div>
+                <button @click="$emit('openAdd')" class="hidden md:block bg-indigo-600 text-white px-3 py-1.5 rounded-lg font-semibold hover:bg-indigo-700 shadow text-xs">+ Tambah Item</button>
             </div>
 
-            <!-- Kolom Pencarian -->
             <div v-if="!showForm" class="w-full max-w-xs">
                 <input v-model="searchQuery" type="text" placeholder="🔍 Cari item atau kategori..." class="w-full px-3 py-1.5 border rounded-lg text-xs focus:outline-indigo-500">
             </div>
 
-            <!-- Form Tambah / Edit Master Item -->
+            <!-- Form Tambah / Edit -->
             <div v-if="showForm" class="bg-white p-4 rounded-xl border border-slate-200 space-y-3">
                 <h3 class="font-bold text-slate-700 text-xs">{{ isEditing ? 'Ubah Layanan' : 'Tambah Layanan Baru' }}</h3>
                 <form @submit.prevent="$emit('save')" class="grid grid-cols-1 md:grid-cols-4 gap-3">
@@ -87,7 +71,6 @@ export default {
                     </div>
                     <div>
                         <label class="block text-xs font-semibold text-slate-500 mb-1">Kategori</label>
-                        <!-- Datalist: Pilihan kategori existing + opsi ketik kategori baru -->
                         <input v-model="serviceForm.kategori" list="category-list" placeholder="Pilih / ketik baru..." class="w-full p-2 border rounded text-xs" required>
                         <datalist id="category-list">
                             <option v-for="cat in existingCategories" :key="cat" :value="cat"></option>
@@ -111,11 +94,10 @@ export default {
                 </form>
             </div>
 
-            <!-- Accordion Grouping List -->
+            <!-- List Accordion -->
             <div v-if="!showForm" class="space-y-2">
                 <div v-for="(items, catName) in groupedServices" :key="catName" class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
-                    <!-- Header Accordion -->
-                    <button @click="toggleCategory(catName)" type="button" class="w-full p-3 bg-slate-50 hover:bg-slate-100 flex justify-between items-center transition border-b border-slate-100">
+                    <button @click="toggleCategory(catName)" type="button" class="w-full p-3 bg-slate-50 hover:bg-slate-100 flex justify-between items-center border-b border-slate-100">
                         <div class="flex items-center space-x-2">
                             <span class="font-bold text-slate-800 text-xs">{{ catName }}</span>
                             <span class="bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded-full text-[10px] font-extrabold">{{ items.length }} item</span>
@@ -123,7 +105,6 @@ export default {
                         <span class="text-slate-400 font-bold text-xs">{{ isCategoryExpanded(catName) ? '▲' : '▼' }}</span>
                     </button>
 
-                    <!-- Isi Item dalam Kategori (Default Closed) -->
                     <div v-show="isCategoryExpanded(catName)" class="p-3 grid grid-cols-2 sm:grid-cols-3 gap-2 bg-white">
                         <div v-for="item in items" :key="item.id" class="bg-slate-50 p-2.5 rounded-lg border border-slate-100 shadow-sm flex flex-col justify-between gap-1.5">
                             <div>
@@ -139,10 +120,6 @@ export default {
                             </div>
                         </div>
                     </div>
-                </div>
-
-                <div v-if="Object.keys(groupedServices).length === 0" class="p-8 text-center text-slate-400 bg-white rounded-xl border">
-                    Tidak ada item laundry ditemukan.
                 </div>
             </div>
         </section>

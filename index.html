@@ -11,6 +11,17 @@
         body { font-family: 'Inter', sans-serif; }
         [v-cloak] { display: none !important; }
     </style>
+  <!-- Detector Error untuk Tablet -->
+<script>
+    window.addEventListener('error', function(e) {
+        var box = document.getElementById('err-box') || document.createElement('div');
+        box.id = 'err-box';
+        box.style = 'position:fixed;top:0;left:0;right:0;z-index:99999;background:#dc2626;color:white;padding:12px;font-size:12px;font-family:sans-serif;word-break:break-all;box-shadow:0 4px 6px rgba(0,0,0,0.3);';
+        var src = e.target && (e.target.src || e.target.href);
+        box.innerHTML = '<b>⚠️ DETECTOR ERROR:</b><br>' + (src ? 'Gagal memuat file: ' + src : e.message);
+        document.body ? document.body.appendChild(box) : document.documentElement.appendChild(box);
+    }, true);
+</script>
 </head>
 <body class="bg-slate-50 text-slate-800 text-xs select-none">
     

@@ -15,8 +15,8 @@ export function useTransaksi(customers, services, getPrice, getCustomerName) {
     const itemSearchQuery = ref('');
     const selectedItemId = ref('');
     const selectedItemQty = ref('');
+    const selectedItemPrice = ref(0); // State Harga Editable saat input
 
-    // State cetak Nota A5
     const printA5Data = ref(null);
 
     onMounted(() => {
@@ -33,7 +33,6 @@ export function useTransaksi(customers, services, getPrice, getCustomerName) {
         return p.length === 3 ? `${p[2]}/${p[1]}/${p[0]}` : ds; 
     };
 
-    // Helper konversi tanggal ISO presisi dengan digit padding (YYYY-MM-DD)
     const toIso = (ds) => {
         if (!ds) return '';
         if (ds.includes('/')) {
@@ -49,7 +48,10 @@ export function useTransaksi(customers, services, getPrice, getCustomerName) {
     const getCustomerUnbilledTotal = (custId) => {
         let total = 0;
         transactions.value.filter(t => t.id_pelanggan === custId && t.status_tagihan !== 'sudah_ditagih').forEach(t => {
-            t.items.forEach(item => { total += Number(item.qty) * getPrice(custId, item.id_layanan); });
+            t.items.forEach(item => { 
+                const itemPrice = item.harga_satuan !== undefined ? Number(item.harga_satuan) : getPrice(custId, item.id_layanan);
+                total += Number(item.qty) * itemPrice; 
+            });
         });
         return total;
     };
@@ -57,7 +59,6 @@ export function useTransaksi(customers, services, getPrice, getCustomerName) {
     const hasUnbilledCustomers = computed(() => customers.value.some(c => getCustomerUnbilledTotal(c.id) > 0));
     const unbilledTransactionsCount = computed(() => transactions.value.filter(t => t.status_tagihan !== 'sudah_ditagih').length);
 
-    // Filter Nama + Rentang Tanggal
     const filteredTransactions = computed(() => {
         return transactions.value.filter(t => {
             const q = searchQueryTransactions.value.toLowerCase().trim();
@@ -69,16 +70,11 @@ export function useTransaksi(customers, services, getPrice, getCustomerName) {
         });
     });
 
-    // Pengelompokan Transaksi (Belum Ditagih & Sudah Ditagih)
-    // PERBAIKAN: Menggunakan !== 'sudah_ditagih' agar data transaksi lama otomatis muncul di Belum Ditagih
-    const unbilledTransactions = computed(() => filteredTransactions.value.filter(t => t.status_tagihan !== 'sudah_ditagih'));
-    const billedTransactions = computed(() => filteredTransactions.value.filter(t => t.status_tagihan === 'sudah_ditagih'));
-
     const openAddTransaction = () => {
         isEditingTrx.value = false;
         editingTrxId.value = '';
         trxForm.value = { id_pelanggan: '', tanggal: new Date().toISOString().split('T')[0], items: [] };
-        itemSearchQuery.value = ''; selectedItemId.value = ''; selectedItemQty.value = ''; 
+        itemSearchQuery.value = ''; selectedItemId.value = ''; selectedItemQty.value = ''; selectedItemPrice.value = 0;
         showTransactionForm.value = true;
     };
 
@@ -88,9 +84,9 @@ export function useTransaksi(customers, services, getPrice, getCustomerName) {
         trxForm.value = {
             id_pelanggan: t.id_pelanggan,
             tanggal: t.tanggal,
-            items: JSON.parse(JSON.stringify(t.items)) // Clone items array
+            items: JSON.parse(JSON.stringify(t.items))
         };
-        itemSearchQuery.value = ''; selectedItemId.value = ''; selectedItemQty.value = ''; 
+        itemSearchQuery.value = ''; selectedItemId.value = ''; selectedItemQty.value = ''; selectedItemPrice.value = 0;
         showTransactionForm.value = true;
     };
 
@@ -99,38 +95,49 @@ export function useTransaksi(customers, services, getPrice, getCustomerName) {
         return !q ? services.value : services.value.filter(s => s.nama_layanan.toLowerCase().includes(q));
     });
 
-    const selectSearchItem = (i) => { selectedItemId.value = i.id; itemSearchQuery.value = i.nama_layanan; };
+    // Otomatis mengisi harga default saat barang dipilih, namun tetap bisa diubah mandiri
+    const selectSearchItem = (i) => { 
+        selectedItemId.value = i.id; 
+        itemSearchQuery.value = i.nama_layanan; 
+        selectedItemPrice.value = getPrice(trxForm.value.id_pelanggan, i.id);
+    };
 
     const addTrxItem = () => {
         if (!selectedItemId.value) { alert("Pilih item!"); return; }
         if (!selectedItemQty.value || Number(selectedItemQty.value) <= 0) { alert("Isi Qty!"); return; }
+        
+        const priceToUse = (selectedItemPrice.value !== '' && selectedItemPrice.value !== null) ? Number(selectedItemPrice.value) : getPrice(trxForm.value.id_pelanggan, selectedItemId.value);
+
         const ex = trxForm.value.items.find(x => x.id_layanan === selectedItemId.value);
-        if (ex) ex.qty += Number(selectedItemQty.value);
-        else trxForm.value.items.push({ id_layanan: selectedItemId.value, qty: Number(selectedItemQty.value) });
-        selectedItemId.value = ''; selectedItemQty.value = ''; itemSearchQuery.value = '';
+        if (ex) {
+            ex.qty += Number(selectedItemQty.value);
+            ex.harga_satuan = priceToUse; // Menggunakan harga editable
+        } else {
+            trxForm.value.items.push({ 
+                id_layanan: selectedItemId.value, 
+                qty: Number(selectedItemQty.value),
+                harga_satuan: priceToUse // Menggunakan harga editable
+            });
+        }
+        selectedItemId.value = ''; selectedItemQty.value = ''; itemSearchQuery.value = ''; selectedItemPrice.value = 0;
     };
 
     const removeTrxItem = (idx) => { trxForm.value.items.splice(idx, 1); };
 
     const saveTransaction = async () => {
-        if (!trxForm.value.id_pelanggan || !trxForm.value.tanggal) { 
-            alert("Harap pilih pelanggan dan tanggal."); 
-            return; 
-        }
-        if (trxForm.value.items.length === 0) { 
-            alert("Harap masukkan minimal satu item ke daftar."); 
-            return; 
-        }
-
+        if (!trxForm.value.id_pelanggan || !trxForm.value.tanggal) { alert("Harap isi data."); return; }
+        if (trxForm.value.items.length === 0) { alert("Isi minimal 1 item."); return; }
         try {
             let savedData = {
                 id_pelanggan: trxForm.value.id_pelanggan,
                 tanggal: trxForm.value.tanggal,
                 items: trxForm.value.items,
-                status_tagihan: 'belum_ditagih'
+                status_tagihan: isEditingTrx.value ? undefined : 'belum_ditagih'
             };
 
+            // Hapus field undefined jika mode edit agar tidak menimpa status_tagihan yang ada
             if (isEditingTrx.value) {
+                delete savedData.status_tagihan;
                 await updateDoc(doc(db, "transaksi", editingTrxId.value), savedData);
                 savedData.id = editingTrxId.value;
                 alert("Transaksi berhasil diperbarui!");
@@ -145,14 +152,11 @@ export function useTransaksi(customers, services, getPrice, getCustomerName) {
             if (confirm("Apakah Anda ingin langsung mencetak Nota Surat Jalan A5 untuk transaksi ini?")) {
                 printA5Note(savedData);
             }
-
-        } catch (e) { 
-            alert("Gagal menyimpan transaksi: " + e.message); 
-        }
+        } catch (e) { alert("Error: " + e.message); }
     };
 
-    const deleteTransaction = async (id, status) => {
-        if (status === 'sudah_ditagih') { alert("Transaksi yang sudah masuk invoice bulanan tidak dapat dihapus."); return; }
+    // Bebas hapus/revisi transaksi kapan saja
+    const deleteTransaction = async (id) => {
         if (confirm("Apakah Anda yakin ingin menghapus catatan transaksi ini?")) {
             try { 
                 await deleteDoc(doc(db, "transaksi", id)); 
@@ -168,9 +172,8 @@ export function useTransaksi(customers, services, getPrice, getCustomerName) {
 
     return {
         transactions, searchQueryTransactions, filterStartDate, filterEndDate,
-        showTransactionForm, isEditingTrx, editingTrxId, trxForm, itemSearchQuery, selectedItemId, selectedItemQty,
-        unbilledTransactionsCount, filteredTransactions, unbilledTransactions, billedTransactions,
-        filteredSearchItems, formatDate, getCustomerUnbilledTotal, hasUnbilledCustomers, printA5Data,
+        showTransactionForm, isEditingTrx, editingTrxId, trxForm, itemSearchQuery, selectedItemId, selectedItemQty, selectedItemPrice,
+        unbilledTransactionsCount, filteredTransactions, filteredSearchItems, formatDate, getCustomerUnbilledTotal, hasUnbilledCustomers, printA5Data,
         openAddTransaction, openEditTransaction, selectSearchItem, addTrxItem, removeTrxItem, saveTransaction, deleteTransaction, printA5Note
     };
 }

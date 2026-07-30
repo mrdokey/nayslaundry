@@ -3,30 +3,58 @@ export default {
     props: [
         'transactions', 'customers', 'services', 
         'searchQuery', 'filterStartDate', 'filterEndDate', 'showForm', 'isEditingTrx', 
-        'editingTrxId', 'trxForm', 'itemSearch', 'selectedItemId', 'selectedItemQty', 
+        'editingTrxId', 'trxForm', 'itemSearch', 'selectedItemId', 'selectedItemQty', 'selectedItemPrice',
         'filteredSearchItems', 'getCustomerName', 'getServiceName', 'getServiceUnit', 
         'getPrice', 'formatDate'
     ],
     emits: [
         'update:searchQuery', 'update:filterStartDate', 'update:filterEndDate', 
-        'update:itemSearch', 'update:selectedItemQty', 'openAdd', 'openEdit', 
+        'update:itemSearch', 'update:selectedItemQty', 'update:selectedItemPrice', 'openAdd', 'openEdit', 
         'closeForm', 'selectSearchItem', 'addItem', 'removeItem', 'save', 'delete', 'printA5'
     ],
     setup(props) {
-        const openUnbilled = Vue.ref(true); // Default Terbuka
-        const openBilled = Vue.ref(false);  // Default Tertutup
+        const expandedCustomers = Vue.ref([]); // State lipat/buka per pelanggan
 
-        const unbilledList = Vue.computed(() => {
-            if (!props.transactions) return [];
-            return props.transactions.filter(t => t.status_tagihan !== 'sudah_ditagih');
+        // Mengelompokkan transaksi PER PELANGGAN (Hotel/Vila)
+        const groupedByCustomer = Vue.computed(() => {
+            if (!props.transactions) return {};
+            const groups = {};
+            
+            props.transactions.forEach(t => {
+                const custId = t.id_pelanggan;
+                if (!groups[custId]) groups[custId] = [];
+                groups[custId].push(t);
+            });
+
+            // Urutkan di dalam setiap hotel: Belum Ditagih di ATAS, Sudah Ditagih di BAWAH
+            for (const custId in groups) {
+                groups[custId].sort((a, b) => {
+                    const aUnbilled = a.status_tagihan !== 'sudah_ditagih' ? 0 : 1;
+                    const bUnbilled = b.status_tagihan !== 'sudah_ditagih' ? 0 : 1;
+                    if (aUnbilled !== bUnbilled) return aUnbilled - bUnbilled;
+                    return b.tanggal.localeCompare(a.tanggal); // Urutan kedua berdasarkan tanggal terbaru
+                });
+            }
+            return groups;
         });
 
-        const billedList = Vue.computed(() => {
-            if (!props.transactions) return [];
-            return props.transactions.filter(t => t.status_tagihan === 'sudah_ditagih');
-        });
+        const toggleCustomerGroup = (custId) => {
+            const idx = expandedCustomers.value.indexOf(custId);
+            if (idx > -1) expandedCustomers.value.splice(idx, 1);
+            else expandedCustomers.value.push(custId);
+        };
 
-        return { openUnbilled, openBilled, unbilledList, billedList };
+        const isCustomerExpanded = (custId) => {
+            if (props.searchQuery && props.searchQuery.trim() !== '') return true; // Otomatis buka saat cari
+            return expandedCustomers.value.includes(custId);
+        };
+
+        // Menghitung jumlah belum ditagih spesifik per hotel
+        const getCustomerUnbilledCount = (custTransactions) => {
+            return custTransactions.filter(t => t.status_tagihan !== 'sudah_ditagih').length;
+        };
+
+        return { groupedByCustomer, toggleCustomerGroup, isCustomerExpanded, getCustomerUnbilledCount };
     },
     template: `
         <section class="space-y-3">
@@ -72,11 +100,11 @@ export default {
                     </div>
                 </div>
 
-                <!-- Selector Item Cart -->
+                <!-- Selector Item Cart dengan HARGA EDITABLE -->
                 <div v-if="trxForm.id_pelanggan" class="border p-3 rounded-lg bg-slate-50 space-y-2">
                     <h4 class="font-bold text-xs text-indigo-900 uppercase">Tambah Item ke Daftar:</h4>
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 items-end">
-                        <div class="relative">
+                    <div class="grid grid-cols-1 sm:grid-cols-4 gap-2 items-end">
+                        <div class="relative sm:col-span-2">
                             <label class="block text-[10px] font-semibold text-slate-500 mb-0.5">Cari & Pilih Item</label>
                             <input type="text" :value="itemSearch" @input="$emit('update:itemSearch', $event.target.value)" placeholder="Ketik nama item..." class="w-full p-2 border rounded text-xs bg-white focus:outline-indigo-500">
                             <div v-if="itemSearch && selectedItemId === ''" class="absolute left-0 right-0 max-h-40 overflow-y-auto bg-white border rounded shadow-lg z-50 mt-1">
@@ -90,10 +118,14 @@ export default {
                             <label class="block text-[10px] font-semibold text-slate-500 mb-0.5">Jumlah (Qty)</label>
                             <input type="number" :value="selectedItemQty" @input="$emit('update:selectedItemQty', $event.target.value)" placeholder="0" class="w-full p-2 border rounded text-xs text-center bg-white focus:outline-indigo-500">
                         </div>
-                        <button type="button" @click="$emit('addItem')" class="bg-indigo-600 hover:bg-indigo-700 text-white p-2 rounded font-bold text-xs shadow">
-                            ➕ Masukkan ke Daftar
-                        </button>
+                        <div>
+                            <label class="block text-[10px] font-semibold text-slate-500 mb-0.5">Harga / Unit (Rp)</label>
+                            <input type="number" :value="selectedItemPrice" @input="$emit('update:selectedItemPrice', $event.target.value)" placeholder="Tarif" class="w-full p-2 border rounded text-xs text-center bg-white focus:outline-indigo-500 font-semibold">
+                        </div>
                     </div>
+                    <button type="button" @click="$emit('addItem')" class="w-full mt-2 bg-indigo-600 hover:bg-indigo-700 text-white p-2 rounded font-bold text-xs shadow">
+                        ➕ Masukkan ke Daftar
+                    </button>
                 </div>
 
                 <!-- Daftar Item Rincian -->
@@ -104,11 +136,11 @@ export default {
                             <div>
                                 <span class="font-semibold text-slate-800">{{ getServiceName(item.id_layanan) }}</span>
                                 <span class="text-[9px] text-slate-400 block">
-                                    {{ item.qty }} {{ getServiceUnit(item.id_layanan) }} x Rp {{ getPrice(trxForm.id_pelanggan, item.id_layanan).toLocaleString() }}
+                                    {{ item.qty }} {{ getServiceUnit(item.id_layanan) }} x Rp {{ (item.harga_satuan !== undefined ? item.harga_satuan : getPrice(trxForm.id_pelanggan, item.id_layanan)).toLocaleString() }}
                                 </span>
                             </div>
                             <div class="flex items-center space-x-3">
-                                <span class="font-bold text-slate-800">Rp {{ (item.qty * getPrice(trxForm.id_pelanggan, item.id_layanan)).toLocaleString() }}</span>
+                                <span class="font-bold text-slate-800">Rp {{ (item.qty * (item.harga_satuan !== undefined ? item.harga_satuan : getPrice(trxForm.id_pelanggan, item.id_layanan))).toLocaleString() }}</span>
                                 <button @click="$emit('removeItem', index)" type="button" class="text-rose-500 hover:text-rose-700 font-bold text-sm">✕</button>
                             </div>
                         </div>
@@ -128,27 +160,32 @@ export default {
                 </div>
             </div>
 
-            <!-- ACCORDION TRANSAKSI -->
+            <!-- ACCORDION TRANSAKSI PER PELANGGAN -->
             <div v-if="!showForm" class="space-y-3">
-                
-                <!-- 1. GROUP BELUM DITAGIH -->
-                <div class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
-                    <button @click="openUnbilled = !openUnbilled" type="button" class="w-full p-3 bg-amber-50 hover:bg-amber-100/80 flex justify-between items-center border-b border-amber-100">
+                <div v-for="(transList, custId) in groupedByCustomer" :key="custId" class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+                    <!-- Header Accordion Pelanggan -->
+                    <button @click="toggleCustomerGroup(custId)" type="button" class="w-full p-3 bg-slate-50 hover:bg-slate-100 flex justify-between items-center border-b border-slate-100">
                         <div class="flex items-center space-x-2">
-                            <span class="font-bold text-amber-900 text-xs">⏳ BELUM DITAGIH</span>
-                            <span class="bg-amber-200 text-amber-900 px-2 py-0.5 rounded-full text-[10px] font-extrabold">{{ unbilledList.length }}</span>
+                            <span class="font-bold text-indigo-950 text-xs">{{ getCustomerName(custId) }}</span>
+                            <span class="bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded-full text-[10px] font-extrabold">{{ transList.length }} transaksi</span>
+                            <span v-if="getCustomerUnbilledCount(transList) > 0" class="bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full text-[9px] font-bold">
+                                {{ getCustomerUnbilledCount(transList) }} belum ditagih
+                            </span>
                         </div>
-                        <span class="text-amber-700 font-bold text-xs">{{ openUnbilled ? '▲' : '▼' }}</span>
+                        <span class="text-slate-400 font-bold text-xs">{{ isCustomerExpanded(custId) ? '▲' : '▼' }}</span>
                     </button>
 
-                    <div v-show="openUnbilled" class="p-3 space-y-2 bg-white">
-                        <div v-for="t in unbilledList" :key="t.id" class="bg-slate-50 p-3 rounded-xl border border-slate-100 shadow-sm space-y-2">
+                    <!-- Body Kartu Transaksi (Belum Ditagih di Atas, Sudah Ditagih di Bawah) -->
+                    <div v-show="isCustomerExpanded(custId)" class="p-3 space-y-2 bg-white">
+                        <div v-for="t in transList" :key="t.id" class="bg-slate-50 p-3 rounded-xl border border-slate-100 shadow-sm space-y-2">
                             <div class="flex justify-between items-start">
                                 <div>
                                     <h4 class="font-bold text-slate-800 text-xs">{{ getCustomerName(t.id_pelanggan) }}</h4>
                                     <span class="text-slate-400 text-[10px]">{{ formatDate(t.tanggal) }}</span>
                                 </div>
-                                <span class="bg-amber-100 text-amber-800 px-2 py-0.5 rounded text-[9px] font-bold">Belum Ditagih</span>
+                                <span :class="t.status_tagihan==='sudah_ditagih'?'bg-emerald-100 text-emerald-800':'bg-amber-100 text-amber-800'" class="px-2 py-0.5 rounded text-[9px] font-bold">
+                                    {{ t.status_tagihan==='sudah_ditagih'?'Sudah Ditagih':'Belum Ditagih' }}
+                                </span>
                             </div>
                             <div class="text-[10px] text-slate-600 bg-white p-2 rounded border border-slate-100 leading-relaxed">
                                 <span v-for="item in t.items" :key="item.id_layanan" class="inline-block mr-3">
@@ -160,48 +197,12 @@ export default {
                                 <button @click="$emit('openEdit', t)" class="text-amber-700 font-semibold hover:underline">✏️ Edit</button>
                             </div>
                         </div>
-                        <div v-if="unbilledList.length === 0" class="p-6 text-center text-slate-400 italic">
-                            Tidak ada transaksi yang belum ditagih.
-                        </div>
                     </div>
                 </div>
 
-                <!-- 2. GROUP SUDAH DITAGIH -->
-                <div class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
-                    <button @click="openBilled = !openBilled" type="button" class="w-full p-3 bg-emerald-50 hover:bg-emerald-100/80 flex justify-between items-center border-b border-emerald-100">
-                        <div class="flex items-center space-x-2">
-                            <span class="font-bold text-emerald-900 text-xs">✅ SUDAH DITAGIH</span>
-                            <span class="bg-emerald-200 text-emerald-900 px-2 py-0.5 rounded-full text-[10px] font-extrabold">{{ billedList.length }}</span>
-                        </div>
-                        <span class="text-emerald-700 font-bold text-xs">{{ openBilled ? '▲' : '▼' }}</span>
-                    </button>
-
-                    <div v-show="openBilled" class="p-3 space-y-2 bg-white">
-                        <div v-for="t in billedList" :key="t.id" class="bg-slate-50 p-3 rounded-xl border border-slate-100 shadow-sm space-y-2">
-                            <div class="flex justify-between items-start">
-                                <div>
-                                    <h4 class="font-bold text-slate-800 text-xs">{{ getCustomerName(t.id_pelanggan) }}</h4>
-                                    <span class="text-slate-400 text-[10px]">{{ formatDate(t.tanggal) }}</span>
-                                </div>
-                                <span class="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded text-[9px] font-bold">Sudah Ditagih</span>
-                            </div>
-                            <div class="text-[10px] text-slate-600 bg-white p-2 rounded border border-slate-100 leading-relaxed">
-                                <span v-for="item in t.items" :key="item.id_layanan" class="inline-block mr-3">
-                                    • {{ getServiceName(item.id_layanan) }}: <strong>{{ item.qty }}</strong>
-                                </span>
-                            </div>
-                            <!-- Tombol Edit Juga Dihadirkan di Sini -->
-                            <div class="flex justify-end space-x-3 pt-1 border-t border-slate-200/60 text-xs">
-                                <button @click="$emit('printA5', t)" class="text-indigo-600 font-semibold hover:underline">📄 Cetak A5</button>
-                                <button @click="$emit('openEdit', t)" class="text-amber-700 font-semibold hover:underline">✏️ Edit</button>
-                            </div>
-                        </div>
-                        <div v-if="billedList.length === 0" class="p-6 text-center text-slate-400 italic">
-                            Belum ada riwayat transaksi yang sudah ditagih.
-                        </div>
-                    </div>
+                <div v-if="Object.keys(groupedByCustomer).length === 0" class="p-8 text-center text-slate-400 bg-white rounded-xl border">
+                    Tidak ada catatan transaksi ditemukan.
                 </div>
-
             </div>
         </section>
     `

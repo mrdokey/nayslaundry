@@ -16,7 +16,6 @@ import MasterItemView from "./components/MasterItemView.js";
 import ProfilView from "./components/ProfilView.js";
 import InvoicePrintView from "./components/InvoicePrintView.js";
 
-// Memasukkan 'watch' ke dalam destrukturisasi Vue
 const { createApp, ref, onMounted, computed, watch } = Vue;
 
 createApp({
@@ -44,9 +43,9 @@ createApp({
                     <button @click="menuOpen = !menuOpen" class="text-xl p-2">☰</button>
                 </header>
 
-                <!-- DRAWER MOBILE -->
-                <div v-if="menuOpen" @click="menuOpen = false" class="fixed inset-0 bg-black/40 z-40 touch-none"></div>
-                <aside :class="menuOpen ? 'translate-x-0' : '-translate-x-full'" class="fixed inset-y-0 left-0 w-56 bg-indigo-900 text-white z-50 transform transition-transform duration-200 flex flex-col">
+                <!-- DRAWER MOBILE DENGAN PENGUNCI SENTUHAN -->
+                <div v-if="menuOpen" @click="menuOpen = false" @touchmove.prevent class="fixed inset-0 bg-black/40 z-40 touch-none"></div>
+                <aside :class="menuOpen ? 'translate-x-0' : '-translate-x-full'" class="fixed inset-y-0 left-0 w-56 bg-indigo-900 text-white z-50 transform transition-transform duration-200 flex flex-col overflow-y-auto overscroll-contain">
                     <div class="p-4 border-b border-indigo-800 flex justify-between items-center"><span class="font-bold">Menu</span><button @click="menuOpen = false">✕</button></div>
                     <nav class="flex-1 p-3 space-y-1">
                         <button v-for="m in menuList" :key="m.id" @click="changeTab(m.id)" :class="activeTab===m.id?'bg-indigo-800':''" class="w-full text-left p-2.5 rounded hover:bg-indigo-800 flex items-center space-x-2">
@@ -56,7 +55,7 @@ createApp({
                     </nav>
                 </aside>
 
-                <!-- SIDEBAR DESKTOP COLLAPSIBLE -->
+                <!-- SIDEBAR DESKTOP -->
                 <aside :class="sidebarCollapsed ? 'w-16' : 'w-56'" class="hidden md:flex bg-indigo-900 text-white flex-col shadow-lg shrink-0 transition-all duration-200">
                     <div class="p-3 border-b border-indigo-800 flex items-center justify-between">
                         <div v-if="!sidebarCollapsed" class="flex items-center space-x-2 overflow-hidden">
@@ -155,12 +154,14 @@ createApp({
         const menuOpen = ref(false);
         const sidebarCollapsed = ref(false);
 
-        // PENJAGAAN SCROLL LATAR DI DALAM SETUP() DENGAN TATA BAHASA PRESISI
+        // MEMATIKAN SCROLL BODY & HTML DUA-DUANYA UNTUK SELULER
         watch(menuOpen, (val) => {
             if (val) {
-                document.body.classList.add('overflow-hidden');
+                document.body.style.overflow = 'hidden';
+                document.documentElement.style.overflow = 'hidden';
             } else {
-                document.body.classList.remove('overflow-hidden');
+                document.body.style.overflow = '';
+                document.documentElement.style.overflow = '';
             }
         });
 
@@ -198,9 +199,9 @@ createApp({
         };
 
         const triggerAdd = () => {
-            if (activeTab.value === 'transaksi') transaksi.openAddTransaction();
-            else if (activeTab.value === 'pelanggan') pelanggan.openAddCustomer();
-            else if (activeTab.value === 'layanan') layanan.openAddService();
+            if (activeTab.value === 'transaksi') openAddTransaction();
+            else if (activeTab.value === 'pelanggan') openAddCustomer();
+            else if (activeTab.value === 'layanan') openAddService();
         };
 
         const logoutAdmin = () => {

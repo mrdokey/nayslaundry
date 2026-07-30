@@ -16,13 +16,10 @@ export default {
         const openUnbilled = Vue.ref(true); // Default Terbuka
         const openBilled = Vue.ref(false);  // Default Tertutup
 
-        // Mengelompokkan transaksi secara internal dari props.transactions
-        // Ubah bagian unbilledList di setup() menjadi seperti ini:
-const unbilledList = Vue.computed(() => {
-    if (!props.transactions) return [];
-    // Menggunakan !== 'sudah_ditagih' agar semua data lama otomatis masuk ke Belum Ditagih
-    return props.transactions.filter(t => t.status_tagihan !== 'sudah_ditagih');
-});
+        const unbilledList = Vue.computed(() => {
+            if (!props.transactions) return [];
+            return props.transactions.filter(t => t.status_tagihan !== 'sudah_ditagih');
+        });
 
         const billedList = Vue.computed(() => {
             if (!props.transactions) return [];
@@ -119,7 +116,6 @@ const unbilledList = Vue.computed(() => {
                 </div>
 
                 <div class="flex justify-between items-center pt-2 border-t">
-                    <!-- Tombol Hapus Dipindahkan ke Dalam Form Edit -->
                     <div>
                         <button v-if="isEditingTrx" type="button" @click="$emit('delete', editingTrxId, 'belum_ditagih')" class="text-red-500 hover:text-red-700 font-semibold text-xs border border-red-200 px-3 py-1 rounded bg-red-50">
                             🗑️ Hapus Transaksi Ini
@@ -132,10 +128,10 @@ const unbilledList = Vue.computed(() => {
                 </div>
             </div>
 
-            <!-- ACCORDION TRANSAKSI (Membaca unbilledList & billedList secara Internal) -->
+            <!-- ACCORDION TRANSAKSI -->
             <div v-if="!showForm" class="space-y-3">
                 
-                <!-- 1. GROUP BELUM DITAGIH (Default Terbuka) -->
+                <!-- 1. GROUP BELUM DITAGIH -->
                 <div class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
                     <button @click="openUnbilled = !openUnbilled" type="button" class="w-full p-3 bg-amber-50 hover:bg-amber-100/80 flex justify-between items-center border-b border-amber-100">
                         <div class="flex items-center space-x-2">
@@ -170,7 +166,7 @@ const unbilledList = Vue.computed(() => {
                     </div>
                 </div>
 
-                <!-- 2. GROUP SUDAH DITAGIH (Default Tertutup) -->
+                <!-- 2. GROUP SUDAH DITAGIH -->
                 <div class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
                     <button @click="openBilled = !openBilled" type="button" class="w-full p-3 bg-emerald-50 hover:bg-emerald-100/80 flex justify-between items-center border-b border-emerald-100">
                         <div class="flex items-center space-x-2">
@@ -194,8 +190,10 @@ const unbilledList = Vue.computed(() => {
                                     • {{ getServiceName(item.id_layanan) }}: <strong>{{ item.qty }}</strong>
                                 </span>
                             </div>
+                            <!-- Tombol Edit Juga Dihadirkan di Sini -->
                             <div class="flex justify-end space-x-3 pt-1 border-t border-slate-200/60 text-xs">
                                 <button @click="$emit('printA5', t)" class="text-indigo-600 font-semibold hover:underline">📄 Cetak A5</button>
+                                <button @click="$emit('openEdit', t)" class="text-amber-700 font-semibold hover:underline">✏️ Edit</button>
                             </div>
                         </div>
                         <div v-if="billedList.length === 0" class="p-6 text-center text-slate-400 italic">

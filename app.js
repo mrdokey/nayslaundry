@@ -129,7 +129,39 @@ createApp({
     @save="saveTransaction" 
     @delete="deleteTransaction" 
     @print-a5="printA5Note" />
-                    <TagihanView v-if="activeTab === 'tagihan'" :invoices="filteredInvoices" :customers="customers" :search-query="searchQueryInvoices" :show-form="showInvoiceForm" :invoice-form="invoiceForm" :draft-items="draftInvoiceItems" :draft-total="draftInvoiceTotal" :get-customer-name="getCustomerName" :format-month-year="formatMonthYear" @update:search-query="searchQueryInvoices = $event" @open-add="openAddInvoice" @close-form="showInvoiceForm = false" @calculate="calculateDraftInvoice" @save="saveInvoice" @delete="deleteInvoice" @update-status="updatePaymentStatus" @print="printInvoice" />
+                    <!-- Cari tag <TagihanView> di app.js, lalu sesuaikan kodenya menjadi: -->
+<TagihanView v-if="activeTab === 'tagihan'" 
+    :invoices="filteredInvoices" 
+    :unpaid-invoices="unpaidInvoices" 
+    :paid-invoices="paidInvoices" 
+    :customers="customers" 
+    :search-query="searchQueryInvoices" 
+    :show-form="showInvoiceForm" 
+    :is-editing-invoice="isEditingInvoice" 
+    :editing-invoice-id="editingInvoiceId" 
+    :invoice-form="invoiceForm" 
+    :selected-trx-ids="selectedTrxIds" 
+    :manual-subtotal="manualSubtotal" 
+    :discount-amount="discountAmount" 
+    :available-trx-for-draft="availableTrxForDraft" 
+    :draft-invoice-items="draftInvoiceItems" 
+    :calculated-subtotal="calculatedSubtotal" 
+    :grand-total="grandTotal" 
+    :get-customer-name="getCustomerName" 
+    :format-month-year="formatMonthYear" 
+    @update:search-query="searchQueryInvoices = $event" 
+    @update:manual-subtotal="manualSubtotal = $event" 
+    @update:discount-amount="discountAmount = $event" 
+    @open-add="openAddInvoice" 
+    @open-edit="openEditInvoice" 
+    @close-form="showInvoiceForm = false" 
+    @calculate="calculateDraftInvoice" 
+    @select-all-trx="selectAllTrx" 
+    @deselect-all-trx="deselectAllTrx" 
+    @save="saveInvoice" 
+    @delete="deleteInvoice" 
+    @update-status="updatePaymentStatus" 
+    @print="printInvoice" />
                     <LaporanView v-if="activeTab === 'laporan'" :customers="customers" :report-invoices="reportInvoices" :report-totals="reportTotals" :filter-client="reportFilterClient" :filter-month="reportFilterMonth" :get-customer-name="getCustomerName" :format-month-year="formatMonthYear" @update:filter-client="reportFilterClient = $event" @update:filter-month="reportFilterMonth = $event" @export="exportToExcel" />
                     <PelangganView v-if="activeTab === 'pelanggan' || activeTab === 'harga_khusus'" :active-tab="activeTab" :customers="filteredCustomers" :services="services" :selected-customer="selectedCustomer" :temp-prices="tempPrices" :search-query="searchQueryCustomers" :show-form="showCustomerForm" :is-editing="isEditing" :customer-form="customerForm" @update:search-query="searchQueryCustomers = $event" @open-add="openAddCustomer" @open-edit="openEditCustomer" @open-custom="openCustomPrices" @close-form="showCustomerForm = false" @save="saveCustomer" @delete="deleteCustomer" @save-custom="saveCustomPrices" @back-to-list="activeTab = 'pelanggan'" />
                     <MasterItemView v-if="activeTab === 'layanan'" :services="services" :show-form="showServiceForm" :is-editing="isEditingService" :service-form="serviceForm" @open-add="openAddService" @open-edit="openEditService" @close-form="showServiceForm = false" @save="saveService" @delete="deleteService" @import-guest="importGuestServices" />

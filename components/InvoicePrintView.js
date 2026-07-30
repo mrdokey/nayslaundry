@@ -5,7 +5,7 @@ export default {
         <div>
             <!-- 1. DOKUMEN INVOICE BULANAN (A4) -->
             <div v-if="printData" class="hidden print:block w-full max-w-4xl p-6 bg-white text-black text-sm">
-                <!-- Kop Surat dengan Alamat Rapat -->
+                <!-- Kop Surat -->
                 <div class="flex justify-between items-start border-b-2 border-indigo-900 pb-3 mb-4">
                     <div class="flex items-center space-x-3">
                         <img v-if="profile.logo_url" :src="profile.logo_url" class="w-14 h-14 object-cover rounded-full bg-slate-50 p-1 shrink-0">
@@ -53,8 +53,17 @@ export default {
                             <td class="p-2 text-right text-slate-600 border">Rp {{ item.harga_satuan.toLocaleString() }}</td>
                             <td class="p-2 text-right font-bold text-slate-800 border">Rp {{ item.subtotal.toLocaleString() }}</td>
                         </tr>
-                        <tr class="bg-slate-50 font-bold text-xs">
-                            <td colspan="4" class="p-2.5 text-right text-indigo-900 border">TOTAL TAGIHAN:</td>
+                        <!-- Baris Rincian Subtotal, Diskon, dan Total Akhir -->
+                        <tr v-if="printData.diskon && printData.diskon > 0" class="bg-slate-50 font-semibold text-xs">
+                            <td colspan="4" class="p-2 text-right text-slate-600 border">Subtotal Tagihan:</td>
+                            <td class="p-2 text-right text-slate-800 border">Rp {{ (printData.subtotal_penyesuaian || printData.subtotal_awal || printData.total_tagihan).toLocaleString() }}</td>
+                        </tr>
+                        <tr v-if="printData.diskon && printData.diskon > 0" class="bg-slate-50 font-semibold text-xs text-rose-600">
+                            <td colspan="4" class="p-2 text-right border">Diskon / Potongan Harga:</td>
+                            <td class="p-2 text-right border">- Rp {{ Number(printData.diskon).toLocaleString() }}</td>
+                        </tr>
+                        <tr class="bg-indigo-50 font-bold text-xs">
+                            <td colspan="4" class="p-2.5 text-right text-indigo-900 border">TOTAL YANG HARUS DIBAYAR:</td>
                             <td class="p-2.5 text-right text-indigo-900 border">Rp {{ printData.total_tagihan.toLocaleString() }}</td>
                         </tr>
                     </tbody>
@@ -83,7 +92,6 @@ export default {
 
             <!-- 2. DOKUMEN NOTA SURAT JALAN HARIAN (A5) -->
             <div v-if="printA5Data" class="hidden print:block w-full max-w-2xl p-4 bg-white text-black text-xs">
-                <!-- Kop Rapat A5 -->
                 <div class="flex justify-between items-start border-b-2 border-indigo-900 pb-2 mb-3">
                     <div class="flex items-center space-x-2">
                         <img v-if="profile.logo_url" :src="profile.logo_url" class="w-10 h-10 object-cover rounded-full bg-slate-50 p-0.5 shrink-0">

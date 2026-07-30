@@ -11,39 +11,22 @@
         body { font-family: 'Inter', sans-serif; }
         [v-cloak] { display: none !important; }
     </style>
-  <!-- Detector Error untuk Tablet -->
+  <!-- Detector Error Silent (Hanya muncul jika ada error) -->
 <script>
-    // Langsung munculkan Bar Status saat halaman dimuat
-    document.addEventListener('DOMContentLoaded', function() {
-    var b = document.createElement('div');
-    b.id = 'status-bar';
-    b.style = 'position:fixed;top:0;left:0;right:0;z-index:99999;background:#1e293b;color:white;padding:10px;font-size:11px;font-family:sans-serif;';
-    
-    // Cek ketersediaan Vue.js
-    if (typeof Vue === 'undefined') {
-        b.style.background = '#dc2626';
-        b.innerHTML = '<b>⚠️ ERROR:</b> Vue.js CDN gagal dimuat (Jaringan/CDN lemot)!';
-    } else {
-        b.innerHTML = '<b>✅ Vue.js Terdeteksi!</b> Menjalankan app.js...';
-    }
-    document.body.appendChild(b);
-});
-
-    // Tangkap SEMUA jenis error JavaScript
     window.addEventListener('error', function(e) {
-        var el = document.getElementById('status-bar');
-        if (el) {
-            el.style.background = '#dc2626';
-            el.innerHTML = '<b>⚠️ ERROR JAVASCRIPT:</b><br>' + (e.message || (e.target && e.target.src) || e);
-        }
+        var b = document.getElementById('err-box') || document.createElement('div');
+        b.id = 'err-box';
+        b.style = 'position:fixed;top:0;left:0;right:0;z-index:99999;background:#dc2626;color:white;padding:12px;font-size:11px;font-family:sans-serif;word-break:break-all;box-shadow:0 4px 6px rgba(0,0,0,0.3);';
+        b.innerHTML = '<b>⚠️ ERROR JAVASCRIPT:</b><br>' + (e.message || (e.target && e.target.src) || e);
+        document.body ? document.body.appendChild(b) : document.documentElement.appendChild(b);
     }, true);
 
     window.addEventListener('unhandledrejection', function(e) {
-        var el = document.getElementById('status-bar');
-        if (el) {
-            el.style.background = '#dc2626';
-            el.innerHTML = '<b>⚠️ REJECTION ERROR:</b><br>' + (e.reason && e.reason.message ? e.reason.message : e.reason);
-        }
+        var b = document.getElementById('err-box') || document.createElement('div');
+        b.id = 'err-box';
+        b.style = 'position:fixed;top:0;left:0;right:0;z-index:99999;background:#dc2626;color:white;padding:12px;font-size:11px;font-family:sans-serif;word-break:break-all;box-shadow:0 4px 6px rgba(0,0,0,0.3);';
+        b.innerHTML = '<b>⚠️ REJECTION ERROR:</b><br>' + (e.reason && e.reason.message ? e.reason.message : e.reason);
+        document.body ? document.body.appendChild(b) : document.documentElement.appendChild(b);
     });
 </script>
 </head>

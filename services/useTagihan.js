@@ -76,32 +76,60 @@ export function useTagihan(transactions, getPrice, getServiceName, getServiceUni
         });
     });
 
-    const draftInvoiceItems = computed(() => {
+    // Ganti bagian draftInvoiceItems di services/useTagihan.js menjadi:
+const draftInvoiceItems = computed(() => {
     const custId = invoiceForm.value.id_pelanggan;
     if (!custId || selectedTrxIds.value.length === 0) return [];
 
     const selectedTrxList = availableTrxForDraft.value.filter(t => selectedTrxIds.value.includes(t.id));
-    const list = [];
+    const mapItems = {};
 
-    // Membaca transaksi yang dicentang dan melampirkan t.tanggal di dalam perulangan
+    // Mengelompokkan item berdasarkan jenisnya & merinci tanggal pengambilannya
     selectedTrxList.forEach(t => {
+        const formattedDate = formatDate(t.tanggal);
         (t.items || []).forEach(item => {
+            const k = item.id_layanan;
             const qty = Number(item.qty);
-            const p = item.harga_satuan !== undefined ? Number(item.harga_satuan) : getPrice(custId, item.id_layanan);
-            list.push({
-                tanggal: t.tanggal, // <-- Variabel 't' valid dan aman di dalam perulangan ini
-                id_layanan: item.id_layanan,
-                nama_layanan: getServiceName(item.id_layanan),
-                satuan: getServiceUnit(item.id_layanan),
-                qty: qty,
-                harga_satuan: p,
-                subtotal: qty * p
+            const p = item.harga_satuan !== undefined ? Number(item.harga_satuan) : getPrice(custId, k);
+
+            if (!mapItems[k]) {
+                mapItems[k] = {
+                    id_layanan: k,
+                    nama_layanan: getServiceName(k),
+                    satuan: getServiceUnit(k),
+                    harga_satuan: p,
+                    total_qty: 0,
+                    dates: []
+                };
+            }
+
+            mapItems[k].total_qty += qty;
+            mapItems[k].dates.push({
+                tanggal: formattedDate,
+                qty: qty
             });
         });
     });
 
-    // Urutkan rincian item berdasarkan tanggal terlama ke terbaru
-    return list.sort((a, b) => (a.tanggal || '').localeCompare(b.tanggal || ''));
+    const list = [];
+    for (const k of Object.keys(mapItems)) {
+        const itemObj = mapItems[k];
+        // Urutkan rincian tanggal di dalam item dari tanggal tertua ke terbaru
+        itemObj.dates.sort((a, b) => a.tanggal.localeCompare(b.tanggal));
+
+        list.push({
+            id_layanan: itemObj.id_layanan,
+            nama_layanan: itemObj.nama_layanan,
+            satuan: itemObj.satuan,
+            qty: itemObj.total_qty,
+            harga_satuan: itemObj.harga_satuan,
+            subtotal: itemObj.total_qty * itemObj.harga_satuan,
+            dates: itemObj.dates // Menyimpan sub-daftar rincian tanggal
+        });
+    }
+
+    // Urutkan daftar item berdasarkan abjad nama
+    return list.sort((a, b) => a.nama_layanan.localeCompare(b.nama_layanan));
 });
 
     const calculatedSubtotal = computed(() => {

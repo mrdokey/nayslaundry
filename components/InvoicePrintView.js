@@ -3,9 +3,9 @@ export default {
     props: ['printData', 'printA5Data', 'profile', 'getCustomerName', 'getCustomerAddress', 'getServiceName', 'getServiceUnit', 'formatDate', 'formatMonthYear'],
     template: `
         <div>
-            <!-- 1. DOKUMEN INVOICE BULANAN (Desain Rapi A4 + Kolom Tanggal) -->
+            <!-- 1. DOKUMEN INVOICE BULANAN (A4 DENGAN SUB-RINCIAN TANGGAL) -->
             <div v-if="printData" class="hidden print:block w-full max-w-4xl p-6 bg-white text-black text-xs print-page">
-                <!-- Kop Surat Rapat -->
+                <!-- Kop Surat -->
                 <div class="flex justify-between items-start border-b-2 border-indigo-900 pb-3 mb-4">
                     <div class="flex items-center space-x-3">
                         <img v-if="profile.logo_url" :src="profile.logo_url" class="w-12 h-12 object-cover rounded-full bg-slate-50 p-0.5 shrink-0">
@@ -35,37 +35,43 @@ export default {
                     </div>
                 </div>
 
-                <!-- Tabel Rincian Diberikan Kolom Tanggal -->
+                <!-- Tabel Rincian Item + Sub-Daftar Rincian Tanggal Pengambilan -->
                 <table class="w-full text-left border-collapse border border-slate-200 text-[11px] mb-4">
                     <thead>
                         <tr class="bg-indigo-900 text-white font-semibold text-[10px]">
-                            <th class="p-1.5 border border-slate-200 text-center">Tanggal</th>
-                            <th class="p-1.5 border border-slate-200">Deskripsi Item Laundry</th>
-                            <th class="p-1.5 border border-slate-200 text-center">Satuan</th>
-                            <th class="p-1.5 border border-slate-200 text-center">Qty</th>
-                            <th class="p-1.5 border border-slate-200 text-right">Harga Satuan</th>
-                            <th class="p-1.5 border border-slate-200 text-right">Subtotal</th>
+                            <th class="p-2 border border-slate-200">Deskripsi Item Laundry & Rincian Tanggal</th>
+                            <th class="p-2 border border-slate-200 text-center">Satuan</th>
+                            <th class="p-2 border border-slate-200 text-center">Total Qty</th>
+                            <th class="p-2 border border-slate-200 text-right">Harga Satuan</th>
+                            <th class="p-2 border border-slate-200 text-right">Subtotal</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-200">
                         <tr v-for="(item, idx) in printData.items" :key="idx" class="even:bg-slate-50/50">
-                            <td class="p-1.5 border border-slate-200 text-center text-slate-500 text-[10px]">{{ formatDate(item.tanggal) }}</td>
-                            <td class="p-1.5 border border-slate-200 font-semibold text-slate-800">{{ item.nama_layanan }}</td>
-                            <td class="p-1.5 border border-slate-200 text-center text-slate-600">{{ item.satuan }}</td>
-                            <td class="p-1.5 border border-slate-200 text-center font-bold text-slate-800">{{ item.qty }}</td>
-                            <td class="p-1.5 border border-slate-200 text-right text-slate-600">Rp {{ (item.harga_satuan || 0).toLocaleString() }}</td>
-                            <td class="p-1.5 border border-slate-200 text-right font-bold text-slate-800">Rp {{ (item.subtotal || 0).toLocaleString() }}</td>
+                            <td class="p-2 border border-slate-200">
+                                <div class="font-bold text-slate-800 text-xs">{{ item.nama_layanan }}</div>
+                                <!-- Badge Sub-Daftar Rincian Tanggal Pengambilan -->
+                                <div v-if="item.dates && item.dates.length > 0" class="text-[9px] text-slate-500 mt-1 leading-relaxed">
+                                    <span v-for="(d, dIdx) in item.dates" :key="dIdx" class="inline-block bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200/60 mr-1 mb-0.5">
+                                        📅 {{ d.tanggal }}: <strong>{{ d.qty }} {{ item.satuan }}</strong>
+                                    </span>
+                                </div>
+                            </td>
+                            <td class="p-2 border border-slate-200 text-center text-slate-600 align-top">{{ item.satuan }}</td>
+                            <td class="p-2 border border-slate-200 text-center font-bold text-slate-800 align-top">{{ item.qty }}</td>
+                            <td class="p-2 border border-slate-200 text-right text-slate-600 align-top">Rp {{ (item.harga_satuan || 0).toLocaleString() }}</td>
+                            <td class="p-2 border border-slate-200 text-right font-bold text-slate-800 align-top">Rp {{ (item.subtotal || 0).toLocaleString() }}</td>
                         </tr>
                         <tr v-if="printData.diskon && printData.diskon > 0" class="bg-slate-50 font-semibold text-xs">
-                            <td colspan="5" class="p-1.5 text-right text-slate-600 border">Subtotal Tagihan:</td>
+                            <td colspan="4" class="p-1.5 text-right text-slate-600 border">Subtotal Tagihan:</td>
                             <td class="p-1.5 text-right text-slate-800 border">Rp {{ (printData.subtotal_penyesuaian || printData.subtotal_awal || printData.total_tagihan).toLocaleString() }}</td>
                         </tr>
                         <tr v-if="printData.diskon && printData.diskon > 0" class="bg-slate-50 font-semibold text-xs text-rose-600">
-                            <td colspan="5" class="p-1.5 text-right border">Diskon / Potongan Harga:</td>
+                            <td colspan="4" class="p-1.5 text-right border">Diskon / Potongan Harga:</td>
                             <td class="p-1.5 text-right border">- Rp {{ Number(printData.diskon).toLocaleString() }}</td>
                         </tr>
                         <tr class="bg-indigo-50 font-bold text-xs">
-                            <td colspan="5" class="p-2 text-right text-indigo-900 border">TOTAL YANG HARUS DIBAYAR:</td>
+                            <td colspan="4" class="p-2 text-right text-indigo-900 border">TOTAL YANG HARUS DIBAYAR:</td>
                             <td class="p-2 text-right text-indigo-900 border">Rp {{ printData.total_tagihan.toLocaleString() }}</td>
                         </tr>
                     </tbody>
@@ -81,7 +87,7 @@ export default {
                         </p>
                     </div>
                     <div class="text-center flex flex-col justify-end items-center">
-                        <p class="text-[10px] text-slate-400 mb-6">Hormat Kami,</p>
+                        <p class="text-[10px] text-slate-400 mb-8">Hormat Kami,</p>
                         <p class="font-bold text-indigo-900 border-t border-slate-300 pt-0.5 px-6 uppercase">{{ profile.nama_laundry || 'Nays Laundry' }}</p>
                     </div>
                 </div>

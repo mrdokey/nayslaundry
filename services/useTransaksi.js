@@ -45,15 +45,27 @@ export function useTransaksi(customers, services, getPrice, getCustomerName) {
     const unbilledTransactionsCount = computed(() => transactions.value.filter(t => t.status_tagihan === 'belum_ditagih').length);
 
     // Filter Nama + Rentang Tanggal
-    const filteredTransactions = computed(() => {
-        return transactions.value.filter(t => {
-            const q = searchQueryTransactions.value.toLowerCase().trim();
-            const matchName = !q || getCustomerName(t.id_pelanggan).toLowerCase().includes(q);
-            const matchStart = !filterStartDate.value || t.tanggal >= filterStartDate.value;
-            const matchEnd = !filterEndDate.value || t.tanggal <= filterEndDate.value;
-            return matchName && matchStart && matchEnd;
-        });
+    // Tambahkan helper konversi tanggal ISO di atas filteredTransactions:
+const toIso = (ds) => {
+    if (!ds) return '';
+    if (ds.includes('/')) {
+        const p = ds.split('/');
+        return p.length === 3 ? `${p[2]}-${p[1].padStart(2,'0')}-${p[0].padStart(2,'0')}` : ds;
+    }
+    return ds;
+};
+
+// Ubah fungsi filteredTransactions menjadi:
+const filteredTransactions = computed(() => {
+    return transactions.value.filter(t => {
+        const q = searchQueryTransactions.value.toLowerCase().trim();
+        const matchName = !q || getCustomerName(t.id_pelanggan).toLowerCase().includes(q);
+        const isoDate = toIso(t.tanggal);
+        const matchStart = !filterStartDate.value || isoDate >= filterStartDate.value;
+        const matchEnd = !filterEndDate.value || isoDate <= filterEndDate.value;
+        return matchName && matchStart && matchEnd;
     });
+});
 
     // Pengelompokan Transaksi (Belum Ditagih & Sudah Ditagih)
     const unbilledTransactions = computed(() => filteredTransactions.value.filter(t => t.status_tagihan === 'belum_ditagih'));

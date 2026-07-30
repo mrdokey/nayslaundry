@@ -17,10 +17,12 @@ export default {
         const openBilled = Vue.ref(false);  // Default Tertutup
 
         // Mengelompokkan transaksi secara internal dari props.transactions
-        const unbilledList = Vue.computed(() => {
-            if (!props.transactions) return [];
-            return props.transactions.filter(t => t.status_tagihan === 'belum_ditagih');
-        });
+        // Ubah bagian unbilledList di setup() menjadi seperti ini:
+const unbilledList = Vue.computed(() => {
+    if (!props.transactions) return [];
+    // Menggunakan !== 'sudah_ditagih' agar semua data lama otomatis masuk ke Belum Ditagih
+    return props.transactions.filter(t => t.status_tagihan !== 'sudah_ditagih');
+});
 
         const billedList = Vue.computed(() => {
             if (!props.transactions) return [];

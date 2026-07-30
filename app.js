@@ -10,7 +10,6 @@ import PelangganView from "./components/PelangganView.js";
 import MasterItemView from "./components/MasterItemView.js";
 import ProfilView from "./components/ProfilView.js";
 import InvoicePrintView from "./components/InvoicePrintView.js";
-import MasterItemView from "./components/MasterItemView.js";
 
 const { createApp, ref, onMounted, computed } = Vue;
 
@@ -273,36 +272,36 @@ createApp({
         };
         const deleteCustomer = async (id) => { if (confirm("Hapus pelanggan?")) { try { await deleteDoc(doc(db, "pelanggan", id)); } catch (e) { alert("Error: " + e.message); } } };
 
-        const openAddService = () => { isEditingService.value = false; serviceForm.value = { id: '', nama_layanan: '', satuan: 'Pcs', harga_standar: 0 }; showServiceForm.value = true; };
+        const openAddService = () => { isEditingService.value = false; serviceForm.value = { id: '', nama_layanan: '', satuan: 'Pcs', harga_standar: 0, kategori: 'Linen Kamar' }; showServiceForm.value = true; };
         const openEditService = (item) => { 
-    isEditingService.value = true; 
-    serviceForm.value = { 
-        ...item, 
-        kategori: item.kategori || 'Linen Kamar' // <-- 3. Sisipkan di sini
-    }; 
-    showServiceForm.value = true; 
-};
+            isEditingService.value = true; 
+            serviceForm.value = { 
+                ...item, 
+                kategori: item.kategori || 'Linen Kamar'
+            }; 
+            showServiceForm.value = true; 
+        };
         const saveService = async () => {
-    try {
-        if (isEditingService.value) {
-            await updateDoc(doc(db, "layanan", serviceForm.value.id), {
-                nama_layanan: serviceForm.value.nama_layanan,
-                satuan: serviceForm.value.satuan,
-                harga_standar: Number(serviceForm.value.harga_standar),
-                kategori: serviceForm.value.kategori || 'Linen Kamar' // <-- 1. Sisipkan di sini (Edit)
-            });
-        } else {
-            await addDoc(collection(db, "layanan"), {
-                nama_layanan: serviceForm.value.nama_layanan,
-                satuan: serviceForm.value.satuan,
-                harga_standar: Number(serviceForm.value.harga_standar),
-                kategori: serviceForm.value.kategori || 'Linen Kamar', // <-- 2. Sisipkan di sini (Tambah)
-                tanggal_dibuat: new Date().toISOString()
-            });
-        }
-        showServiceForm.value = false;
-    } catch (e) { alert("Error: " + e.message); }
-};
+            try {
+                if (isEditingService.value) {
+                    await updateDoc(doc(db, "layanan", serviceForm.value.id), {
+                        nama_layanan: serviceForm.value.nama_layanan,
+                        satuan: serviceForm.value.satuan,
+                        harga_standar: Number(serviceForm.value.harga_standar),
+                        kategori: serviceForm.value.kategori || 'Linen Kamar'
+                    });
+                } else {
+                    await addDoc(collection(db, "layanan"), {
+                        nama_layanan: serviceForm.value.nama_layanan,
+                        satuan: serviceForm.value.satuan,
+                        harga_standar: Number(serviceForm.value.harga_standar),
+                        kategori: serviceForm.value.kategori || 'Linen Kamar',
+                        tanggal_dibuat: new Date().toISOString()
+                    });
+                }
+                showServiceForm.value = false;
+            } catch (e) { alert("Error: " + e.message); }
+        };
         const deleteService = async (id) => { if (confirm("Hapus item?")) { try { await deleteDoc(doc(db, "layanan", id)); } catch (e) { alert("Error: " + e.message); } } };
 
         const openCustomPrices = (c) => {

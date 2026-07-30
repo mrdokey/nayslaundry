@@ -33,42 +33,45 @@ export function useTransaksi(customers, services, getPrice, getCustomerName) {
         return p.length === 3 ? `${p[2]}/${p[1]}/${p[0]}` : ds; 
     };
 
+    // Helper konversi tanggal ISO presisi dengan digit padding (YYYY-MM-DD)
+    const toIso = (ds) => {
+        if (!ds) return '';
+        if (ds.includes('/')) {
+            const p = ds.split('/');
+            return p.length === 3 ? `${p[2]}-${p[1].padStart(2,'0')}-${p[0].padStart(2,'0')}` : ds;
+        } else if (ds.includes('-')) {
+            const p = ds.split('-');
+            return p.length === 3 ? `${p[0]}-${p[1].padStart(2,'0')}-${p[2].padStart(2,'0')}` : ds;
+        }
+        return ds;
+    };
+
     const getCustomerUnbilledTotal = (custId) => {
         let total = 0;
-        transactions.value.filter(t => t.id_pelanggan === custId && t.status_tagihan === 'belum_ditagih').forEach(t => {
+        transactions.value.filter(t => t.id_pelanggan === custId && t.status_tagihan !== 'sudah_ditagih').forEach(t => {
             t.items.forEach(item => { total += Number(item.qty) * getPrice(custId, item.id_layanan); });
         });
         return total;
     };
 
     const hasUnbilledCustomers = computed(() => customers.value.some(c => getCustomerUnbilledTotal(c.id) > 0));
-    const unbilledTransactionsCount = computed(() => transactions.value.filter(t => t.status_tagihan === 'belum_ditagih').length);
+    const unbilledTransactionsCount = computed(() => transactions.value.filter(t => t.status_tagihan !== 'sudah_ditagih').length);
 
     // Filter Nama + Rentang Tanggal
-    // Tambahkan helper konversi tanggal ISO di atas filteredTransactions:
-const toIso = (ds) => {
-    if (!ds) return '';
-    if (ds.includes('/')) {
-        const p = ds.split('/');
-        return p.length === 3 ? `${p[2]}-${p[1].padStart(2,'0')}-${p[0].padStart(2,'0')}` : ds;
-    }
-    return ds;
-};
-
-// Ubah fungsi filteredTransactions menjadi:
-const filteredTransactions = computed(() => {
-    return transactions.value.filter(t => {
-        const q = searchQueryTransactions.value.toLowerCase().trim();
-        const matchName = !q || getCustomerName(t.id_pelanggan).toLowerCase().includes(q);
-        const isoDate = toIso(t.tanggal);
-        const matchStart = !filterStartDate.value || isoDate >= filterStartDate.value;
-        const matchEnd = !filterEndDate.value || isoDate <= filterEndDate.value;
-        return matchName && matchStart && matchEnd;
+    const filteredTransactions = computed(() => {
+        return transactions.value.filter(t => {
+            const q = searchQueryTransactions.value.toLowerCase().trim();
+            const matchName = !q || getCustomerName(t.id_pelanggan).toLowerCase().includes(q);
+            const isoDate = toIso(t.tanggal);
+            const matchStart = !filterStartDate.value || isoDate >= filterStartDate.value;
+            const matchEnd = !filterEndDate.value || isoDate <= filterEndDate.value;
+            return matchName && matchStart && matchEnd;
+        });
     });
-});
 
     // Pengelompokan Transaksi (Belum Ditagih & Sudah Ditagih)
-    const unbilledTransactions = computed(() => filteredTransactions.value.filter(t => t.status_tagihan === 'belum_ditagih'));
+    // PERBAIKAN: Menggunakan !== 'sudah_ditagih' agar data transaksi lama otomatis muncul di Belum Ditagih
+    const unbilledTransactions = computed(() => filteredTransactions.value.filter(t => t.status_tagihan !== 'sudah_ditagih'));
     const billedTransactions = computed(() => filteredTransactions.value.filter(t => t.status_tagihan === 'sudah_ditagih'));
 
     const openAddTransaction = () => {
@@ -110,46 +113,43 @@ const filteredTransactions = computed(() => {
     const removeTrxItem = (idx) => { trxForm.value.items.splice(idx, 1); };
 
     const saveTransaction = async () => {
-    if (!trxForm.value.id_pelanggan || !trxForm.value.tanggal) { 
-        alert("Harap pilih pelanggan dan tanggal."); 
-        return; 
-    }
-    if (trxForm.value.items.length === 0) { 
-        alert("Harap masukkan minimal satu item ke daftar."); 
-        return; 
-    }
-
-    try {
-        let savedData = {
-            id_pelanggan: trxForm.value.id_pelanggan,
-            tanggal: trxForm.value.tanggal,
-            items: trxForm.value.items,
-            status_tagihan: 'belum_ditagih'
-        };
-
-        if (isEditingTrx.value) {
-            // Update transaksi yang diedit
-            await updateDoc(doc(db, "transaksi", editingTrxId.value), savedData);
-            savedData.id = editingTrxId.value;
-            alert("Transaksi berhasil diperbarui!");
-        } else {
-            // Tambah transaksi baru
-            const docRef = await addDoc(collection(db, "transaksi"), savedData);
-            savedData.id = docRef.id;
-            alert("Transaksi berhasil disimpan!");
+        if (!trxForm.value.id_pelanggan || !trxForm.value.tanggal) { 
+            alert("Harap pilih pelanggan dan tanggal."); 
+            return; 
+        }
+        if (trxForm.value.items.length === 0) { 
+            alert("Harap masukkan minimal satu item ke daftar."); 
+            return; 
         }
 
-        showTransactionForm.value = false;
+        try {
+            let savedData = {
+                id_pelanggan: trxForm.value.id_pelanggan,
+                tanggal: trxForm.value.tanggal,
+                items: trxForm.value.items,
+                status_tagihan: 'belum_ditagih'
+            };
 
-        // POP-UP OTOMATIS: Penawaran Cetak Nota A5 Langsung
-        if (confirm("Apakah Anda ingin langsung mencetak Nota Surat Jalan A5 untuk transaksi ini?")) {
-            printA5Note(savedData);
+            if (isEditingTrx.value) {
+                await updateDoc(doc(db, "transaksi", editingTrxId.value), savedData);
+                savedData.id = editingTrxId.value;
+                alert("Transaksi berhasil diperbarui!");
+            } else {
+                const docRef = await addDoc(collection(db, "transaksi"), savedData);
+                savedData.id = docRef.id;
+                alert("Transaksi berhasil disimpan!");
+            }
+
+            showTransactionForm.value = false;
+
+            if (confirm("Apakah Anda ingin langsung mencetak Nota Surat Jalan A5 untuk transaksi ini?")) {
+                printA5Note(savedData);
+            }
+
+        } catch (e) { 
+            alert("Gagal menyimpan transaksi: " + e.message); 
         }
-
-    } catch (e) { 
-        alert("Gagal menyimpan transaksi: " + e.message); 
-    }
-};
+    };
 
     const deleteTransaction = async (id, status) => {
         if (status === 'sudah_ditagih') { alert("Transaksi yang sudah masuk invoice bulanan tidak dapat dihapus."); return; }

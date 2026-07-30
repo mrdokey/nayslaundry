@@ -39,7 +39,7 @@ createApp({
                     <button @click="menuOpen = !menuOpen" class="text-xl p-2">☰</button>
                 </header>
 
-                <div v-if="menuOpen" @click="menuOpen = false" class="fixed inset-0 bg-black/40 z-40"></div>
+                <div v-if="menuOpen" @click="menuOpen = false" class="fixed inset-0 bg-black/40 z-40 touch-none"></div>
                 <aside :class="menuOpen ? 'translate-x-0' : '-translate-x-full'" class="fixed inset-y-0 left-0 w-56 bg-indigo-900 text-white z-50 transform transition-transform duration-200 flex flex-col">
                     <div class="p-4 border-b border-indigo-800 flex justify-between items-center"><span class="font-bold">Menu</span><button @click="menuOpen = false">✕</button></div>
                     <nav class="flex-1 p-3 space-y-1">
@@ -139,7 +139,16 @@ createApp({
     :format-month-year="formatMonthYear" />
         </div>
     `,
-    setup() {
+    setup() 
+    // Tambahkan watch ini di dalam setup() pada file app.js Anda:
+Vue.watch(menuOpen, (val) => {
+    if (val) {
+        document.body.classList.add('overflow-hidden');
+    } else {
+        document.body.classList.remove('overflow-hidden');
+    }
+});
+    {
         // MEMBACA TAB TERAKHIR DARI LOCALSTORAGE
         const savedTab = localStorage.getItem('nays_active_tab');
         const activeTab = ref(savedTab || 'dashboard');

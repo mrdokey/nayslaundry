@@ -3,20 +3,20 @@ export default {
     props: ['printData', 'printA5Data', 'profile', 'getCustomerName', 'getCustomerAddress', 'getServiceName', 'getServiceUnit', 'formatDate', 'formatMonthYear'],
     template: `
         <div>
-            <!-- 1. DOKUMEN INVOICE BULANAN (A4) -->
-            <div v-if="printData" class="hidden print:block w-full max-w-4xl p-6 bg-white text-black text-sm">
-                <!-- Kop Surat -->
+            <!-- 1. DOKUMEN INVOICE BULANAN (Desain Rapi A4 + Kolom Tanggal) -->
+            <div v-if="printData" class="hidden print:block w-full max-w-4xl p-6 bg-white text-black text-xs print-page">
+                <!-- Kop Surat Rapat -->
                 <div class="flex justify-between items-start border-b-2 border-indigo-900 pb-3 mb-4">
                     <div class="flex items-center space-x-3">
-                        <img v-if="profile.logo_url" :src="profile.logo_url" class="w-14 h-14 object-cover rounded-full bg-slate-50 p-1 shrink-0">
+                        <img v-if="profile.logo_url" :src="profile.logo_url" class="w-12 h-12 object-cover rounded-full bg-slate-50 p-0.5 shrink-0">
                         <div class="leading-tight">
-                            <h1 class="text-xl font-bold text-indigo-900 uppercase tracking-wide leading-none mb-1">{{ profile.nama_laundry || 'Nays Laundry' }}</h1>
+                            <h1 class="text-lg font-bold text-indigo-900 uppercase tracking-wide leading-none mb-1">{{ profile.nama_laundry || 'Nays Laundry' }}</h1>
                             <p class="text-[10px] text-slate-600 whitespace-pre-line leading-tight">{{ profile.alamat }}</p>
                             <p class="text-[10px] text-slate-600 leading-tight">Telp: {{ profile.no_telepon }}</p>
                         </div>
                     </div>
                     <div class="text-right leading-tight">
-                        <h2 class="text-2xl font-extrabold text-slate-300 tracking-wider">INVOICE</h2>
+                        <h2 class="text-xl font-extrabold text-slate-300 tracking-wider">INVOICE</h2>
                         <p class="text-[10px] text-slate-700 mt-1">Nomor: {{ printData.no_invoice }}</p>
                         <p class="text-[10px] text-slate-400">Tanggal: {{ formatDate(printData.tanggal_buat) }}</p>
                     </div>
@@ -25,51 +25,53 @@ export default {
                 <div class="grid grid-cols-2 gap-4 mb-4">
                     <div>
                         <h3 class="text-[10px] font-bold text-indigo-900 uppercase mb-0.5">Bill To:</h3>
-                        <p class="font-bold text-slate-800 text-sm leading-none">{{ getCustomerName(printData.id_pelanggan) }}</p>
+                        <p class="font-bold text-slate-800 text-xs leading-none">{{ getCustomerName(printData.id_pelanggan) }}</p>
                         <p class="text-[10px] text-slate-600 mt-0.5">{{ getCustomerAddress(printData.id_pelanggan) }}</p>
                     </div>
                     <div class="text-right">
                         <h3 class="text-[10px] font-bold text-indigo-900 uppercase mb-0.5">Periode:</h3>
-                        <p class="font-bold text-slate-800 text-sm leading-none">{{ formatMonthYear(printData.periode) }}</p>
+                        <p class="font-bold text-slate-800 text-xs leading-none">{{ formatMonthYear(printData.periode) }}</p>
                         <p class="text-[10px] text-slate-500 mt-0.5">Payment Method: Cash / Transfer</p>
                     </div>
                 </div>
 
-                <table class="w-full text-left border-collapse border border-slate-200 text-xs mb-4">
+                <!-- Tabel Rincian Diberikan Kolom Tanggal -->
+                <table class="w-full text-left border-collapse border border-slate-200 text-[11px] mb-4">
                     <thead>
-                        <tr class="bg-indigo-900 text-white font-semibold">
-                            <th class="p-2 border">Deskripsi Item Laundry</th>
-                            <th class="p-2 border text-center">Satuan</th>
-                            <th class="p-2 border text-center">Qty</th>
-                            <th class="p-2 border text-right">Harga Satuan</th>
-                            <th class="p-2 border text-right">Subtotal</th>
+                        <tr class="bg-indigo-900 text-white font-semibold text-[10px]">
+                            <th class="p-1.5 border border-slate-200 text-center">Tanggal</th>
+                            <th class="p-1.5 border border-slate-200">Deskripsi Item Laundry</th>
+                            <th class="p-1.5 border border-slate-200 text-center">Satuan</th>
+                            <th class="p-1.5 border border-slate-200 text-center">Qty</th>
+                            <th class="p-1.5 border border-slate-200 text-right">Harga Satuan</th>
+                            <th class="p-1.5 border border-slate-200 text-right">Subtotal</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        <tr v-for="item in printData.items" :key="item.id_layanan">
-                            <td class="p-2 font-semibold text-slate-800 border">{{ item.nama_layanan }}</td>
-                            <td class="p-2 text-center text-slate-600 border">{{ item.satuan }}</td>
-                            <td class="p-2 text-center font-bold text-slate-800 border">{{ item.qty }}</td>
-                            <td class="p-2 text-right text-slate-600 border">Rp {{ item.harga_satuan.toLocaleString() }}</td>
-                            <td class="p-2 text-right font-bold text-slate-800 border">Rp {{ item.subtotal.toLocaleString() }}</td>
+                    <tbody class="divide-y divide-slate-200">
+                        <tr v-for="(item, idx) in printData.items" :key="idx" class="even:bg-slate-50/50">
+                            <td class="p-1.5 border border-slate-200 text-center text-slate-500 text-[10px]">{{ formatDate(item.tanggal) }}</td>
+                            <td class="p-1.5 border border-slate-200 font-semibold text-slate-800">{{ item.nama_layanan }}</td>
+                            <td class="p-1.5 border border-slate-200 text-center text-slate-600">{{ item.satuan }}</td>
+                            <td class="p-1.5 border border-slate-200 text-center font-bold text-slate-800">{{ item.qty }}</td>
+                            <td class="p-1.5 border border-slate-200 text-right text-slate-600">Rp {{ (item.harga_satuan || 0).toLocaleString() }}</td>
+                            <td class="p-1.5 border border-slate-200 text-right font-bold text-slate-800">Rp {{ (item.subtotal || 0).toLocaleString() }}</td>
                         </tr>
-                        <!-- Baris Rincian Subtotal, Diskon, dan Total Akhir -->
                         <tr v-if="printData.diskon && printData.diskon > 0" class="bg-slate-50 font-semibold text-xs">
-                            <td colspan="4" class="p-2 text-right text-slate-600 border">Subtotal Tagihan:</td>
-                            <td class="p-2 text-right text-slate-800 border">Rp {{ (printData.subtotal_penyesuaian || printData.subtotal_awal || printData.total_tagihan).toLocaleString() }}</td>
+                            <td colspan="5" class="p-1.5 text-right text-slate-600 border">Subtotal Tagihan:</td>
+                            <td class="p-1.5 text-right text-slate-800 border">Rp {{ (printData.subtotal_penyesuaian || printData.subtotal_awal || printData.total_tagihan).toLocaleString() }}</td>
                         </tr>
                         <tr v-if="printData.diskon && printData.diskon > 0" class="bg-slate-50 font-semibold text-xs text-rose-600">
-                            <td colspan="4" class="p-2 text-right border">Diskon / Potongan Harga:</td>
-                            <td class="p-2 text-right border">- Rp {{ Number(printData.diskon).toLocaleString() }}</td>
+                            <td colspan="5" class="p-1.5 text-right border">Diskon / Potongan Harga:</td>
+                            <td class="p-1.5 text-right border">- Rp {{ Number(printData.diskon).toLocaleString() }}</td>
                         </tr>
                         <tr class="bg-indigo-50 font-bold text-xs">
-                            <td colspan="4" class="p-2.5 text-right text-indigo-900 border">TOTAL YANG HARUS DIBAYAR:</td>
-                            <td class="p-2.5 text-right text-indigo-900 border">Rp {{ printData.total_tagihan.toLocaleString() }}</td>
+                            <td colspan="5" class="p-2 text-right text-indigo-900 border">TOTAL YANG HARUS DIBAYAR:</td>
+                            <td class="p-2 text-right text-indigo-900 border">Rp {{ printData.total_tagihan.toLocaleString() }}</td>
                         </tr>
                     </tbody>
                 </table>
 
-                <div class="grid grid-cols-2 gap-4 mt-6 pt-3 border-t border-slate-100">
+                <div class="grid grid-cols-2 gap-4 mt-4 pt-3 border-t border-slate-100">
                     <div>
                         <h4 class="text-[10px] font-bold text-indigo-900 uppercase mb-0.5">Informasi Rekening Pembayaran:</h4>
                         <p class="text-xs text-slate-800 font-semibold leading-relaxed">
@@ -79,19 +81,19 @@ export default {
                         </p>
                     </div>
                     <div class="text-center flex flex-col justify-end items-center">
-                        <p class="text-[10px] text-slate-400 mb-8">Hormat Kami,</p>
+                        <p class="text-[10px] text-slate-400 mb-6">Hormat Kami,</p>
                         <p class="font-bold text-indigo-900 border-t border-slate-300 pt-0.5 px-6 uppercase">{{ profile.nama_laundry || 'Nays Laundry' }}</p>
                     </div>
                 </div>
 
-                <div v-if="profile.tos" class="mt-6 border-t pt-3 text-[8px] text-slate-400 leading-tight">
+                <div v-if="profile.tos" class="mt-4 border-t pt-2 text-[8px] text-slate-400 leading-tight">
                     <p class="font-bold text-slate-500 mb-0.5">Syarat & Ketentuan (Terms of Service):</p>
                     <p class="whitespace-pre-line pl-2">{{ profile.tos }}</p>
                 </div>
             </div>
 
             <!-- 2. DOKUMEN NOTA SURAT JALAN HARIAN (A5) -->
-            <div v-if="printA5Data" class="hidden print:block w-full max-w-2xl p-4 bg-white text-black text-xs">
+            <div v-if="printA5Data" class="hidden print:block w-full max-w-xl p-4 bg-white text-black text-xs print-page">
                 <div class="flex justify-between items-start border-b-2 border-indigo-900 pb-2 mb-3">
                     <div class="flex items-center space-x-2">
                         <img v-if="profile.logo_url" :src="profile.logo_url" class="w-10 h-10 object-cover rounded-full bg-slate-50 p-0.5 shrink-0">

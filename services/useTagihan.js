@@ -77,34 +77,32 @@ export function useTagihan(transactions, getPrice, getServiceName, getServiceUni
     });
 
     const draftInvoiceItems = computed(() => {
-        const custId = invoiceForm.value.id_pelanggan;
-        if (!custId || selectedTrxIds.value.length === 0) return [];
+    const custId = invoiceForm.value.id_pelanggan;
+    if (!custId || selectedTrxIds.value.length === 0) return [];
 
-        const selectedTrxList = availableTrxForDraft.value.filter(t => selectedTrxIds.value.includes(t.id));
-        const mapItems = {};
+    const selectedTrxList = availableTrxForDraft.value.filter(t => selectedTrxIds.value.includes(t.id));
+    const list = [];
 
-        selectedTrxList.forEach(t => {
-            (t.items || []).forEach(item => {
-                if (!mapItems[item.id_layanan]) mapItems[item.id_layanan] = 0;
-                mapItems[item.id_layanan] += Number(item.qty);
-            });
-        });
-
-        const list = [];
-        for (const k of Object.keys(mapItems)) {
-            const qty = mapItems[k];
-            const p = getPrice(custId, k);
+    // Membaca transaksi yang dicentang dan melampirkan t.tanggal di dalam perulangan
+    selectedTrxList.forEach(t => {
+        (t.items || []).forEach(item => {
+            const qty = Number(item.qty);
+            const p = item.harga_satuan !== undefined ? Number(item.harga_satuan) : getPrice(custId, item.id_layanan);
             list.push({
-                id_layanan: k,
-                nama_layanan: getServiceName(k),
-                satuan: getServiceUnit(k),
+                tanggal: t.tanggal, // <-- Variabel 't' valid dan aman di dalam perulangan ini
+                id_layanan: item.id_layanan,
+                nama_layanan: getServiceName(item.id_layanan),
+                satuan: getServiceUnit(item.id_layanan),
                 qty: qty,
                 harga_satuan: p,
                 subtotal: qty * p
             });
-        }
-        return list;
+        });
     });
+
+    // Urutkan rincian item berdasarkan tanggal terlama ke terbaru
+    return list.sort((a, b) => (a.tanggal || '').localeCompare(b.tanggal || ''));
+});
 
     const calculatedSubtotal = computed(() => {
         return draftInvoiceItems.value.reduce((acc, i) => acc + i.subtotal, 0);
@@ -163,15 +161,17 @@ export function useTagihan(transactions, getPrice, getServiceName, getServiceUni
         }
 
         try {
-            let savedData = {
-                id_pelanggan: invoiceForm.value.id_pelanggan,
-                periode: invoiceForm.value.periode,
-                subtotal_awal: calculatedSubtotal.value,
-                subtotal_penyesuaian: Number(manualSubtotal.value),
-                diskon: Number(discountAmount.value),
-                total_tagihan: grandTotal.value,
-                items: draftInvoiceItems.value
-            };
+            // Tambahkan baris trx_ids di dalam objek savedData pada saveInvoice:
+let savedData = {
+    id_pelanggan: invoiceForm.value.id_pelanggan,
+    periode: invoiceForm.value.periode,
+    subtotal_awal: calculatedSubtotal.value,
+    subtotal_penyesuaian: Number(manualSubtotal.value),
+    diskon: Number(discountAmount.value),
+    total_tagihan: grandTotal.value,
+    items: draftInvoiceItems.value,
+    trx_ids: selectedTrxIds.value // <-- SIMPAN ID TRANSAKSI YANG DITAGIHKAN
+};
 
             if (isEditingInvoice.value) {
                 await updateDoc(doc(db, "tagihan", editingInvoiceId.value), savedData);
@@ -205,13 +205,37 @@ export function useTagihan(transactions, getPrice, getServiceName, getServiceUni
     };
 
     const deleteInvoice = async (id) => {
-        if (confirm("Apakah Anda yakin ingin menghapus invoice ini?")) {
-            try {
-                await deleteDoc(doc(db, "tagihan", id));
-                showInvoiceForm.value = false;
-            } catch (e) { alert("Error: " + e.message); }
+    const inv = invoices.value.find(i => i.id === id);
+    if (!inv) return;
+
+    if (confirm(`Hapus invoice ${inv.no_invoice}? Seluruh transaksi harian terkait akan otomatis dikembalikan menjadi 'Belum Ditagih'.`)) {
+        try {
+            // 1. Ambil daftar ID transaksi yang tersimpan di invoice ini
+            let idsToReset = inv.trx_ids || [];
+
+            // Fallback untuk invoice lama yang belum memiliki field trx_ids
+            if (idsToReset.length === 0) {
+                idsToReset = transactions.value
+                    .filter(t => t.id_pelanggan === inv.id_pelanggan && (t.tanggal || '').startsWith(inv.periode) && t.status_tagihan === 'sudah_ditagih')
+                    .map(t => t.id);
+            }
+
+            // 2. Kembalikan status transaksi harian menjadi 'belum_ditagih'
+            const resetPromises = idsToReset.map(trxId => {
+                return updateDoc(doc(db, "transaksi", trxId), { status_tagihan: 'belum_ditagih' });
+            });
+            await Promise.all(resetPromises);
+
+            // 3. Hapus dokumen invoice
+            await deleteDoc(doc(db, "tagihan", id));
+
+            alert("Invoice berhasil dihapus dan transaksi harian telah dikembalikan ke status 'Belum Ditagih'!");
+            showInvoiceForm.value = false;
+        } catch (e) {
+            alert("Gagal menghapus invoice: " + e.message);
         }
-    };
+    }
+};
 
     const updatePaymentStatus = async (id, ns) => {
         try { await updateDoc(doc(db, "tagihan", id), { status_pembayaran: ns }); } catch (e) { alert("Error: " + e.message); }

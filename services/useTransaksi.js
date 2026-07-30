@@ -98,28 +98,46 @@ export function useTransaksi(customers, services, getPrice, getCustomerName) {
     const removeTrxItem = (idx) => { trxForm.value.items.splice(idx, 1); };
 
     const saveTransaction = async () => {
-        if (!trxForm.value.id_pelanggan || !trxForm.value.tanggal) { alert("Harap isi data."); return; }
-        if (trxForm.value.items.length === 0) { alert("Isi minimal 1 item."); return; }
-        try {
-            if (isEditingTrx.value) {
-                await updateDoc(doc(db, "transaksi", editingTrxId.value), {
-                    id_pelanggan: trxForm.value.id_pelanggan,
-                    tanggal: trxForm.value.tanggal,
-                    items: trxForm.value.items
-                });
-                alert("Transaksi berhasil diperbarui!");
-            } else {
-                await addDoc(collection(db, "transaksi"), { 
-                    id_pelanggan: trxForm.value.id_pelanggan, 
-                    tanggal: trxForm.value.tanggal, 
-                    items: trxForm.value.items, 
-                    status_tagihan: 'belum_ditagih' 
-                });
-                alert("Transaksi berhasil disimpan!");
-            }
-            showTransactionForm.value = false;
-        } catch (e) { alert("Error: " + e.message); }
-    };
+    if (!trxForm.value.id_pelanggan || !trxForm.value.tanggal) { 
+        alert("Harap pilih pelanggan dan tanggal."); 
+        return; 
+    }
+    if (trxForm.value.items.length === 0) { 
+        alert("Harap masukkan minimal satu item ke daftar."); 
+        return; 
+    }
+
+    try {
+        let savedData = {
+            id_pelanggan: trxForm.value.id_pelanggan,
+            tanggal: trxForm.value.tanggal,
+            items: trxForm.value.items,
+            status_tagihan: 'belum_ditagih'
+        };
+
+        if (isEditingTrx.value) {
+            // Update transaksi yang diedit
+            await updateDoc(doc(db, "transaksi", editingTrxId.value), savedData);
+            savedData.id = editingTrxId.value;
+            alert("Transaksi berhasil diperbarui!");
+        } else {
+            // Tambah transaksi baru
+            const docRef = await addDoc(collection(db, "transaksi"), savedData);
+            savedData.id = docRef.id;
+            alert("Transaksi berhasil disimpan!");
+        }
+
+        showTransactionForm.value = false;
+
+        // POP-UP OTOMATIS: Penawaran Cetak Nota A5 Langsung
+        if (confirm("Apakah Anda ingin langsung mencetak Nota Surat Jalan A5 untuk transaksi ini?")) {
+            printA5Note(savedData);
+        }
+
+    } catch (e) { 
+        alert("Gagal menyimpan transaksi: " + e.message); 
+    }
+};
 
     const deleteTransaction = async (id, status) => {
         if (status === 'sudah_ditagih') { alert("Transaksi yang sudah masuk invoice bulanan tidak dapat dihapus."); return; }

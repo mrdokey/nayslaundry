@@ -10,10 +10,11 @@ export default {
     emits: [
         'update:searchQuery', 'update:filterStartDate', 'update:filterEndDate', 
         'update:itemSearch', 'update:selectedItemQty', 'update:selectedItemPrice', 'openAdd', 'openEdit', 
-        'closeForm', 'selectSearchItem', 'addItem', 'removeItem', 'save', 'delete', 'printA5'
+        'closeForm', 'selectSearchItem', 'addItem', 'removeItem', 'save', 'delete', 'printA5', 'shortcutTagihan'
     ],
-    setup(props) {
-        const collapsedCustomers = Vue.ref([]); // State grup hotel yang ditutup (default terbuka semua)
+    setup(props, { emit }) {
+        const expandedCustomers = Vue.ref([]); // State grup hotel (Default Kosong = Tertutup Semua)
+        const checkedTrxIds = Vue.ref([]);     // State ID transaksi yang dicentang
 
         // Mengelompokkan transaksi PER PELANGGAN (Hotel/Vila)
         const groupedByCustomer = Vue.computed(() => {
@@ -39,22 +40,49 @@ export default {
         });
 
         const toggleCustomerGroup = (custId) => {
-            const idx = collapsedCustomers.value.indexOf(custId);
-            if (idx > -1) collapsedCustomers.value.splice(idx, 1);
-            else collapsedCustomers.value.push(custId);
+            const idx = expandedCustomers.value.indexOf(custId);
+            if (idx > -1) expandedCustomers.value.splice(idx, 1);
+            else expandedCustomers.value.push(custId);
         };
 
-        // Terbuka secara default agar langsung terlihat di HP
+        // DEFAULT TERTUTUP (Kecuali diketuk atau sedang mengetik pencarian)
         const isCustomerExpanded = (custId) => {
             if (props.searchQuery && props.searchQuery.trim() !== '') return true;
-            return !collapsedCustomers.value.includes(custId);
+            return expandedCustomers.value.includes(custId);
         };
 
         const getCustomerUnbilledCount = (custTransactions) => {
             return custTransactions.filter(t => t.status_tagihan !== 'sudah_ditagih').length;
         };
 
-        return { groupedByCustomer, toggleCustomerGroup, isCustomerExpanded, getCustomerUnbilledCount };
+        // Trigger Shortcut Pembuatan Tagihan Langsung dari Centang
+        const triggerShortcutTagihan = () => {
+            if (checkedTrxIds.value.length === 0) return;
+
+            const firstTrx = props.transactions.find(t => checkedTrxIds.value.includes(t.id));
+            if (!firstTrx) return;
+
+            // Validasi: Memastikan semua transaksi berasal dari hotel yang sama
+            const sameCustomer = checkedTrxIds.value.every(id => {
+                const t = props.transactions.find(x => x.id === id);
+                return t && t.id_pelanggan === firstTrx.id_pelanggan;
+            });
+
+            if (!sameCustomer) {
+                alert("Harap pilih transaksi dari satu hotel/vila yang sama untuk diterbitkan tagihan.");
+                return;
+            }
+
+            emit('shortcutTagihan', {
+                id_pelanggan: firstTrx.id_pelanggan,
+                periode: firstTrx.tanggal.slice(0, 7), // Ambil format YYYY-MM
+                trx_ids: [...checkedTrxIds.value]
+            });
+
+            checkedTrxIds.value = []; // Reset centang setelah dialihkan
+        };
+
+        return { expandedCustomers, checkedTrxIds, groupedByCustomer, toggleCustomerGroup, isCustomerExpanded, getCustomerUnbilledCount, triggerShortcutTagihan };
     },
     template: `
         <section class="space-y-3">
@@ -77,6 +105,14 @@ export default {
                     <label class="block text-[10px] font-semibold text-slate-400 mb-0.5">Sampai Tanggal</label>
                     <input :value="filterEndDate" @input="$emit('update:filterEndDate', $event.target.value)" type="date" class="w-full px-2 py-1 border rounded-lg text-xs">
                 </div>
+            </div>
+
+            <!-- BILAH ACTION SHORTCUT TAGIHAN (Muncul Otomatis Jika Ada Centang) -->
+            <div v-if="!showForm && checkedTrxIds.length > 0" class="bg-indigo-950 text-white p-3 rounded-xl flex justify-between items-center shadow-lg border border-indigo-800 animate-pulse my-2">
+                <span class="font-bold text-xs">Terpilih {{ checkedTrxIds.length }} Transaksi Harian</span>
+                <button @click="triggerShortcutTagihan" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg font-bold text-xs shadow">
+                    💵 Buat Tagihan Sekarang ➡️
+                </button>
             </div>
 
             <!-- Form Transaksi (Tambah / Edit Cart-Style) -->
@@ -160,7 +196,7 @@ export default {
                 </div>
             </div>
 
-            <!-- ACCORDION TRANSAKSI PER PELANGGAN -->
+            <!-- ACCORDION TRANSAKSI PER PELANGGAN (DEFAULT TERTUTUP RAPI) -->
             <div v-if="!showForm" class="space-y-3">
                 <div v-for="(transList, custId) in groupedByCustomer" :key="custId" class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
                     <!-- Header Accordion Pelanggan -->
@@ -179,9 +215,13 @@ export default {
                     <div v-show="isCustomerExpanded(custId)" class="p-3 space-y-2 bg-white">
                         <div v-for="t in transList" :key="t.id" class="bg-slate-50 p-3 rounded-xl border border-slate-100 shadow-sm space-y-2">
                             <div class="flex justify-between items-start">
-                                <div>
-                                    <h4 class="font-bold text-slate-800 text-xs">{{ getCustomerName(t.id_pelanggan) }}</h4>
-                                    <span class="text-slate-400 text-[10px]">{{ formatDate(t.tanggal) }}</span>
+                                <div class="flex items-center space-x-2.5">
+                                    <!-- KOTAK CENTANG UNTUK SHORTCUT PEMBUATAN TAGIHAN -->
+                                    <input v-if="t.status_tagihan !== 'sudah_ditagih'" type="checkbox" :value="t.id" v-model="checkedTrxIds" class="w-4 h-4 text-indigo-600 rounded cursor-pointer">
+                                    <div>
+                                        <h4 class="font-bold text-slate-800 text-xs">{{ getCustomerName(t.id_pelanggan) }}</h4>
+                                        <span class="text-slate-400 text-[10px]">{{ formatDate(t.tanggal) }}</span>
+                                    </div>
                                 </div>
                                 <span :class="t.status_tagihan==='sudah_ditagih'?'bg-emerald-100 text-emerald-800':'bg-amber-100 text-amber-800'" class="px-2 py-0.5 rounded text-[9px] font-bold">
                                     {{ t.status_tagihan==='sudah_ditagih'?'Sudah Ditagih':'Belum Ditagih' }}

@@ -1,14 +1,23 @@
-import { db, doc, collection, addDoc, deleteDoc, onSnapshot } from "../firebase-db.js";
+import { db, doc, collection, addDoc, updateDoc, deleteDoc, onSnapshot } from "../firebase-db.js";
 
 export function useTransaksi(customers, services, getPrice, getCustomerName) {
     const { ref, onMounted, computed } = Vue;
     const transactions = ref([]);
     const searchQueryTransactions = ref('');
+    const filterStartDate = ref('');
+    const filterEndDate = ref('');
+    
     const showTransactionForm = ref(false);
+    const isEditingTrx = ref(false);
+    const editingTrxId = ref('');
     const trxForm = ref({ id_pelanggan: '', tanggal: '', items: [] });
+    
     const itemSearchQuery = ref('');
     const selectedItemId = ref('');
     const selectedItemQty = ref('');
+
+    // State cetak Nota A5
+    const printA5Data = ref(null);
 
     onMounted(() => {
         onSnapshot(collection(db, "transaksi"), (snap) => {
@@ -17,7 +26,12 @@ export function useTransaksi(customers, services, getPrice, getCustomerName) {
         });
     });
 
-    const formatDate = (ds) => { if (!ds) return '-'; if (ds.includes('T')) ds = ds.split('T')[0]; const p = ds.split('-'); return p.length === 3 ? `${p[2]}/${p[1]}/${p[0]}` : ds; };
+    const formatDate = (ds) => { 
+        if (!ds) return '-'; 
+        if (ds.includes('T')) ds = ds.split('T')[0]; 
+        const p = ds.split('-'); 
+        return p.length === 3 ? `${p[2]}/${p[1]}/${p[0]}` : ds; 
+    };
 
     const getCustomerUnbilledTotal = (custId) => {
         let total = 0;
@@ -30,14 +44,39 @@ export function useTransaksi(customers, services, getPrice, getCustomerName) {
     const hasUnbilledCustomers = computed(() => customers.value.some(c => getCustomerUnbilledTotal(c.id) > 0));
     const unbilledTransactionsCount = computed(() => transactions.value.filter(t => t.status_tagihan === 'belum_ditagih').length);
 
+    // Filter Nama + Rentang Tanggal
     const filteredTransactions = computed(() => {
-        const q = searchQueryTransactions.value.toLowerCase().trim();
-        return !q ? transactions.value : transactions.value.filter(t => getCustomerName(t.id_pelanggan).toLowerCase().includes(q));
+        return transactions.value.filter(t => {
+            const q = searchQueryTransactions.value.toLowerCase().trim();
+            const matchName = !q || getCustomerName(t.id_pelanggan).toLowerCase().includes(q);
+            const matchStart = !filterStartDate.value || t.tanggal >= filterStartDate.value;
+            const matchEnd = !filterEndDate.value || t.tanggal <= filterEndDate.value;
+            return matchName && matchStart && matchEnd;
+        });
     });
 
+    // Pengelompokan Transaksi (Belum Ditagih & Sudah Ditagih)
+    const unbilledTransactions = computed(() => filteredTransactions.value.filter(t => t.status_tagihan === 'belum_ditagih'));
+    const billedTransactions = computed(() => filteredTransactions.value.filter(t => t.status_tagihan === 'sudah_ditagih'));
+
     const openAddTransaction = () => {
+        isEditingTrx.value = false;
+        editingTrxId.value = '';
         trxForm.value = { id_pelanggan: '', tanggal: new Date().toISOString().split('T')[0], items: [] };
-        itemSearchQuery.value = ''; selectedItemId.value = ''; selectedItemQty.value = ''; showTransactionForm.value = true;
+        itemSearchQuery.value = ''; selectedItemId.value = ''; selectedItemQty.value = ''; 
+        showTransactionForm.value = true;
+    };
+
+    const openEditTransaction = (t) => {
+        isEditingTrx.value = true;
+        editingTrxId.value = t.id;
+        trxForm.value = {
+            id_pelanggan: t.id_pelanggan,
+            tanggal: t.tanggal,
+            items: JSON.parse(JSON.stringify(t.items)) // Clone items array
+        };
+        itemSearchQuery.value = ''; selectedItemId.value = ''; selectedItemQty.value = ''; 
+        showTransactionForm.value = true;
     };
 
     const filteredSearchItems = computed(() => {
@@ -62,19 +101,46 @@ export function useTransaksi(customers, services, getPrice, getCustomerName) {
         if (!trxForm.value.id_pelanggan || !trxForm.value.tanggal) { alert("Harap isi data."); return; }
         if (trxForm.value.items.length === 0) { alert("Isi minimal 1 item."); return; }
         try {
-            await addDoc(collection(db, "transaksi"), { id_pelanggan: trxForm.value.id_pelanggan, tanggal: trxForm.value.tanggal, items: trxForm.value.items, status_tagihan: 'belum_ditagih' });
-            alert("Transaksi tersimpan!"); showTransactionForm.value = false;
+            if (isEditingTrx.value) {
+                await updateDoc(doc(db, "transaksi", editingTrxId.value), {
+                    id_pelanggan: trxForm.value.id_pelanggan,
+                    tanggal: trxForm.value.tanggal,
+                    items: trxForm.value.items
+                });
+                alert("Transaksi berhasil diperbarui!");
+            } else {
+                await addDoc(collection(db, "transaksi"), { 
+                    id_pelanggan: trxForm.value.id_pelanggan, 
+                    tanggal: trxForm.value.tanggal, 
+                    items: trxForm.value.items, 
+                    status_tagihan: 'belum_ditagih' 
+                });
+                alert("Transaksi berhasil disimpan!");
+            }
+            showTransactionForm.value = false;
         } catch (e) { alert("Error: " + e.message); }
     };
 
     const deleteTransaction = async (id, status) => {
-        if (status === 'sudah_ditagih') { alert("Sudah masuk invoice."); return; }
-        if (confirm("Hapus transaksi?")) { try { await deleteDoc(doc(db, "transaksi", id)); } catch (e) { alert("Error: " + e.message); } }
+        if (status === 'sudah_ditagih') { alert("Transaksi yang sudah masuk invoice bulanan tidak dapat dihapus."); return; }
+        if (confirm("Apakah Anda yakin ingin menghapus catatan transaksi ini?")) {
+            try { 
+                await deleteDoc(doc(db, "transaksi", id)); 
+                showTransactionForm.value = false;
+            } catch (e) { alert("Error: " + e.message); }
+        }
+    };
+
+    const printA5Note = (t) => {
+        printA5Data.value = t;
+        setTimeout(() => { window.print(); }, 300);
     };
 
     return {
-        transactions, searchQueryTransactions, showTransactionForm, trxForm, itemSearchQuery, selectedItemId, selectedItemQty,
-        unbilledTransactionsCount, filteredTransactions, filteredSearchItems, formatDate, getCustomerUnbilledTotal, hasUnbilledCustomers,
-        openAddTransaction, selectSearchItem, addTrxItem, removeTrxItem, saveTransaction, deleteTransaction
+        transactions, searchQueryTransactions, filterStartDate, filterEndDate,
+        showTransactionForm, isEditingTrx, editingTrxId, trxForm, itemSearchQuery, selectedItemId, selectedItemQty,
+        unbilledTransactionsCount, filteredTransactions, unbilledTransactions, billedTransactions,
+        filteredSearchItems, formatDate, getCustomerUnbilledTotal, hasUnbilledCustomers, printA5Data,
+        openAddTransaction, openEditTransaction, selectSearchItem, addTrxItem, removeTrxItem, saveTransaction, deleteTransaction, printA5Note
     };
 }

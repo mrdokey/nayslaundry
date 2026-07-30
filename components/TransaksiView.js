@@ -1,34 +1,68 @@
 export default {
     name: 'TransaksiView',
-    props: ['transactions', 'customers', 'services', 'searchQuery', 'showForm', 'trxForm', 'itemSearch', 'selectedItemId', 'selectedItemQty', 'filteredSearchItems', 'getCustomerName', 'getServiceName', 'getServiceUnit', 'getPrice', 'formatDate'],
-    emits: ['update:searchQuery', 'update:itemSearch', 'update:selectedItemQty', 'openAdd', 'closeForm', 'selectSearchItem', 'addItem', 'removeItem', 'save', 'delete'],
+    props: [
+        'unbilledTransactions', 'billedTransactions', 'customers', 'services', 
+        'searchQuery', 'filterStartDate', 'filterEndDate', 'showForm', 'isEditingTrx', 
+        'editingTrxId', 'trxForm', 'itemSearch', 'selectedItemId', 'selectedItemQty', 
+        'filteredSearchItems', 'getCustomerName', 'getServiceName', 'getServiceUnit', 
+        'getPrice', 'formatDate'
+    ],
+    emits: [
+        'update:searchQuery', 'update:filterStartDate', 'update:filterEndDate', 
+        'update:itemSearch', 'update:selectedItemQty', 'openAdd', 'openEdit', 
+        'closeForm', 'selectSearchItem', 'addItem', 'removeItem', 'save', 'delete', 'printA5'
+    ],
+    setup() {
+        const openUnbilled = Vue.ref(true); // Default Terbuka
+        const openBilled = Vue.ref(false);  // Default Tertutup
+
+        return { openUnbilled, openBilled };
+    },
     template: `
         <section class="space-y-3">
             <div class="flex justify-between items-center">
                 <h2 class="text-base font-bold">Transaksi Laundry</h2>
-                <button v-if="!showForm" @click="$emit('openAdd')" class="hidden md:block bg-indigo-600 text-white px-3 py-1.5 rounded-lg font-semibold hover:bg-indigo-700 shadow">+ Tambah</button>
+                <button v-if="!showForm" @click="$emit('openAdd')" class="hidden md:block bg-indigo-600 text-white px-3 py-1.5 rounded-lg font-semibold hover:bg-indigo-700 shadow text-xs">+ Tambah Transaksi</button>
             </div>
 
-            <input v-if="!showForm" :value="searchQuery" @input="$emit('update:searchQuery', $event.target.value)" type="text" placeholder="🔍 Cari nama pelanggan..." class="w-full max-w-xs px-3 py-1.5 border rounded-lg text-xs">
+            <!-- Panel Filter Pencarian & Rentang Tanggal -->
+            <div v-if="!showForm" class="bg-white p-3 rounded-xl border border-slate-200 grid grid-cols-1 sm:grid-cols-3 gap-2">
+                <div>
+                    <label class="block text-[10px] font-semibold text-slate-400 mb-0.5">Cari Pelanggan</label>
+                    <input :value="searchQuery" @input="$emit('update:searchQuery', $event.target.value)" type="text" placeholder="🔍 Ketik nama hotel/vila..." class="w-full px-2.5 py-1 border rounded-lg text-xs focus:outline-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-semibold text-slate-400 mb-0.5">Dari Tanggal</label>
+                    <input :value="filterStartDate" @input="$emit('update:filterStartDate', $event.target.value)" type="date" class="w-full px-2 py-1 border rounded-lg text-xs">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-semibold text-slate-400 mb-0.5">Sampai Tanggal</label>
+                    <input :value="filterEndDate" @input="$emit('update:filterEndDate', $event.target.value)" type="date" class="w-full px-2 py-1 border rounded-lg text-xs">
+                </div>
+            </div>
 
-            <!-- Form Transaksi Cart-Style -->
+            <!-- Form Transaksi (Tambah / Edit) -->
             <div v-if="showForm" class="bg-white p-4 rounded-xl border border-slate-200 space-y-3">
-                <h3 class="font-bold text-slate-700">Form Pencatatan Laundry</h3>
+                <div class="flex justify-between items-center">
+                    <h3 class="font-bold text-slate-700 text-xs">{{ isEditingTrx ? 'Ubah Catatan Transaksi' : 'Form Pencatatan Laundry' }}</h3>
+                    <span v-if="isEditingTrx" class="text-[10px] bg-amber-100 text-amber-800 px-2 py-0.5 rounded font-bold">Mode Edit</span>
+                </div>
+
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                        <label class="block font-semibold text-slate-500 mb-1">Pelanggan</label>
+                        <label class="block text-xs font-semibold text-slate-500 mb-1">Pelanggan</label>
                         <select v-model="trxForm.id_pelanggan" class="w-full p-2 border rounded text-xs">
                             <option value="">-- Pilih Hotel/Vila --</option>
                             <option v-for="c in customers" :key="c.id" :value="c.id">{{ c.nama_pelanggan }}</option>
                         </select>
                     </div>
                     <div>
-                        <label class="block font-semibold text-slate-500 mb-1">Tanggal</label>
+                        <label class="block text-xs font-semibold text-slate-500 mb-1">Tanggal Pengambilan</label>
                         <input v-model="trxForm.tanggal" type="date" class="w-full p-2 border rounded text-xs">
                     </div>
                 </div>
 
-                <!-- Panel Tambah Item ala Cart (Dropdown + Cari) -->
+                <!-- Selector Item Cart -->
                 <div v-if="trxForm.id_pelanggan" class="border p-3 rounded-lg bg-slate-50 space-y-2">
                     <h4 class="font-bold text-xs text-indigo-900 uppercase">Tambah Item ke Daftar:</h4>
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 items-end">
@@ -52,9 +86,9 @@ export default {
                     </div>
                 </div>
 
-                <!-- List Item Sementara -->
+                <!-- Daftar Item Rincian -->
                 <div v-if="trxForm.items.length > 0" class="space-y-1.5">
-                    <h4 class="font-bold text-xs text-slate-600">Daftar Item Sementara:</h4>
+                    <h4 class="font-bold text-xs text-slate-600">Daftar Item Rincian:</h4>
                     <div class="space-y-1">
                         <div v-for="(item, index) in trxForm.items" :key="item.id_layanan" class="flex justify-between items-center bg-slate-50 p-2 rounded border">
                             <div>
@@ -71,33 +105,92 @@ export default {
                     </div>
                 </div>
 
-                <div class="flex justify-end space-x-2 pt-2 border-t">
-                    <button @click="$emit('closeForm')" class="px-3 py-1 bg-slate-100 rounded">Batal</button>
-                    <button @click="$emit('save')" class="bg-indigo-600 text-white px-4 py-1 rounded font-semibold">Simpan</button>
+                <div class="flex justify-between items-center pt-2 border-t">
+                    <!-- Tombol Hapus Dipindahkan ke Dalam Form Edit -->
+                    <div>
+                        <button v-if="isEditingTrx" type="button" @click="$emit('delete', editingTrxId, 'belum_ditagih')" class="text-red-500 hover:text-red-700 font-semibold text-xs border border-red-200 px-3 py-1 rounded bg-red-50">
+                            🗑️ Hapus Transaksi Ini
+                        </button>
+                    </div>
+                    <div class="flex space-x-2">
+                        <button type="button" @click="$emit('closeForm')" class="px-3 py-1 bg-slate-100 rounded text-xs">Batal</button>
+                        <button type="button" @click="$emit('save')" class="bg-indigo-600 text-white px-4 py-1 rounded font-semibold text-xs shadow">Simpan</button>
+                    </div>
                 </div>
             </div>
 
-            <!-- List Transaksi Log -->
-            <div v-if="!showForm" class="space-y-2">
-                <div v-for="t in transactions" :key="t.id" class="bg-white p-3 rounded-xl border shadow-sm flex flex-col justify-between gap-2">
-                    <div class="flex justify-between items-start">
-                        <div>
-                            <h4 class="font-bold text-slate-800 text-xs">{{ getCustomerName(t.id_pelanggan) }}</h4>
-                            <span class="text-slate-400 text-[10px]">{{ formatDate(t.tanggal) }}</span>
+            <!-- ACCORDION TRANSAKSI -->
+            <div v-if="!showForm" class="space-y-3">
+                
+                <!-- 1. GROUP BELUM DITAGIH (Default Terbuka) -->
+                <div class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+                    <button @click="openUnbilled = !openUnbilled" type="button" class="w-full p-3 bg-amber-50 hover:bg-amber-100/80 flex justify-between items-center border-b border-amber-100">
+                        <div class="flex items-center space-x-2">
+                            <span class="font-bold text-amber-900 text-xs">⏳ BELUM DITAGIH</span>
+                            <span class="bg-amber-200 text-amber-900 px-2 py-0.5 rounded-full text-[10px] font-extrabold">{{ unbilledTransactions.length }}</span>
                         </div>
-                        <span :class="t.status_tagihan==='belum_ditagih'?'bg-amber-100 text-amber-800':'bg-emerald-100 text-emerald-800'" class="px-2 py-0.5 rounded text-[9px] font-bold">
-                            {{ t.status_tagihan==='belum_ditagih'?'Belum Ditagih':'Sudah Ditagih' }}
-                        </span>
-                    </div>
-                    <div class="text-[10px] text-slate-600 bg-slate-50 p-2 rounded leading-relaxed">
-                        <span v-for="item in t.items" :key="item.id_layanan" class="inline-block mr-3">
-                            • {{ getServiceName(item.id_layanan) }}: <strong>{{ item.qty }}</strong>
-                        </span>
-                    </div>
-                    <div class="flex justify-end pt-1">
-                        <button @click="$emit('delete', t.id, t.status_tagihan)" class="text-red-500 hover:text-red-700">Hapus</button>
+                        <span class="text-amber-700 font-bold text-xs">{{ openUnbilled ? '▲' : '▼' }}</span>
+                    </button>
+
+                    <div v-show="openUnbilled" class="p-3 space-y-2 bg-white">
+                        <div v-for="t in unbilledTransactions" :key="t.id" class="bg-slate-50 p-3 rounded-xl border border-slate-100 shadow-sm space-y-2">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <h4 class="font-bold text-slate-800 text-xs">{{ getCustomerName(t.id_pelanggan) }}</h4>
+                                    <span class="text-slate-400 text-[10px]">{{ formatDate(t.tanggal) }}</span>
+                                </div>
+                                <span class="bg-amber-100 text-amber-800 px-2 py-0.5 rounded text-[9px] font-bold">Belum Ditagih</span>
+                            </div>
+                            <div class="text-[10px] text-slate-600 bg-white p-2 rounded border border-slate-100 leading-relaxed">
+                                <span v-for="item in t.items" :key="item.id_layanan" class="inline-block mr-3">
+                                    • {{ getServiceName(item.id_layanan) }}: <strong>{{ item.qty }}</strong>
+                                </span>
+                            </div>
+                            <div class="flex justify-end space-x-3 pt-1 border-t border-slate-200/60 text-xs">
+                                <button @click="$emit('printA5', t)" class="text-indigo-600 font-semibold hover:underline">📄 Cetak A5</button>
+                                <button @click="$emit('openEdit', t)" class="text-amber-700 font-semibold hover:underline">✏️ Edit</button>
+                            </div>
+                        </div>
+                        <div v-if="unbilledTransactions.length === 0" class="p-6 text-center text-slate-400 italic">
+                            Tidak ada transaksi yang belum ditagih.
+                        </div>
                     </div>
                 </div>
+
+                <!-- 2. GROUP SUDAH DITAGIH (Default Tertutup) -->
+                <div class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+                    <button @click="openBilled = !openBilled" type="button" class="w-full p-3 bg-emerald-50 hover:bg-emerald-100/80 flex justify-between items-center border-b border-emerald-100">
+                        <div class="flex items-center space-x-2">
+                            <span class="font-bold text-emerald-900 text-xs">✅ SUDAH DITAGIH</span>
+                            <span class="bg-emerald-200 text-emerald-900 px-2 py-0.5 rounded-full text-[10px] font-extrabold">{{ billedTransactions.length }}</span>
+                        </div>
+                        <span class="text-emerald-700 font-bold text-xs">{{ openBilled ? '▲' : '▼' }}</span>
+                    </button>
+
+                    <div v-show="openBilled" class="p-3 space-y-2 bg-white">
+                        <div v-for="t in billedTransactions" :key="t.id" class="bg-slate-50 p-3 rounded-xl border border-slate-100 shadow-sm space-y-2">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <h4 class="font-bold text-slate-800 text-xs">{{ getCustomerName(t.id_pelanggan) }}</h4>
+                                    <span class="text-slate-400 text-[10px]">{{ formatDate(t.tanggal) }}</span>
+                                </div>
+                                <span class="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded text-[9px] font-bold">Sudah Ditagih</span>
+                            </div>
+                            <div class="text-[10px] text-slate-600 bg-white p-2 rounded border border-slate-100 leading-relaxed">
+                                <span v-for="item in t.items" :key="item.id_layanan" class="inline-block mr-3">
+                                    • {{ getServiceName(item.id_layanan) }}: <strong>{{ item.qty }}</strong>
+                                </span>
+                            </div>
+                            <div class="flex justify-end space-x-3 pt-1 border-t border-slate-200/60 text-xs">
+                                <button @click="$emit('printA5', t)" class="text-indigo-600 font-semibold hover:underline">📄 Cetak A5</button>
+                            </div>
+                        </div>
+                        <div v-if="billedTransactions.length === 0" class="p-6 text-center text-slate-400 italic">
+                            Belum ada riwayat transaksi yang sudah ditagih.
+                        </div>
+                    </div>
+                </div>
+
             </div>
         </section>
     `

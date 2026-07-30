@@ -1,12 +1,12 @@
 export default {
     name: 'MasterItemView',
     props: ['services', 'showForm', 'isEditing', 'serviceForm'],
-    emits: ['openAdd', 'openEdit', 'closeForm', 'save', 'delete'],
+    emits: ['openAdd', 'openEdit', 'closeForm', 'save', 'delete', 'importGuest'],
     setup(props) {
         const searchQuery = Vue.ref('');
         const expandedCategories = Vue.ref([]); // Default tertutup (array kosong)
 
-        // Otomatis mengelompokkan barang lama berdasarkan nama barang
+        // Otomatis mengelompokkan barang berdasarkan nama untuk data lama
         const getServiceCategory = (item) => {
             if (item.kategori && item.kategori.trim() !== '') return item.kategori;
             const name = (item.nama_layanan || '').toLowerCase();
@@ -66,7 +66,10 @@ export default {
         <section class="space-y-3">
             <div class="flex justify-between items-center">
                 <h2 class="text-base font-bold">Master Item Laundry</h2>
-                <button @click="$emit('openAdd')" class="bg-indigo-600 text-white px-3 py-1.5 rounded-lg font-semibold hover:bg-indigo-700 shadow text-xs">+ Tambah Item</button>
+                <div class="flex space-x-2">
+                    <button @click="$emit('importGuest')" class="bg-slate-200 text-slate-700 px-3 py-1.5 rounded-lg font-semibold text-[10px]">📥 Impor 18 Item Guest</button>
+                    <button @click="$emit('openAdd')" class="hidden md:block bg-indigo-600 text-white px-3 py-1.5 rounded-lg font-semibold hover:bg-indigo-700 shadow text-xs">+ Tambah Item</button>
+                </div>
             </div>
 
             <!-- Kolom Pencarian -->

@@ -13,13 +13,30 @@
     </style>
   <!-- Detector Error untuk Tablet -->
 <script>
-    fetch('./app.js').then(r => {
-        if (!r.ok) throw new Error('HTTP Status ' + r.status + ' (' + r.statusText + ') - File app.js TIDAK DITEMUKAN di server GitHub!');
-    }).catch(err => {
+    // Langsung munculkan Bar Status saat halaman dimuat
+    document.addEventListener('DOMContentLoaded', function() {
         var b = document.createElement('div');
-        b.style = 'position:fixed;top:0;left:0;right:0;z-index:99999;background:#dc2626;color:white;padding:12px;font-size:12px;font-family:sans-serif;word-break:break-all;';
-        b.innerHTML = '<b>⚠️ DIAGNOSTIK PRESI:</b><br>' + err.message;
-        document.body ? document.body.appendChild(b) : document.documentElement.appendChild(b);
+        b.id = 'status-bar';
+        b.style = 'position:fixed;top:0;left:0;right:0;z-index:99999;background:#1e293b;color:white;padding:10px;font-size:11px;font-family:sans-serif;box-shadow:0 4px 6px rgba(0,0,0,0.3);';
+        b.innerHTML = '<b>🔍 DETECTOR AKTIF:</b> Menunggu pemuatan Vue & app.js...';
+        document.body.appendChild(b);
+    });
+
+    // Tangkap SEMUA jenis error JavaScript
+    window.addEventListener('error', function(e) {
+        var el = document.getElementById('status-bar');
+        if (el) {
+            el.style.background = '#dc2626';
+            el.innerHTML = '<b>⚠️ ERROR JAVASCRIPT:</b><br>' + (e.message || (e.target && e.target.src) || e);
+        }
+    }, true);
+
+    window.addEventListener('unhandledrejection', function(e) {
+        var el = document.getElementById('status-bar');
+        if (el) {
+            el.style.background = '#dc2626';
+            el.innerHTML = '<b>⚠️ REJECTION ERROR:</b><br>' + (e.reason && e.reason.message ? e.reason.message : e.reason);
+        }
     });
 </script>
 </head>

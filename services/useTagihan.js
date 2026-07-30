@@ -4,6 +4,9 @@ export function useTagihan(transactions, getPrice, getServiceName, getServiceUni
     const { ref, onMounted, computed, watch } = Vue;
     const invoices = ref([]);
     const searchQueryInvoices = ref('');
+    const selectedFilterMonth = ref(''); // '' = Semua Bulan, '01'..'12'
+    const selectedFilterYear = ref(new Date().getFullYear().toString()); // Otomatis tahun berjalan berjalan
+
     const showInvoiceForm = ref(false);
     const isEditingInvoice = ref(false);
     const editingInvoiceId = ref('');
@@ -17,7 +20,7 @@ export function useTagihan(transactions, getPrice, getServiceName, getServiceUni
     onMounted(() => {
         onSnapshot(collection(db, "tagihan"), (snap) => {
             const list = []; snap.forEach((doc) => list.push({ id: doc.id, ...doc.data() }));
-            invoices.value = list.sort((a, b) => b.tanggal_buat.localeCompare(a.tanggal_buat));
+            invoices.value = list.sort((a, b) => (b.tanggal_buat || '').localeCompare(a.tanggal_buat || ''));
         });
     });
 
@@ -27,16 +30,39 @@ export function useTagihan(transactions, getPrice, getServiceName, getServiceUni
         return ms;
     };
 
-    const filteredInvoices = computed(() => {
-        const q = searchQueryInvoices.value.toLowerCase().trim();
-        return !q ? invoices.value : invoices.value.filter(inv => inv.no_invoice.toLowerCase().includes(q) || getCustomerName(inv.id_pelanggan).toLowerCase().includes(q));
+    // Daftar tahun otomatis terkelola dinamis
+    const availableYears = computed(() => {
+        const currentY = new Date().getFullYear();
+        const years = [];
+        for (let y = currentY - 2; y <= currentY + 3; y++) {
+            years.push(y.toString());
+        }
+        return years;
     });
 
-    // Pengelompokan Tagihan: Belum Lunas vs Sudah Lunas
+    // Filter invoice aman tanpa crash (safe check)
+    const filteredInvoices = computed(() => {
+        return invoices.value.filter(inv => {
+            const q = searchQueryInvoices.value.toLowerCase().trim();
+            const noInv = (inv.no_invoice || '').toLowerCase();
+            const custName = (getCustomerName(inv.id_pelanggan) || '').toLowerCase();
+            const matchQuery = !q || noInv.includes(q) || custName.includes(q);
+
+            let matchDate = true;
+            if (inv.periode && inv.periode.includes('-')) {
+                const [invYear, invMonth] = inv.periode.split('-');
+                const matchY = !selectedFilterYear.value || invYear === selectedFilterYear.value;
+                const matchM = !selectedFilterMonth.value || invMonth === selectedFilterMonth.value;
+                matchDate = matchY && matchM;
+            }
+
+            return matchQuery && matchDate;
+        });
+    });
+
     const unpaidInvoices = computed(() => filteredInvoices.value.filter(inv => inv.status_pembayaran === 'belum_lunas'));
     const paidInvoices = computed(() => filteredInvoices.value.filter(inv => inv.status_pembayaran === 'lunas_cash' || inv.status_pembayaran === 'lunas_transfer'));
 
-    // Mengambil transaksi harian yang tersedia untuk dicentang
     const availableTrxForDraft = computed(() => {
         const custId = invoiceForm.value.id_pelanggan;
         const period = invoiceForm.value.periode;
@@ -44,13 +70,12 @@ export function useTagihan(transactions, getPrice, getServiceName, getServiceUni
 
         return transactions.value.filter(t => {
             const matchCust = t.id_pelanggan === custId;
-            const matchMonth = t.tanggal.startsWith(period);
+            const matchMonth = (t.tanggal || '').startsWith(period);
             const matchStatus = t.status_tagihan !== 'sudah_ditagih' || (isEditingInvoice.value && selectedTrxIds.value.includes(t.id));
             return matchCust && matchMonth && matchStatus;
         });
     });
 
-    // Menghitung draf item terakumulasi HANYA dari transaksi yang DICENTANG
     const draftInvoiceItems = computed(() => {
         const custId = invoiceForm.value.id_pelanggan;
         if (!custId || selectedTrxIds.value.length === 0) return [];
@@ -59,7 +84,7 @@ export function useTagihan(transactions, getPrice, getServiceName, getServiceUni
         const mapItems = {};
 
         selectedTrxList.forEach(t => {
-            t.items.forEach(item => {
+            (t.items || []).forEach(item => {
                 if (!mapItems[item.id_layanan]) mapItems[item.id_layanan] = 0;
                 mapItems[item.id_layanan] += Number(item.qty);
             });
@@ -81,19 +106,16 @@ export function useTagihan(transactions, getPrice, getServiceName, getServiceUni
         return list;
     });
 
-    // Subtotal murni terhitung dari sistem
     const calculatedSubtotal = computed(() => {
         return draftInvoiceItems.value.reduce((acc, i) => acc + i.subtotal, 0);
     });
 
-    // Total Akhir = Subtotal Penyesuaian - Diskon
     const grandTotal = computed(() => {
         const sub = Number(manualSubtotal.value) || 0;
         const disc = Number(discountAmount.value) || 0;
         return Math.max(0, sub - disc);
     });
 
-    // Sinkronisasi otomatis subtotal awal jika centang berubah
     watch(calculatedSubtotal, (newSub) => {
         if (!isEditingInvoice.value) {
             manualSubtotal.value = newSub;
@@ -119,7 +141,7 @@ export function useTagihan(transactions, getPrice, getServiceName, getServiceUni
         discountAmount.value = inv.diskon || 0;
         
         selectedTrxIds.value = transactions.value
-            .filter(t => t.id_pelanggan === inv.id_pelanggan && t.tanggal.startsWith(inv.periode))
+            .filter(t => t.id_pelanggan === inv.id_pelanggan && (t.tanggal || '').startsWith(inv.periode))
             .map(t => t.id);
         
         showInvoiceForm.value = true;
@@ -168,7 +190,6 @@ export function useTagihan(transactions, getPrice, getServiceName, getServiceUni
                 const docRef = await addDoc(collection(db, "tagihan"), savedData);
                 savedData.id = docRef.id;
 
-                // Tandai transaksi yang dicentang sebagai 'sudah_ditagih'
                 const batchTrx = selectedTrxIds.value.map(id => updateDoc(doc(db, "transaksi", id), { status_tagihan: 'sudah_ditagih' }));
                 await Promise.all(batchTrx);
 
@@ -177,7 +198,6 @@ export function useTagihan(transactions, getPrice, getServiceName, getServiceUni
 
             showInvoiceForm.value = false;
 
-            // POP-UP OTOMATIS: Penawaran Cetak Invoice PDF Langsung
             if (confirm("Apakah Anda ingin langsung mencetak/mengunduh Invoice PDF ini?")) {
                 printInvoice(savedData);
             }
@@ -203,7 +223,8 @@ export function useTagihan(transactions, getPrice, getServiceName, getServiceUni
     };
 
     return {
-        invoices, searchQueryInvoices, showInvoiceForm, isEditingInvoice, editingInvoiceId, invoiceForm,
+        invoices, searchQueryInvoices, selectedFilterMonth, selectedFilterYear, availableYears,
+        showInvoiceForm, isEditingInvoice, editingInvoiceId, invoiceForm,
         selectedTrxIds, manualSubtotal, discountAmount, printData, availableTrxForDraft, draftInvoiceItems,
         calculatedSubtotal, grandTotal, unpaidInvoices, paidInvoices, filteredInvoices, formatMonthYear,
         openAddInvoice, openEditInvoice, selectAllTrx, deselectAllTrx, saveInvoice, deleteInvoice, updatePaymentStatus, printInvoice

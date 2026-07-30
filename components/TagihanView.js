@@ -1,21 +1,33 @@
 export default {
     name: 'TagihanView',
     props: [
-        'invoices', 'unpaidInvoices', 'paidInvoices', 'customers', 'searchQuery', 'showForm', 
+        'invoices', 'unpaidInvoices', 'paidInvoices', 'customers', 'searchQuery', 
+        'selectedFilterMonth', 'selectedFilterYear', 'availableYears', 'showForm', 
         'isEditingInvoice', 'editingInvoiceId', 'invoiceForm', 'selectedTrxIds', 'manualSubtotal', 
         'discountAmount', 'availableTrxForDraft', 'draftInvoiceItems', 'calculatedSubtotal', 
         'grandTotal', 'getCustomerName', 'formatMonthYear'
     ],
     emits: [
-        'update:searchQuery', 'update:manualSubtotal', 'update:discountAmount', 
+        'update:searchQuery', 'update:selectedFilterMonth', 'update:selectedFilterYear', 
+        'update:manualSubtotal', 'update:discountAmount', 
         'openAdd', 'openEdit', 'closeForm', 'calculate', 'selectAllTrx', 'deselectAllTrx', 
         'save', 'delete', 'updateStatus', 'print'
     ],
     setup() {
-        const openUnpaid = Vue.ref(true);  // Default Terbuka
-        const openPaid = Vue.ref(false);   // Default Tertutup
+        const openUnpaid = Vue.ref(true);
+        const openPaid = Vue.ref(false);
 
-        return { openUnpaid, openPaid };
+        const monthsList = [
+            { id: '', name: 'Semua Bulan' },
+            { id: '01', name: 'Januari' }, { id: '02', name: 'Februari' },
+            { id: '03', name: 'Maret' }, { id: '04', name: 'April' },
+            { id: '05', name: 'Mei' }, { id: '06', name: 'Juni' },
+            { id: '07', name: 'Juli' }, { id: '08', name: 'Agustus' },
+            { id: '09', name: 'September' }, { id: '10', name: 'Oktober' },
+            { id: '11', name: 'November' }, { id: '12', name: 'Desember' }
+        ];
+
+        return { openUnpaid, openPaid, monthsList };
     },
     template: `
         <section class="space-y-3">
@@ -24,9 +36,25 @@ export default {
                 <button v-if="!showForm" @click="$emit('openAdd')" class="bg-indigo-600 text-white px-3 py-1.5 rounded-lg font-semibold hover:bg-indigo-700 shadow text-xs">💵 Buat Tagihan Baru</button>
             </div>
 
-            <!-- Pencarian -->
-            <div v-if="!showForm" class="w-full max-w-xs">
-                <input :value="searchQuery" @input="$emit('update:searchQuery', $event.target.value)" type="text" placeholder="🔍 Cari nomor invoice atau pelanggan..." class="w-full px-3 py-1.5 border rounded-lg text-xs focus:outline-indigo-500">
+            <!-- Panel Filter Pencarian, Bulan & Tahun -->
+            <div v-if="!showForm" class="bg-white p-3 rounded-xl border border-slate-200 grid grid-cols-1 sm:grid-cols-3 gap-2">
+                <div>
+                    <label class="block text-[10px] font-semibold text-slate-400 mb-0.5">Cari Invoice / Klien</label>
+                    <input :value="searchQuery" @input="$emit('update:searchQuery', $event.target.value)" type="text" placeholder="🔍 Ketik nama/no. invoice..." class="w-full px-2 py-1 border rounded-lg text-xs focus:outline-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-semibold text-slate-400 mb-0.5">Filter Bulan</label>
+                    <select :value="selectedFilterMonth" @change="$emit('update:selectedFilterMonth', $event.target.value)" class="w-full p-1 border rounded-lg text-xs">
+                        <option v-for="m in monthsList" :key="m.id" :value="m.id">{{ m.name }}</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-[10px] font-semibold text-slate-400 mb-0.5">Filter Tahun</label>
+                    <select :value="selectedFilterYear" @change="$emit('update:selectedFilterYear', $event.target.value)" class="w-full p-1 border rounded-lg text-xs">
+                        <option value="">Semua Tahun</option>
+                        <option v-for="y in availableYears" :key="y" :value="y">{{ y }}</option>
+                    </select>
+                </div>
             </div>
 
             <!-- Form Pembuatan & Edit Tagihan -->
@@ -113,7 +141,6 @@ export default {
                 </div>
 
                 <div class="flex justify-between items-center pt-3 border-t">
-                    <!-- Tombol Hapus Dipindahkan ke Dalam Form Edit -->
                     <div>
                         <button v-if="isEditingInvoice" type="button" @click="$emit('delete', editingInvoiceId)" class="text-red-500 hover:text-red-700 font-semibold text-xs border border-red-200 px-3 py-1 rounded bg-red-50">
                             🗑️ Hapus Invoice Ini
@@ -131,7 +158,7 @@ export default {
             <!-- ACCORDION TAGIHAN (2 KELOMPOK: BELUM LUNAS VS SUDAH LUNAS) -->
             <div v-if="!showForm" class="space-y-3">
                 
-                <!-- 1. KELOMPOK BELUM LUNAS (Default Terbuka) -->
+                <!-- 1. KELOMPOK BELUM LUNAS -->
                 <div class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
                     <button @click="openUnpaid = !openUnpaid" type="button" class="w-full p-3 bg-red-50 hover:bg-red-100/80 flex justify-between items-center border-b border-red-100">
                         <div class="flex items-center space-x-2">
@@ -168,7 +195,7 @@ export default {
                     </div>
                 </div>
 
-                <!-- 2. KELOMPOK SUDAH LUNAS (Default Tertutup) -->
+                <!-- 2. KELOMPOK SUDAH LUNAS -->
                 <div class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
                     <button @click="openPaid = !openPaid" type="button" class="w-full p-3 bg-emerald-50 hover:bg-emerald-100/80 flex justify-between items-center border-b border-emerald-100">
                         <div class="flex items-center space-x-2">

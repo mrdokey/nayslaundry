@@ -129,13 +129,16 @@ createApp({
     @save="saveTransaction" 
     @delete="deleteTransaction" 
     @print-a5="printA5Note" />
-                    <!-- Cari tag <TagihanView> di app.js, lalu sesuaikan kodenya menjadi: -->
+                    <!-- Cari tag <TagihanView> di app.js, lalu sesuaikan binding props & eventnya menjadi: -->
 <TagihanView v-if="activeTab === 'tagihan'" 
     :invoices="filteredInvoices" 
     :unpaid-invoices="unpaidInvoices" 
     :paid-invoices="paidInvoices" 
     :customers="customers" 
     :search-query="searchQueryInvoices" 
+    :selected-filter-month="selectedFilterMonth" 
+    :selected-filter-year="selectedFilterYear" 
+    :available-years="availableYears" 
     :show-form="showInvoiceForm" 
     :is-editing-invoice="isEditingInvoice" 
     :editing-invoice-id="editingInvoiceId" 
@@ -150,6 +153,8 @@ createApp({
     :get-customer-name="getCustomerName" 
     :format-month-year="formatMonthYear" 
     @update:search-query="searchQueryInvoices = $event" 
+    @update:selected-filter-month="selectedFilterMonth = $event" 
+    @update:selected-filter-year="selectedFilterYear = $event" 
     @update:manual-subtotal="manualSubtotal = $event" 
     @update:discount-amount="discountAmount = $event" 
     @open-add="openAddInvoice" 

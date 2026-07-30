@@ -89,104 +89,107 @@ createApp({
                     <button @click="changeTab('layanan')" :class="activeTab==='layanan'?'text-white font-bold':'text-indigo-300'" class="flex flex-col items-center text-[9px]"><span class="text-base">⚙️</span><span>Item</span></button>
                 </nav>
 
-                <!-- MAIN DISPLAY -->
                 <main class="flex-1 p-4 pt-20 md:pt-4 overflow-y-auto">
                     <DashboardView v-if="activeTab === 'dashboard'" :customers="customers" :services="services" :unbilled-count="unbilledTransactionsCount" :has-unbilled="hasUnbilledCustomers" :get-unbilled-total="getCustomerUnbilledTotal" />
-                    <!-- Cari tag <TransaksiView> di app.js, lalu sesuaikan binding props & eventnya menjadi: -->
-<TransaksiView v-if="activeTab === 'transaksi'" 
-    :transactions="filteredTransactions" 
-    :customers="customers" 
-    :services="services" 
-    :search-query="searchQueryTransactions" 
-    :filter-start-date="filterStartDate" 
-    :filter-end-date="filterEndDate" 
-    :show-form="showTransactionForm" 
-    :is-editing-trx="isEditingTrx" 
-    :editing-trx-id="editingTrxId" 
-    :trx-form="trxForm" 
-    :item-search="itemSearchQuery" 
-    :selected-item-id="selectedItemId" 
-    :selected-item-qty="selectedItemQty" 
-    :selected-item-price="selectedItemPrice"
-    :filtered-search-items="filteredSearchItems" 
-    :get-customer-name="getCustomerName" 
-    :get-service-name="getServiceName" 
-    :get-service-unit="getServiceUnit" 
-    :get-price="getPrice" 
-    :format-date="formatDate" 
-    @update:search-query="searchQueryTransactions = $event" 
-    @update:filter-start-date="filterStartDate = $event" 
-    @update:filter-end-date="filterEndDate = $event" 
-    @update:item-search="itemSearchQuery = $event" 
-    @update:selected-item-qty="selectedItemQty = $event" 
-    @update:selected-item-price="selectedItemPrice = $event"
-    @open-add="openAddTransaction" 
-    @open-edit="openEditTransaction" 
-    @close-form="showTransactionForm = false" 
-    @select-search-item="selectSearchItem" 
-    @add-item="addTrxItem" 
-    @remove-item="removeTrxItem" 
-    @save="saveTransaction" 
-    @delete="deleteTransaction" 
-    @print-a5="printA5Note" />
-                    <!-- Cari tag <TagihanView> di app.js, lalu sesuaikan binding props & eventnya menjadi: -->
-<TagihanView v-if="activeTab === 'tagihan'" 
-    :invoices="filteredInvoices" 
-    :unpaid-invoices="unpaidInvoices" 
-    :paid-invoices="paidInvoices" 
-    :customers="customers" 
-    :search-query="searchQueryInvoices" 
-    :selected-filter-month="selectedFilterMonth" 
-    :selected-filter-year="selectedFilterYear" 
-    :available-years="availableYears" 
-    :show-form="showInvoiceForm" 
-    :is-editing-invoice="isEditingInvoice" 
-    :editing-invoice-id="editingInvoiceId" 
-    :invoice-form="invoiceForm" 
-    :selected-trx-ids="selectedTrxIds" 
-    :manual-subtotal="manualSubtotal" 
-    :discount-amount="discountAmount" 
-    :available-trx-for-draft="availableTrxForDraft" 
-    :draft-invoice-items="draftInvoiceItems" 
-    :calculated-subtotal="calculatedSubtotal" 
-    :grand-total="grandTotal" 
-    :get-customer-name="getCustomerName" 
-    :format-month-year="formatMonthYear" 
-    @update:search-query="searchQueryInvoices = $event" 
-    @update:selected-filter-month="selectedFilterMonth = $event" 
-    @update:selected-filter-year="selectedFilterYear = $event" 
-    @update:manual-subtotal="manualSubtotal = $event" 
-    @update:discount-amount="discountAmount = $event" 
-    @open-add="openAddInvoice" 
-    @open-edit="openEditInvoice" 
-    @close-form="showInvoiceForm = false" 
-    @calculate="calculateDraftInvoice" 
-    @select-all-trx="selectAllTrx" 
-    @deselect-all-trx="deselectAllTrx" 
-    @save="saveInvoice" 
-    @delete="deleteInvoice" 
-    @update-status="updatePaymentStatus" 
-    @print="printInvoice" />
+                    
+                    <TransaksiView v-if="activeTab === 'transaksi'" 
+                        :transactions="filteredTransactions" 
+                        :customers="customers" 
+                        :services="services" 
+                        :search-query="searchQueryTransactions" 
+                        :filter-start-date="filterStartDate" 
+                        :filter-end-date="filterEndDate" 
+                        :show-form="showTransactionForm" 
+                        :is-editing-trx="isEditingTrx" 
+                        :editing-trx-id="editingTrxId" 
+                        :trx-form="trxForm" 
+                        :item-search="itemSearchQuery" 
+                        :selected-item-id="selectedItemId" 
+                        :selected-item-qty="selectedItemQty" 
+                        :selected-item-price="selectedItemPrice"
+                        :filtered-search-items="filteredSearchItems" 
+                        :get-customer-name="getCustomerName" 
+                        :get-service-name="getServiceName" 
+                        :get-service-unit="getServiceUnit" 
+                        :get-price="getPrice" 
+                        :format-date="formatDate" 
+                        @update:search-query="searchQueryTransactions = $event" 
+                        @update:filter-start-date="filterStartDate = $event" 
+                        @update:filter-end-date="filterEndDate = $event" 
+                        @update:item-search="itemSearchQuery = $event" 
+                        @update:selected-item-qty="selectedItemQty = $event" 
+                        @update:selected-item-price="selectedItemPrice = $event"
+                        @open-add="openAddTransaction" 
+                        @open-edit="openEditTransaction" 
+                        @close-form="showTransactionForm = false" 
+                        @select-search-item="selectSearchItem" 
+                        @add-item="addTrxItem" 
+                        @remove-item="removeTrxItem" 
+                        @save="saveTransaction" 
+                        @delete="deleteTransaction" 
+                        @print-a5="printA5Note"
+                        @shortcut-tagihan="handleShortcutTagihan" />
+                    
+                    <TagihanView v-if="activeTab === 'tagihan'" 
+                        :invoices="filteredInvoices" 
+                        :unpaid-invoices="unpaidInvoices" 
+                        :paid-invoices="paidInvoices" 
+                        :customers="customers" 
+                        :search-query="searchQueryInvoices" 
+                        :selected-filter-month="selectedFilterMonth" 
+                        :selected-filter-year="selectedFilterYear" 
+                        :available-years="availableYears" 
+                        :show-form="showInvoiceForm" 
+                        :is-editing-invoice="isEditingInvoice" 
+                        :editing-invoice-id="editingInvoiceId" 
+                        :invoice-form="invoiceForm" 
+                        :selected-trx-ids="selectedTrxIds" 
+                        :manual-subtotal="manualSubtotal" 
+                        :discount-amount="discountAmount" 
+                        :available-trx-for-draft="availableTrxForDraft" 
+                        :draft-invoice-items="draftInvoiceItems" 
+                        :calculated-subtotal="calculatedSubtotal" 
+                        :grand-total="grandTotal" 
+                        :get-customer-name="getCustomerName" 
+                        :format-month-year="formatMonthYear" 
+                        @update:search-query="searchQueryInvoices = $event" 
+                        @update:selected-filter-month="selectedFilterMonth = $event" 
+                        @update:selected-filter-year="selectedFilterYear = $event" 
+                        @update:manual-subtotal="manualSubtotal = $event" 
+                        @update:discount-amount="discountAmount = $event" 
+                        @open-add="openAddInvoice" 
+                        @open-edit="openEditInvoice" 
+                        @close-form="showInvoiceForm = false" 
+                        @calculate="calculateDraftInvoice" 
+                        @select-all-trx="selectAllTrx" 
+                        @deselect-all-trx="deselectAllTrx" 
+                        @save="saveInvoice" 
+                        @delete="deleteInvoice" 
+                        @update-status="updatePaymentStatus" 
+                        @print="printInvoice" />
+                    
                     <LaporanView v-if="activeTab === 'laporan'" :customers="customers" :report-invoices="reportInvoices" :report-totals="reportTotals" :filter-client="reportFilterClient" :filter-month="reportFilterMonth" :get-customer-name="getCustomerName" :format-month-year="formatMonthYear" @update:filter-client="reportFilterClient = $event" @update:filter-month="reportFilterMonth = $event" @export="exportToExcel" />
+                    
                     <PelangganView v-if="activeTab === 'pelanggan' || activeTab === 'harga_khusus'" 
-    :active-tab="activeTab" 
-    :customers="filteredCustomers" 
-    :services="services" 
-    :selected-customer="selectedCustomer" 
-    :temp-prices="tempPrices" 
-    :search-query="searchQueryCustomers" 
-    :show-form="showCustomerForm" 
-    :is-editing="isEditing" 
-    :customer-form="customerForm" 
-    @update:search-query="searchQueryCustomers = $event" 
-    @open-add="openAddCustomer" 
-    @open-edit="openEditCustomer" 
-    @open-custom="handleOpenCustom" 
-    @close-form="showCustomerForm = false" 
-    @save="saveCustomer" 
-    @delete="deleteCustomer" 
-    @save-custom="handleSaveCustom" 
-    @back-to-list="activeTab = 'pelanggan'" />
+                        :active-tab="activeTab" 
+                        :customers="filteredCustomers" 
+                        :services="services" 
+                        :selected-customer="selectedCustomer" 
+                        :temp-prices="tempPrices" 
+                        :search-query="searchQueryCustomers" 
+                        :show-form="showCustomerForm" 
+                        :is-editing="isEditing" 
+                        :customer-form="customerForm" 
+                        @update:search-query="searchQueryCustomers = $event" 
+                        @open-add="openAddCustomer" 
+                        @open-edit="openEditCustomer" 
+                        @open-custom="handleOpenCustom" 
+                        @close-form="showCustomerForm = false" 
+                        @save="saveCustomer" 
+                        @delete="deleteCustomer" 
+                        @save-custom="handleSaveCustom" 
+                        @back-to-list="activeTab = 'pelanggan'" />
+                    
                     <MasterItemView v-if="activeTab === 'layanan'" :services="services" :show-form="showServiceForm" :is-editing="isEditingService" :service-form="serviceForm" @open-add="openAddService" @open-edit="openEditService" @close-form="showServiceForm = false" @save="saveService" @delete="deleteService" @import-guest="importGuestServices" />
                     <ProfilView v-if="activeTab === 'profil'" :profile="profile" @save="saveProfile" />
                 </main>
@@ -212,17 +215,6 @@ createApp({
         const menuOpen = ref(false);
         const sidebarCollapsed = ref(false);
 
-      const handleOpenCustom = (c) => {
-    pelanggan.openCustomPrices(c);
-    activeTab.value = 'harga_khusus';
-};
-
-const handleSaveCustom = async () => {
-    await pelanggan.saveCustomPrices();
-    activeTab.value = 'pelanggan';
-};
-
-        // MEMATIKAN SCROLL BODY & HTML DUA-DUANYA UNTUK SELULER
         watch(menuOpen, (val) => {
             if (val) {
                 document.body.style.overflow = 'hidden';
@@ -267,9 +259,30 @@ const handleSaveCustom = async () => {
         };
 
         const triggerAdd = () => {
-            if (activeTab.value === 'transaksi') openAddTransaction();
-            else if (activeTab.value === 'pelanggan') openAddCustomer();
-            else if (activeTab.value === 'layanan') openAddService();
+            if (activeTab.value === 'transaksi') transaksi.openAddTransaction();
+            else if (activeTab.value === 'pelanggan') pelanggan.openAddCustomer();
+            else if (activeTab.value === 'layanan') layanan.openAddService();
+        };
+
+        // HANDLER SHORTCUT TAGIHAN DARI MENU TRANSAKSI
+        const handleShortcutTagihan = ({ id_pelanggan, periode, trx_ids }) => {
+            activeTab.value = 'tagihan';
+            tagihan.invoiceForm.value = { id_pelanggan, periode };
+            tagihan.selectedTrxIds.value = trx_ids;
+            tagihan.isEditingInvoice.value = false;
+            tagihan.showInvoiceForm.value = true;
+            tagihan.calculateDraftInvoice();
+        };
+
+        // HANDLER HARGA KHUSUS PELANGGAN
+        const handleOpenCustom = (c) => {
+            pelanggan.openCustomPrices(c);
+            activeTab.value = 'harga_khusus';
+        };
+
+        const handleSaveCustom = async () => {
+            await pelanggan.saveCustomPrices();
+            activeTab.value = 'pelanggan';
         };
 
         const logoutAdmin = () => {
@@ -286,6 +299,7 @@ const handleSaveCustom = async () => {
 
         return {
             activeTab, menuOpen, sidebarCollapsed, menuList, profile, saveProfile, showForm, changeTab, triggerAdd, logoutAdmin,
+            handleShortcutTagihan, handleOpenCustom, handleSaveCustom,
             ...auth, ...layanan, ...pelanggan, ...transaksi, ...tagihan, ...laporan
         };
     }

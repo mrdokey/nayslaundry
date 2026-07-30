@@ -3,58 +3,59 @@ export default {
     props: [
         'transactions', 'customers', 'services', 
         'searchQuery', 'filterStartDate', 'filterEndDate', 'showForm', 'isEditingTrx', 
-        'editingTrxId', 'trxForm', 'itemSearch', 'selectedItemId', 'selectedItemQty', 'selectedItemPrice',
+        'editingTrxId', 'trxForm', 'itemSearch', 'selectedItemId', 'selectedItemQty', 
         'filteredSearchItems', 'getCustomerName', 'getServiceName', 'getServiceUnit', 
         'getPrice', 'formatDate'
     ],
     emits: [
         'update:searchQuery', 'update:filterStartDate', 'update:filterEndDate', 
-        'update:itemSearch', 'update:selectedItemQty', 'update:selectedItemPrice', 'openAdd', 'openEdit', 
-        'closeForm', 'selectSearchItem', 'addItem', 'removeItem', 'save', 'delete', 'printA5'
+        'update:itemSearch', 'update:selectedItemQty', 'openAdd', 'openEdit', 
+        'closeForm', 'selectSearchItem', 'addItem', 'removeItem', 'save', 'delete', 'printA5', 'shortcutTagihan'
     ],
-    setup(props) {
-        const expandedCustomers = Vue.ref([]); // State lipat/buka per pelanggan
+    setup(props, { emit }) {
+        const openUnbilled = Vue.ref(true);
+        const openBilled = Vue.ref(false);
+        const checkedTrxIds = Vue.ref([]); // State ID transaksi yang dicentang di list
 
-        // Mengelompokkan transaksi PER PELANGGAN (Hotel/Vila)
-        const groupedByCustomer = Vue.computed(() => {
-            if (!props.transactions) return {};
-            const groups = {};
-            
-            props.transactions.forEach(t => {
-                const custId = t.id_pelanggan;
-                if (!groups[custId]) groups[custId] = [];
-                groups[custId].push(t);
-            });
-
-            // Urutkan di dalam setiap hotel: Belum Ditagih di ATAS, Sudah Ditagih di BAWAH
-            for (const custId in groups) {
-                groups[custId].sort((a, b) => {
-                    const aUnbilled = a.status_tagihan !== 'sudah_ditagih' ? 0 : 1;
-                    const bUnbilled = b.status_tagihan !== 'sudah_ditagih' ? 0 : 1;
-                    if (aUnbilled !== bUnbilled) return aUnbilled - bUnbilled;
-                    return b.tanggal.localeCompare(a.tanggal); // Urutan kedua berdasarkan tanggal terbaru
-                });
-            }
-            return groups;
+        const unbilledList = Vue.computed(() => {
+            if (!props.transactions) return [];
+            return props.transactions.filter(t => t.status_tagihan !== 'sudah_ditagih');
         });
 
-        const toggleCustomerGroup = (custId) => {
-            const idx = expandedCustomers.value.indexOf(custId);
-            if (idx > -1) expandedCustomers.value.splice(idx, 1);
-            else expandedCustomers.value.push(custId);
+        const billedList = Vue.computed(() => {
+            if (!props.transactions) return [];
+            return props.transactions.filter(t => t.status_tagihan === 'sudah_ditagih');
+        });
+
+        // Trigger Shortcut Pembuatan Tagihan
+        const triggerShortcutTagihan = () => {
+            if (checkedTrxIds.value.length === 0) return;
+
+            const firstTrx = props.transactions.find(t => checkedTrxIds.value.includes(t.id));
+            if (!firstTrx) return;
+
+            // Validasi: Memastikan semua transaksi yang dicentang berasal dari hotel yang sama
+            const sameCustomer = checkedTrxIds.value.every(id => {
+                const t = props.transactions.find(x => x.id === id);
+                return t && t.id_pelanggan === firstTrx.id_pelanggan;
+            });
+
+            if (!sameCustomer) {
+                alert("Harap pilih transaksi dari satu hotel/vila yang sama untuk diterbitkan tagihan.");
+                return;
+            }
+
+            // Kirim data ke app.js untuk membuka form tagihan
+            emit('shortcutTagihan', {
+                id_pelanggan: firstTrx.id_pelanggan,
+                periode: firstTrx.tanggal.slice(0, 7), // Ambil YYYY-MM
+                trx_ids: [...checkedTrxIds.value]
+            });
+
+            checkedTrxIds.value = []; // Reset centang setelah dialihkan
         };
 
-        const isCustomerExpanded = (custId) => {
-            if (props.searchQuery && props.searchQuery.trim() !== '') return true; // Otomatis buka saat cari
-            return expandedCustomers.value.includes(custId);
-        };
-
-        // Menghitung jumlah belum ditagih spesifik per hotel
-        const getCustomerUnbilledCount = (custTransactions) => {
-            return custTransactions.filter(t => t.status_tagihan !== 'sudah_ditagih').length;
-        };
-
-        return { groupedByCustomer, toggleCustomerGroup, isCustomerExpanded, getCustomerUnbilledCount };
+        return { openUnbilled, openBilled, checkedTrxIds, unbilledList, billedList, triggerShortcutTagihan };
     },
     template: `
         <section class="space-y-3">
@@ -79,6 +80,14 @@ export default {
                 </div>
             </div>
 
+            <!-- BILAH ACTION SHORTCUT PEMBUATAN TAGIHAN (Muncul Jika Ada Centang) -->
+            <div v-if="!showForm && checkedTrxIds.length > 0" class="bg-indigo-950 text-white p-3 rounded-xl flex justify-between items-center shadow-lg border border-indigo-800 animate-pulse">
+                <span class="font-bold text-xs">Terpilih {{ checkedTrxIds.length }} Transaksi Harian</span>
+                <button @click="triggerShortcutTagihan" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg font-bold text-xs shadow">
+                    💵 Buat Tagihan Sekarang ➡️
+                </button>
+            </div>
+
             <!-- Form Transaksi (Tambah / Edit Cart-Style) -->
             <div v-if="showForm" class="bg-white p-4 rounded-xl border border-slate-200 space-y-3">
                 <div class="flex justify-between items-center">
@@ -100,11 +109,11 @@ export default {
                     </div>
                 </div>
 
-                <!-- Selector Item Cart dengan HARGA EDITABLE -->
+                <!-- Selector Item Cart -->
                 <div v-if="trxForm.id_pelanggan" class="border p-3 rounded-lg bg-slate-50 space-y-2">
                     <h4 class="font-bold text-xs text-indigo-900 uppercase">Tambah Item ke Daftar:</h4>
-                    <div class="grid grid-cols-1 sm:grid-cols-4 gap-2 items-end">
-                        <div class="relative sm:col-span-2">
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 items-end">
+                        <div class="relative">
                             <label class="block text-[10px] font-semibold text-slate-500 mb-0.5">Cari & Pilih Item</label>
                             <input type="text" :value="itemSearch" @input="$emit('update:itemSearch', $event.target.value)" placeholder="Ketik nama item..." class="w-full p-2 border rounded text-xs bg-white focus:outline-indigo-500">
                             <div v-if="itemSearch && selectedItemId === ''" class="absolute left-0 right-0 max-h-40 overflow-y-auto bg-white border rounded shadow-lg z-50 mt-1">
@@ -118,14 +127,10 @@ export default {
                             <label class="block text-[10px] font-semibold text-slate-500 mb-0.5">Jumlah (Qty)</label>
                             <input type="number" :value="selectedItemQty" @input="$emit('update:selectedItemQty', $event.target.value)" placeholder="0" class="w-full p-2 border rounded text-xs text-center bg-white focus:outline-indigo-500">
                         </div>
-                        <div>
-                            <label class="block text-[10px] font-semibold text-slate-500 mb-0.5">Harga / Unit (Rp)</label>
-                            <input type="number" :value="selectedItemPrice" @input="$emit('update:selectedItemPrice', $event.target.value)" placeholder="Tarif" class="w-full p-2 border rounded text-xs text-center bg-white focus:outline-indigo-500 font-semibold">
-                        </div>
+                        <button type="button" @click="$emit('addItem')" class="bg-indigo-600 hover:bg-indigo-700 text-white p-2 rounded font-bold text-xs shadow">
+                            ➕ Masukkan ke Daftar
+                        </button>
                     </div>
-                    <button type="button" @click="$emit('addItem')" class="w-full mt-2 bg-indigo-600 hover:bg-indigo-700 text-white p-2 rounded font-bold text-xs shadow">
-                        ➕ Masukkan ke Daftar
-                    </button>
                 </div>
 
                 <!-- Daftar Item Rincian -->
@@ -136,11 +141,11 @@ export default {
                             <div>
                                 <span class="font-semibold text-slate-800">{{ getServiceName(item.id_layanan) }}</span>
                                 <span class="text-[9px] text-slate-400 block">
-                                    {{ item.qty }} {{ getServiceUnit(item.id_layanan) }} x Rp {{ (item.harga_satuan !== undefined ? item.harga_satuan : getPrice(trxForm.id_pelanggan, item.id_layanan)).toLocaleString() }}
+                                    {{ item.qty }} {{ getServiceUnit(item.id_layanan) }} x Rp {{ getPrice(trxForm.id_pelanggan, item.id_layanan).toLocaleString() }}
                                 </span>
                             </div>
                             <div class="flex items-center space-x-3">
-                                <span class="font-bold text-slate-800">Rp {{ (item.qty * (item.harga_satuan !== undefined ? item.harga_satuan : getPrice(trxForm.id_pelanggan, item.id_layanan))).toLocaleString() }}</span>
+                                <span class="font-bold text-slate-800">Rp {{ (item.qty * getPrice(trxForm.id_pelanggan, item.id_layanan)).toLocaleString() }}</span>
                                 <button @click="$emit('removeItem', index)" type="button" class="text-rose-500 hover:text-rose-700 font-bold text-sm">✕</button>
                             </div>
                         </div>
@@ -175,13 +180,17 @@ export default {
                         <span class="text-slate-400 font-bold text-xs">{{ isCustomerExpanded(custId) ? '▲' : '▼' }}</span>
                     </button>
 
-                    <!-- Body Kartu Transaksi (Belum Ditagih di Atas, Sudah Ditagih di Bawah) -->
+                    <!-- Body Kartu Transaksi -->
                     <div v-show="isCustomerExpanded(custId)" class="p-3 space-y-2 bg-white">
                         <div v-for="t in transList" :key="t.id" class="bg-slate-50 p-3 rounded-xl border border-slate-100 shadow-sm space-y-2">
                             <div class="flex justify-between items-start">
-                                <div>
-                                    <h4 class="font-bold text-slate-800 text-xs">{{ getCustomerName(t.id_pelanggan) }}</h4>
-                                    <span class="text-slate-400 text-[10px]">{{ formatDate(t.tanggal) }}</span>
+                                <div class="flex items-center space-x-2">
+                                    <!-- CHECKBOX PENANDA UNTUK MENGAKUMULASI KE INVOICE (Hanya Muncul Jika Belum Ditagih) -->
+                                    <input v-if="t.status_tagihan !== 'sudah_ditagih'" type="checkbox" :value="t.id" v-model="checkedTrxIds" class="w-4 h-4 text-indigo-600 rounded">
+                                    <div>
+                                        <h4 class="font-bold text-slate-800 text-xs">{{ getCustomerName(t.id_pelanggan) }}</h4>
+                                        <span class="text-slate-400 text-[10px]">{{ formatDate(t.tanggal) }}</span>
+                                    </div>
                                 </div>
                                 <span :class="t.status_tagihan==='sudah_ditagih'?'bg-emerald-100 text-emerald-800':'bg-amber-100 text-amber-800'" class="px-2 py-0.5 rounded text-[9px] font-bold">
                                     {{ t.status_tagihan==='sudah_ditagih'?'Sudah Ditagih':'Belum Ditagih' }}

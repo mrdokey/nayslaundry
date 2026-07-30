@@ -28,7 +28,8 @@ export function usePelanggan(services) {
     const getPrice = (custId, itemId) => {
         const pFound = customPricesList.value.find(p => p.id_pelanggan === custId && p.id_layanan === itemId);
         if (pFound && pFound.harga_custom !== undefined && pFound.harga_custom !== '') return Number(pFound.harga_custom);
-        const s = services.value.find(x => x.id === itemId); return s ? Number(s.harga_standar) : 0;
+        const s = (services.value || []).find(x => x.id === itemId); 
+        return s ? Number(s.harga_standar) : 0;
     };
 
     const filteredCustomers = computed(() => {
@@ -47,15 +48,26 @@ export function usePelanggan(services) {
         } catch (e) { alert("Error: " + e.message); }
     };
 
-    const deleteCustomer = async (id) => { if (confirm("Hapus pelanggan?")) { try { await deleteDoc(doc(db, "pelanggan", id)); } catch (e) { alert("Error: " + e.message); } } };
-
-    const openCustomPrices = (c, activeTab) => {
-        selectedCustomer.value = c; tempPrices.value = {};
-        services.value.forEach(i => { const p = customPricesList.value.find(x => x.id_pelanggan === c.id && x.id_layanan === i.id); tempPrices.value[i.id] = p ? p.harga_custom : ''; });
-        activeTab.value = 'harga_khusus';
+    const deleteCustomer = async (id) => { 
+        if (confirm("Apakah Anda yakin ingin menghapus pelanggan ini?")) { 
+            try { 
+                await deleteDoc(doc(db, "pelanggan", id)); 
+                showCustomerForm.value = false;
+            } catch (e) { alert("Error: " + e.message); } 
+        } 
     };
 
-    const saveCustomPrices = async (activeTab) => {
+    // Fungsi Tarif Khusus dengan pelindung array
+    const openCustomPrices = (c) => {
+        selectedCustomer.value = c;
+        tempPrices.value = {};
+        (services.value || []).forEach(item => {
+            const savedPrice = customPricesList.value.find(p => p.id_pelanggan === c.id && p.id_layanan === item.id);
+            tempPrices.value[item.id] = savedPrice ? savedPrice.harga_custom : '';
+        });
+    };
+
+    const saveCustomPrices = async () => {
         try {
             const cId = selectedCustomer.value.id;
             for (const k of Object.keys(tempPrices.value)) {
@@ -63,7 +75,7 @@ export function usePelanggan(services) {
                 if (val !== '' && val !== null && val !== undefined) await setDoc(doc(db, "harga_khusus", dId), { id_pelanggan: cId, id_layanan: k, harga_custom: Number(val) });
                 else await deleteDoc(doc(db, "harga_khusus", dId));
             }
-            alert("Tarif khusus tersimpan!"); activeTab.value = 'pelanggan';
+            alert("Tarif khusus tersimpan!");
         } catch (e) { alert("Error: " + e.message); }
     };
 

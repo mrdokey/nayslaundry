@@ -97,7 +97,10 @@ createApp({
         </div>
     `,
     setup() {
-        const activeTab = ref('dashboard');
+        // MEMBACA TAB TERAKHIR DARI LOCALSTORAGE
+        const savedTab = localStorage.getItem('nays_active_tab');
+        const activeTab = ref(savedTab || 'dashboard');
+        
         const menuOpen = ref(false);
         const sidebarCollapsed = ref(false);
 
@@ -124,15 +127,35 @@ createApp({
         const laporan = useLaporan(tagihan.invoices, pelanggan.getCustomerName, tagihan.formatMonthYear);
 
         const showForm = computed(() => transaksi.showTransactionForm.value || pelanggan.showCustomerForm.value || layanan.showServiceForm.value);
-        const changeTab = (tab) => { activeTab.value = tab; menuOpen.value = false; };
+
+        // MENGUNCI SIMPAN TAB SAAT PERPINDAHAN MENU
+        const changeTab = (tab) => { 
+            activeTab.value = tab; 
+            localStorage.setItem('nays_active_tab', tab); 
+            menuOpen.value = false; 
+        };
+
         const triggerAdd = () => {
             if (activeTab.value === 'transaksi') transaksi.openAddTransaction();
             else if (activeTab.value === 'pelanggan') pelanggan.openAddCustomer();
             else if (activeTab.value === 'layanan') layanan.openAddService();
         };
 
+        // KOREKSI KELUAR SISTEM
+        const logoutAdmin = () => {
+            if (confirm("Keluar sistem?")) { 
+                auth.isLoggedIn.value = false; 
+                localStorage.removeItem('nays_logged_in'); 
+                localStorage.removeItem('nays_active_tab'); 
+                activeTab.value = 'dashboard'; 
+                auth.otpSent.value = false; 
+                auth.phoneNumber.value = ''; 
+                auth.inputOtp.value = ''; 
+            }
+        };
+
         return {
-            activeTab, menuOpen, sidebarCollapsed, menuList, profile, saveProfile, showForm, changeTab, triggerAdd,
+            activeTab, menuOpen, sidebarCollapsed, menuList, profile, saveProfile, showForm, changeTab, triggerAdd, logoutAdmin,
             ...auth, ...layanan, ...pelanggan, ...transaksi, ...tagihan, ...laporan
         };
     }

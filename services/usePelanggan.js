@@ -7,7 +7,7 @@ export function usePelanggan(services) {
     const searchQueryCustomers = ref('');
     const showCustomerForm = ref(false);
     const isEditing = ref(false);
-    const customerForm = ref({ id: '', nama_pelanggan: '', alamat: '', no_telepon: '' });
+    const customerForm = ref({ id: '', nama_pelanggan: '', alamat: '', no_telepon: '', markup_persen: 0 });
     const selectedCustomer = ref(null);
     const tempPrices = ref({});
 
@@ -24,6 +24,12 @@ export function usePelanggan(services) {
 
     const getCustomerName = (id) => { const c = customers.value.find(x => x.id === id); return c ? c.nama_pelanggan : 'Tanpa Nama'; };
     const getCustomerAddress = (id) => { const c = customers.value.find(x => x.id === id); return c ? c.alamat : '-'; };
+    
+    // Helper mengambil persen markup pelanggan
+    const getCustomerMarkup = (id) => {
+        const c = customers.value.find(x => x.id === id);
+        return (c && c.markup_persen) ? Number(c.markup_persen) : 0;
+    };
 
     const getPrice = (custId, itemId) => {
         const pFound = customPricesList.value.find(p => p.id_pelanggan === custId && p.id_layanan === itemId);
@@ -37,13 +43,33 @@ export function usePelanggan(services) {
         return !q ? customers.value : customers.value.filter(c => c.nama_pelanggan.toLowerCase().includes(q) || c.alamat.toLowerCase().includes(q));
     });
 
-    const openAddCustomer = () => { isEditing.value = false; customerForm.value = { id: '', nama_pelanggan: '', alamat: '', no_telepon: '' }; showCustomerForm.value = true; };
-    const openEditCustomer = (c) => { isEditing.value = true; customerForm.value = { ...c }; showCustomerForm.value = true; };
+    const openAddCustomer = () => { 
+        isEditing.value = false; 
+        customerForm.value = { id: '', nama_pelanggan: '', alamat: '', no_telepon: '', markup_persen: 0 }; 
+        showCustomerForm.value = true; 
+    };
+    
+    const openEditCustomer = (c) => { 
+        isEditing.value = true; 
+        customerForm.value = { ...c, markup_persen: c.markup_persen || 0 }; 
+        showCustomerForm.value = true; 
+    };
 
     const saveCustomer = async () => {
         try {
-            if (isEditing.value) await updateDoc(doc(db, "pelanggan", customerForm.value.id), { nama_pelanggan: customerForm.value.nama_pelanggan, alamat: customerForm.value.alamat, no_telepon: customerForm.value.no_telepon });
-            else await addDoc(collection(db, "pelanggan"), { nama_pelanggan: customerForm.value.nama_pelanggan, alamat: customerForm.value.alamat, no_telepon: customerForm.value.no_telepon, tanggal_bergabung: new Date().toISOString() });
+            const payload = {
+                nama_pelanggan: customerForm.value.nama_pelanggan,
+                alamat: customerForm.value.alamat,
+                no_telepon: customerForm.value.no_telepon,
+                markup_persen: Number(customerForm.value.markup_persen || 0)
+            };
+
+            if (isEditing.value) {
+                await updateDoc(doc(db, "pelanggan", customerForm.value.id), payload);
+            } else {
+                payload.tanggal_bergabung = new Date().toISOString();
+                await addDoc(collection(db, "pelanggan"), payload);
+            }
             showCustomerForm.value = false;
         } catch (e) { alert("Error: " + e.message); }
     };
@@ -57,7 +83,6 @@ export function usePelanggan(services) {
         } 
     };
 
-    // Fungsi Tarif Khusus dengan pelindung array
     const openCustomPrices = (c) => {
         selectedCustomer.value = c;
         tempPrices.value = {};
@@ -81,7 +106,7 @@ export function usePelanggan(services) {
 
     return {
         customers, customPricesList, searchQueryCustomers, showCustomerForm, isEditing, customerForm,
-        selectedCustomer, tempPrices, filteredCustomers, getCustomerName, getCustomerAddress, getPrice,
+        selectedCustomer, tempPrices, filteredCustomers, getCustomerName, getCustomerAddress, getCustomerMarkup, getPrice,
         openAddCustomer, openEditCustomer, saveCustomer, deleteCustomer, openCustomPrices, saveCustomPrices
     };
 }

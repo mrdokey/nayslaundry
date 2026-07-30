@@ -195,17 +195,19 @@ createApp({
                 </main>
             </div>
 
-            <!-- PRINTABLE INVOICE VIEW -->
-            <InvoicePrintView v-if="printData || printA5Data" 
-                :print-data="printData" 
-                :print-a5-data="printA5Data" 
-                :profile="profile" 
-                :get-customer-name="getCustomerName" 
-                :get-customer-address="getCustomerAddress" 
-                :get-service-name="getServiceName" 
-                :get-service-unit="getServiceUnit" 
-                :format-date="formatDate" 
-                :format-month-year="formatMonthYear" />
+<!-- Sesuaikan tag <InvoicePrintView> di app.js Anda menjadi seperti ini: -->
+<InvoicePrintView v-if="printData || printA5Data" 
+    :print-data="printData" 
+    :print-a5-data="printA5Data" 
+    :profile="profile" 
+    :get-customer-name="getCustomerName" 
+    :get-customer-address="getCustomerAddress" 
+    :get-customer-markup="getCustomerMarkup"
+    :get-service-name="getServiceName" 
+    :get-service-unit="getServiceUnit" 
+    :get-price="getPrice"
+    :format-date="formatDate" 
+    :format-month-year="formatMonthYear" />
         </div>
     `,
     setup() {

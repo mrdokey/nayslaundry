@@ -16,7 +16,7 @@ export default {
                 <!-- Form Input Pelanggan -->
                 <div v-if="showForm" class="bg-white p-4 rounded-xl border border-slate-200 space-y-3">
                     <h3 class="font-bold text-slate-700 text-xs">{{ isEditing ? 'Ubah Data Pelanggan' : 'Tambah Pelanggan Baru' }}</h3>
-                    <form @submit.prevent="$emit('save')" class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <form @submit.prevent="$emit('save')" class="grid grid-cols-1 md:grid-cols-4 gap-3">
                         <div>
                             <label class="block text-xs font-semibold text-slate-500 mb-1">Nama Hotel / Vila</label>
                             <input v-model="customerForm.nama_pelanggan" type="text" required class="w-full p-2 border rounded text-xs">
@@ -29,8 +29,11 @@ export default {
                             <label class="block text-xs font-semibold text-slate-500 mb-1">Alamat Lengkap</label>
                             <input v-model="customerForm.alamat" type="text" required class="w-full p-2 border rounded text-xs">
                         </div>
-                        <div class="md:col-span-3 flex justify-between items-center pt-2 border-t">
-                            <!-- Tombol Hapus Pelanggan Dipindahkan ke Dalam Form Edit -->
+                        <div>
+                            <label class="block text-xs font-semibold text-indigo-900 mb-1">Markup Nota Guest (%)</label>
+                            <input v-model.number="customerForm.markup_persen" type="number" min="0" placeholder="0" class="w-full p-2 border rounded text-xs font-bold text-indigo-600">
+                        </div>
+                        <div class="md:col-span-4 flex justify-between items-center pt-2 border-t">
                             <div>
                                 <button v-if="isEditing" type="button" @click="$emit('delete', customerForm.id)" class="text-red-500 hover:text-red-700 font-semibold text-xs border border-red-200 px-3 py-1 rounded bg-red-50">
                                     🗑️ Hapus Pelanggan Ini
@@ -48,7 +51,12 @@ export default {
                 <div v-if="!showForm" class="space-y-2">
                     <div v-for="cust in customers" :key="cust.id" class="bg-white p-3 rounded-xl border border-slate-100 shadow-sm flex justify-between items-center">
                         <div>
-                            <h4 class="font-bold text-slate-800 text-xs">{{ cust.nama_pelanggan }}</h4>
+                            <div class="flex items-center space-x-2">
+                                <h4 class="font-bold text-slate-800 text-xs">{{ cust.nama_pelanggan }}</h4>
+                                <span v-if="cust.markup_persen > 0" class="bg-indigo-100 text-indigo-800 px-1.5 py-0.5 rounded text-[9px] font-extrabold">
+                                    Guest Markup {{ cust.markup_persen }}%
+                                </span>
+                            </div>
                             <span class="text-slate-400 text-[10px] block mt-0.5">📍 {{ cust.alamat }} | Telp: {{ cust.no_telepon }}</span>
                         </div>
                         <div class="flex space-x-1.5 shrink-0 text-xs">

@@ -1,16 +1,6 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <script>
-    fetch('./app.js').then(r => {
-        if (!r.ok) throw new Error('HTTP Status ' + r.status + ' (' + r.statusText + ') - File app.js TIDAK DITEMUKAN di server GitHub!');
-    }).catch(err => {
-        var b = document.createElement('div');
-        b.style = 'position:fixed;top:0;left:0;right:0;z-index:99999;background:#dc2626;color:white;padding:12px;font-size:12px;font-family:sans-serif;word-break:break-all;';
-        b.innerHTML = '<b>⚠️ DIAGNOSTIK PRESI:</b><br>' + err.message;
-        document.body ? document.body.appendChild(b) : document.documentElement.appendChild(b);
-    });
-</script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Nays Laundry</title>
@@ -21,6 +11,17 @@
         body { font-family: 'Inter', sans-serif; }
         [v-cloak] { display: none !important; }
     </style>
+  <!-- Detector Error untuk Tablet -->
+<script>
+    fetch('./app.js').then(r => {
+        if (!r.ok) throw new Error('HTTP Status ' + r.status + ' (' + r.statusText + ') - File app.js TIDAK DITEMUKAN di server GitHub!');
+    }).catch(err => {
+        var b = document.createElement('div');
+        b.style = 'position:fixed;top:0;left:0;right:0;z-index:99999;background:#dc2626;color:white;padding:12px;font-size:12px;font-family:sans-serif;word-break:break-all;';
+        b.innerHTML = '<b>⚠️ DIAGNOSTIK PRESI:</b><br>' + err.message;
+        document.body ? document.body.appendChild(b) : document.documentElement.appendChild(b);
+    });
+</script>
 </head>
 <body class="bg-slate-50 text-slate-800 text-xs select-none">
     

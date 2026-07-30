@@ -1,7 +1,6 @@
-import { 
-    db, doc, setDoc, collection, addDoc, updateDoc, deleteDoc, onSnapshot 
-} from "./firebase-db.js";
+import { db, doc, setDoc, collection, addDoc, updateDoc, deleteDoc, onSnapshot } from "./firebase-db.js";
 
+// Import Komponen Modular dari folder components/
 import AuthLogin from "./components/AuthLogin.js";
 import DashboardView from "./components/DashboardView.js";
 import TransaksiView from "./components/TransaksiView.js";
@@ -11,6 +10,7 @@ import PelangganView from "./components/PelangganView.js";
 import MasterItemView from "./components/MasterItemView.js";
 import ProfilView from "./components/ProfilView.js";
 import InvoicePrintView from "./components/InvoicePrintView.js";
+import MasterItemView from "./components/MasterItemView.js";
 
 const { createApp, ref, onMounted, computed } = Vue;
 
@@ -21,15 +21,19 @@ createApp({
     },
     template: `
         <div class="flex flex-col min-h-screen print:p-0 print:bg-white">
+            <!-- LOGIN VIEW -->
             <AuthLogin v-if="!isLoggedIn" 
                 :phone-number="phoneNumber" :otp-sent="otpSent" :input-otp="inputOtp" :is-loading-otp="isLoadingOtp"
                 @update:phone-number="phoneNumber = $event" @update:input-otp="inputOtp = $event"
                 @send-otp="sendOtpCode" @verify-otp="verifyOtpCode" />
 
+            <!-- MAIN APPLICATION -->
             <div v-else class="flex flex-col md:flex-row w-full min-h-screen print:hidden pb-16 md:pb-0">
+                <!-- FAB MOBILE -->
                 <button v-if="['transaksi', 'pelanggan', 'layanan'].includes(activeTab) && !showForm" 
                         @click="triggerAdd" class="md:hidden fixed bottom-20 right-4 bg-indigo-600 text-white rounded-full w-12 h-12 flex items-center justify-center shadow-lg z-40 text-xl font-bold">+</button>
 
+                <!-- HEADER MOBILE -->
                 <header class="flex md:hidden h-14 bg-indigo-900 text-white items-center justify-between px-4 fixed top-0 left-0 right-0 z-40 shadow">
                     <div class="flex items-center space-x-2">
                         <img v-if="profile.logo_url" :src="profile.logo_url" class="w-8 h-8 rounded-full object-cover bg-white">
@@ -38,6 +42,7 @@ createApp({
                     <button @click="menuOpen = !menuOpen" class="text-xl p-2">☰</button>
                 </header>
 
+                <!-- DRAWER MOBILE -->
                 <div v-if="menuOpen" @click="menuOpen = false" class="fixed inset-0 bg-black/40 z-40"></div>
                 <aside :class="menuOpen ? 'translate-x-0' : '-translate-x-full'" class="fixed inset-y-0 left-0 w-56 bg-indigo-900 text-white z-50 transform transition-transform duration-200 flex flex-col">
                     <div class="p-4 border-b border-indigo-800 flex justify-between items-center"><span class="font-bold">Menu</span><button @click="menuOpen = false">✕</button></div>
@@ -47,6 +52,7 @@ createApp({
                     </nav>
                 </aside>
 
+                <!-- SIDEBAR DESKTOP -->
                 <aside class="hidden md:flex w-56 bg-indigo-900 text-white flex-col shadow-lg shrink-0">
                     <div class="p-4 border-b border-indigo-800 flex items-center space-x-2">
                         <img v-if="profile.logo_url" :src="profile.logo_url" class="w-8 h-8 rounded-full object-cover bg-white">
@@ -58,6 +64,7 @@ createApp({
                     </nav>
                 </aside>
 
+                <!-- BOTTOM NAV MOBILE -->
                 <nav class="flex md:hidden fixed bottom-0 left-0 right-0 h-14 bg-indigo-900 text-white border-t border-indigo-800 z-30 justify-around items-center shadow-lg">
                     <button @click="changeTab('dashboard')" :class="activeTab==='dashboard'?'text-white font-bold':'text-indigo-300'" class="flex flex-col items-center text-[9px]"><span class="text-base">🏠</span><span>Dashboard</span></button>
                     <button @click="changeTab('transaksi')" :class="activeTab==='transaksi'?'text-white font-bold':'text-indigo-300'" class="flex flex-col items-center text-[9px]"><span class="text-base">📝</span><span>Transaksi</span></button>
@@ -65,17 +72,19 @@ createApp({
                     <button @click="changeTab('layanan')" :class="activeTab==='layanan'?'text-white font-bold':'text-indigo-300'" class="flex flex-col items-center text-[9px]"><span class="text-base">⚙️</span><span>Item</span></button>
                 </nav>
 
+                <!-- MAIN DISPLAY -->
                 <main class="flex-1 p-4 pt-20 md:pt-4 overflow-y-auto">
                     <DashboardView v-if="activeTab === 'dashboard'" :customers="customers" :services="services" :unbilled-count="unbilledTransactionsCount" :has-unbilled="hasUnbilledCustomers" :get-unbilled-total="getCustomerUnbilledTotal" />
                     <TransaksiView v-if="activeTab === 'transaksi'" :transactions="filteredTransactions" :customers="customers" :services="services" :search-query="searchQueryTransactions" :show-form="showTransactionForm" :trx-form="trxForm" :item-search="itemSearchQuery" :selected-item-id="selectedItemId" :selected-item-qty="selectedItemQty" :filtered-search-items="filteredSearchItems" :get-customer-name="getCustomerName" :get-service-name="getServiceName" :get-service-unit="getServiceUnit" :get-price="getPrice" :format-date="formatDate" @update:search-query="searchQueryTransactions = $event" @open-add="openAddTransaction" @close-form="showTransactionForm = false" @select-search-item="selectSearchItem" @add-item="addTrxItem" @remove-item="removeTrxItem" @save="saveTransaction" @delete="deleteTransaction" />
                     <TagihanView v-if="activeTab === 'tagihan'" :invoices="filteredInvoices" :customers="customers" :search-query="searchQueryInvoices" :show-form="showInvoiceForm" :invoice-form="invoiceForm" :draft-items="draftInvoiceItems" :draft-total="draftInvoiceTotal" :get-customer-name="getCustomerName" :format-month-year="formatMonthYear" @update:search-query="searchQueryInvoices = $event" @open-add="openAddInvoice" @close-form="showInvoiceForm = false" @calculate="calculateDraftInvoice" @save="saveInvoice" @delete="deleteInvoice" @update-status="updatePaymentStatus" @print="printInvoice" />
                     <LaporanView v-if="activeTab === 'laporan'" :customers="customers" :report-invoices="reportInvoices" :report-totals="reportTotals" :filter-client="reportFilterClient" :filter-month="reportFilterMonth" :get-customer-name="getCustomerName" :format-month-year="formatMonthYear" @update:filter-client="reportFilterClient = $event" @update:filter-month="reportFilterMonth = $event" @export="exportToExcel" />
                     <PelangganView v-if="activeTab === 'pelanggan' || activeTab === 'harga_khusus'" :active-tab="activeTab" :customers="filteredCustomers" :services="services" :selected-customer="selectedCustomer" :temp-prices="tempPrices" :search-query="searchQueryCustomers" :show-form="showCustomerForm" :is-editing="isEditing" :customer-form="customerForm" @update:search-query="searchQueryCustomers = $event" @open-add="openAddCustomer" @open-edit="openEditCustomer" @open-custom="openCustomPrices" @close-form="showCustomerForm = false" @save="saveCustomer" @delete="deleteCustomer" @save-custom="saveCustomPrices" @back-to-list="activeTab = 'pelanggan'" />
-                    <MasterItemView v-if="activeTab === 'layanan'" :services="services" :show-form="showServiceForm" :is-editing="isEditingService" :service-form="serviceForm" @open-add="openAddService" @open-edit="openEditService" @close-form="showServiceForm = false" @save="saveService" @delete="deleteService" />
+                    <MasterItemView v-if="activeTab === 'layanan'" :services="services" :show-form="showServiceForm" :is-editing="isEditingService" :service-form="serviceForm" @open-add="openAddService" @open-edit="openEditService" @close-form="showServiceForm = false" @save="saveService" @delete="deleteService" @import-guest="importGuestServices" />
                     <ProfilView v-if="activeTab === 'profil'" :profile="profile" @save="saveProfile" />
                 </main>
             </div>
 
+            <!-- PRINTABLE INVOICE -->
             <InvoicePrintView v-if="printData" :print-data="printData" :profile="profile" :get-customer-name="getCustomerName" :get-customer-address="getCustomerAddress" :format-date="formatDate" :format-month-year="formatMonthYear" />
         </div>
     `,
@@ -114,7 +123,6 @@ createApp({
 
         const showServiceForm = ref(false);
         const isEditingService = ref(false);
-        // Menambahkan properti 'kategori' pada form Master Item
         const serviceForm = ref({ id: '', nama_layanan: '', satuan: 'Pcs', harga_standar: 0, kategori: 'Linen Kamar' });
 
         const showTransactionForm = ref(false);
@@ -265,51 +273,36 @@ createApp({
         };
         const deleteCustomer = async (id) => { if (confirm("Hapus pelanggan?")) { try { await deleteDoc(doc(db, "pelanggan", id)); } catch (e) { alert("Error: " + e.message); } } };
 
-        // Helper membaca kategori item otomatis untuk item lama
-        const getServiceCategory = (item) => {
-            if (item.kategori && item.kategori.trim() !== '') return item.kategori;
-            const name = (item.nama_layanan || '').toLowerCase();
-            if (name.includes('express') || name.includes('spotting')) return 'Layanan Khusus';
-            if (name.includes('towel') || name.includes('mat') || name.includes('spa') || name.includes('kimono')) return 'Handuk & Kamar Mandi';
-            if (name.includes('napkin') || name.includes('sofa') || name.includes('cushion')) return 'F&B & Penutup';
-            if (name.includes('shirt') || name.includes('dress') || name.includes('jeans') || name.includes('pajamas') || name.includes('sarung') || name.includes('scarf') || name.includes('topi') || name.includes('boxer') || name.includes('panties') || name.includes('bra') || name.includes('swimsuit') || name.includes('socks') || name.includes('baby')) return 'Pakaian Tamu';
-            return 'Linen Kamar';
-        };
-
-        const openAddService = () => { 
-            isEditingService.value = false; 
-            serviceForm.value = { id: '', nama_layanan: '', satuan: 'Pcs', harga_standar: 0, kategori: 'Linen Kamar' }; 
-            showServiceForm.value = true; 
-        };
+        const openAddService = () => { isEditingService.value = false; serviceForm.value = { id: '', nama_layanan: '', satuan: 'Pcs', harga_standar: 0 }; showServiceForm.value = true; };
         const openEditService = (item) => { 
-            isEditingService.value = true; 
-            serviceForm.value = { 
-                ...item, 
-                kategori: getServiceCategory(item) 
-            }; 
-            showServiceForm.value = true; 
-        };
+    isEditingService.value = true; 
+    serviceForm.value = { 
+        ...item, 
+        kategori: item.kategori || 'Linen Kamar' // <-- 3. Sisipkan di sini
+    }; 
+    showServiceForm.value = true; 
+};
         const saveService = async () => {
-            try {
-                if (isEditingService.value) {
-                    await updateDoc(doc(db, "layanan", serviceForm.value.id), { 
-                        nama_layanan: serviceForm.value.nama_layanan, 
-                        satuan: serviceForm.value.satuan, 
-                        harga_standar: Number(serviceForm.value.harga_standar),
-                        kategori: serviceForm.value.kategori || 'Linen Kamar'
-                    });
-                } else {
-                    await addDoc(collection(db, "layanan"), { 
-                        nama_layanan: serviceForm.value.nama_layanan, 
-                        satuan: serviceForm.value.satuan, 
-                        harga_standar: Number(serviceForm.value.harga_standar),
-                        kategori: serviceForm.value.kategori || 'Linen Kamar',
-                        tanggal_dibuat: new Date().toISOString() 
-                    });
-                }
-                showServiceForm.value = false;
-            } catch (e) { alert("Error: " + e.message); }
-        };
+    try {
+        if (isEditingService.value) {
+            await updateDoc(doc(db, "layanan", serviceForm.value.id), {
+                nama_layanan: serviceForm.value.nama_layanan,
+                satuan: serviceForm.value.satuan,
+                harga_standar: Number(serviceForm.value.harga_standar),
+                kategori: serviceForm.value.kategori || 'Linen Kamar' // <-- 1. Sisipkan di sini (Edit)
+            });
+        } else {
+            await addDoc(collection(db, "layanan"), {
+                nama_layanan: serviceForm.value.nama_layanan,
+                satuan: serviceForm.value.satuan,
+                harga_standar: Number(serviceForm.value.harga_standar),
+                kategori: serviceForm.value.kategori || 'Linen Kamar', // <-- 2. Sisipkan di sini (Tambah)
+                tanggal_dibuat: new Date().toISOString()
+            });
+        }
+        showServiceForm.value = false;
+    } catch (e) { alert("Error: " + e.message); }
+};
         const deleteService = async (id) => { if (confirm("Hapus item?")) { try { await deleteDoc(doc(db, "layanan", id)); } catch (e) { alert("Error: " + e.message); } } };
 
         const openCustomPrices = (c) => {
@@ -391,6 +384,24 @@ createApp({
         const updatePaymentStatus = async (id, ns) => { try { await updateDoc(doc(db, "tagihan", id), { status_pembayaran: ns }); } catch (e) { alert("Error: " + e.message); } };
         const printInvoice = (inv) => { printData.value = inv; setTimeout(() => { window.print(); }, 300); };
 
+        const importGuestServices = async () => {
+            const items = [
+                { name: "Shirt/Blouse", price: 5000 }, { name: "T-Shirt", price: 4000 }, { name: "Polo/Long Sleeved T-Shirt", price: 5000 },
+                { name: "Sweater/Hoodie", price: 5000 }, { name: "Under Shirt/Tank Top", price: 3000 }, { name: "Shorts/Skirt", price: 5000 },
+                { name: "Trousers/Long Skirt", price: 7000 }, { name: "Jeans", price: 8000 }, { name: "Briefs/Boxer/Panties", price: 3000 },
+                { name: "Bra", price: 4000 }, { name: "Swimsuit", price: 4000 }, { name: "Socks/Kaos Kaki", price: 2500 },
+                { name: "Long Dress", price: 9000 }, { name: "Pajamas/Baju Tidur", price: 7000 }, { name: "Sarong/Sarung", price: 3000 },
+                { name: "Scarf/Selendang", price: 3000 }, { name: "Topi", price: 5000 }, { name: "Baby Clothes/Baju Bayi", price: 3000 }
+            ];
+            if (confirm(`Impor ${items.length} item Guest Laundry?`)) {
+                let cnt = 0;
+                try {
+                    for (const i of items) { await addDoc(collection(db, "layanan"), { nama_layanan: i.name, satuan: "Pcs", harga_standar: Number(i.price), tanggal_dibuat: new Date().toISOString() }); cnt++; }
+                    alert(`Sukses impor ${cnt} item!`);
+                } catch (e) { alert("Error: " + e.message); }
+            }
+        };
+
         return {
             activeTab, menuOpen, changeTab, isLoggedIn, isApk, phoneNumber, otpSent, inputOtp, isLoadingOtp,
             profile, customers, services, transactions, invoices, unbilledTransactionsCount,
@@ -405,7 +416,7 @@ createApp({
             sendOtpCode, verifyOtpCode, logoutAdmin, saveProfile, openAddCustomer, openEditCustomer, saveCustomer, deleteCustomer,
             openAddService, openEditService, saveService, deleteService, openCustomPrices, saveCustomPrices,
             openAddTransaction, saveTransaction, deleteTransaction, openAddInvoice, calculateDraftInvoice, saveInvoice, deleteInvoice,
-            updatePaymentStatus, printInvoice, exportToExcel, getCustomerUnbilledTotal, hasUnbilledCustomers
+            updatePaymentStatus, printInvoice, exportToExcel, getCustomerUnbilledTotal, hasUnbilledCustomers, importGuestServices
         };
     }
 }).mount('#app');

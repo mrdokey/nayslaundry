@@ -1,6 +1,5 @@
 import { db, doc, setDoc, collection, addDoc, updateDoc, deleteDoc, onSnapshot } from "./firebase-db.js";
 
-// Import Komponen Modular dari folder components/
 import AuthLogin from "./components/AuthLogin.js";
 import DashboardView from "./components/DashboardView.js";
 import TransaksiView from "./components/TransaksiView.js";
@@ -20,15 +19,12 @@ createApp({
     },
     template: `
         <div class="flex flex-col min-h-screen print:p-0 print:bg-white">
-            <!-- LOGIN VIEW -->
             <AuthLogin v-if="!isLoggedIn" 
                 :phone-number="phoneNumber" :otp-sent="otpSent" :input-otp="inputOtp" :is-loading-otp="isLoadingOtp"
                 @update:phone-number="phoneNumber = $event" @update:input-otp="inputOtp = $event"
                 @send-otp="sendOtpCode" @verify-otp="verifyOtpCode" />
 
-            <!-- MAIN APPLICATION -->
             <div v-else class="flex flex-col md:flex-row w-full min-h-screen print:hidden pb-16 md:pb-0">
-                <!-- FAB MOBILE -->
                 <button v-if="['transaksi', 'pelanggan', 'layanan'].includes(activeTab) && !showForm" 
                         @click="triggerAdd" class="md:hidden fixed bottom-20 right-4 bg-indigo-600 text-white rounded-full w-12 h-12 flex items-center justify-center shadow-lg z-40 text-xl font-bold">+</button>
 
@@ -46,20 +42,38 @@ createApp({
                 <aside :class="menuOpen ? 'translate-x-0' : '-translate-x-full'" class="fixed inset-y-0 left-0 w-56 bg-indigo-900 text-white z-50 transform transition-transform duration-200 flex flex-col">
                     <div class="p-4 border-b border-indigo-800 flex justify-between items-center"><span class="font-bold">Menu</span><button @click="menuOpen = false">✕</button></div>
                     <nav class="flex-1 p-3 space-y-1">
-                        <button v-for="t in ['dashboard', 'transaksi', 'tagihan', 'laporan', 'pelanggan', 'layanan', 'profil']" @click="changeTab(t)" :class="activeTab===t?'bg-indigo-800':''" class="w-full text-left p-2.5 rounded hover:bg-indigo-800 capitalize">{{ t==='layanan'?'master item':t }}</button>
-                        <button v-if="!isApk" @click="logoutAdmin" class="w-full text-left p-2.5 rounded text-rose-300 hover:bg-rose-950 block mt-8 border-t border-indigo-800">🚪 Keluar</button>
+                        <button v-for="m in menuList" :key="m.id" @click="changeTab(m.id)" :class="activeTab===m.id?'bg-indigo-800':''" class="w-full text-left p-2.5 rounded hover:bg-indigo-800 flex items-center space-x-2">
+                            <span>{{ m.icon }}</span><span class="capitalize">{{ m.name }}</span>
+                        </button>
+                        <button v-if="!isApk" @click="logoutAdmin" class="w-full text-left p-2.5 rounded text-rose-300 hover:bg-rose-950 flex items-center space-x-2 mt-8 border-t border-indigo-800">
+                            <span>🚪</span><span>Keluar</span>
+                        </button>
                     </nav>
                 </aside>
 
-                <!-- SIDEBAR DESKTOP -->
-                <aside class="hidden md:flex w-56 bg-indigo-900 text-white flex-col shadow-lg shrink-0">
-                    <div class="p-4 border-b border-indigo-800 flex items-center space-x-2">
-                        <img v-if="profile.logo_url" :src="profile.logo_url" class="w-8 h-8 rounded-full object-cover bg-white">
-                        <span class="font-bold text-xs">{{ profile.nama_laundry || 'Nays Laundry' }}</span>
+                <!-- SIDEBAR DESKTOP COLLAPSIBLE (Bisa Disiutkan Menjadi Icon Only) -->
+                <aside :class="sidebarCollapsed ? 'w-16' : 'w-56'" class="hidden md:flex bg-indigo-900 text-white flex-col shadow-lg shrink-0 transition-all duration-200">
+                    <div class="p-3 border-b border-indigo-800 flex items-center justify-between">
+                        <div v-if="!sidebarCollapsed" class="flex items-center space-x-2 overflow-hidden">
+                            <img v-if="profile.logo_url" :src="profile.logo_url" class="w-7 h-7 rounded-full object-cover bg-white shrink-0">
+                            <span class="font-bold text-xs truncate">{{ profile.nama_laundry || 'Nays Laundry' }}</span>
+                        </div>
+                        <button @click="sidebarCollapsed = !sidebarCollapsed" class="p-1.5 text-base hover:bg-indigo-800 rounded w-full text-center">
+                            {{ sidebarCollapsed ? '➡️' : '☰' }}
+                        </button>
                     </div>
-                    <nav class="flex-1 p-3 space-y-1 text-indigo-100">
-                        <button v-for="t in ['dashboard', 'transaksi', 'tagihan', 'laporan', 'pelanggan', 'layanan', 'profil']" @click="changeTab(t)" :class="activeTab===t?'bg-indigo-800 text-white':''" class="w-full text-left p-2.5 rounded hover:bg-indigo-800 capitalize">{{ t==='layanan'?'master item':t }}</button>
-                        <button v-if="!isApk" @click="logoutAdmin" class="w-full text-left p-2.5 rounded text-rose-300 hover:bg-rose-950 block mt-12 border-t border-indigo-800">🚪 Keluar</button>
+                    <nav class="flex-1 p-2 space-y-1 text-indigo-100">
+                        <button v-for="m in menuList" :key="m.id" @click="changeTab(m.id)" 
+                                :class="activeTab===m.id?'bg-indigo-800 text-white':''" 
+                                :title="m.name"
+                                class="w-full text-left p-2.5 rounded hover:bg-indigo-800 flex items-center space-x-3 transition">
+                            <span class="text-base shrink-0">{{ m.icon }}</span>
+                            <span v-if="!sidebarCollapsed" class="capitalize text-xs whitespace-nowrap">{{ m.name }}</span>
+                        </button>
+                        <button v-if="!isApk" @click="logoutAdmin" title="Keluar" class="w-full text-left p-2.5 rounded text-rose-300 hover:bg-rose-950 flex items-center space-x-3 mt-12 border-t border-indigo-800">
+                            <span class="text-base shrink-0">🚪</span>
+                            <span v-if="!sidebarCollapsed" class="text-xs">Keluar</span>
+                        </button>
                     </nav>
                 </aside>
 
@@ -74,7 +88,7 @@ createApp({
                 <!-- MAIN DISPLAY -->
                 <main class="flex-1 p-4 pt-20 md:pt-4 overflow-y-auto">
                     <DashboardView v-if="activeTab === 'dashboard'" :customers="customers" :services="services" :unbilled-count="unbilledTransactionsCount" :has-unbilled="hasUnbilledCustomers" :get-unbilled-total="getCustomerUnbilledTotal" />
-                    <TransaksiView v-if="activeTab === 'transaksi'" :transactions="filteredTransactions" :customers="customers" :services="services" :search-query="searchQueryTransactions" :show-form="showTransactionForm" :trx-form="trxForm" :item-search="itemSearchQuery" :selected-item-id="selectedItemId" :selected-item-qty="selectedItemQty" :filtered-search-items="filteredSearchItems" :get-customer-name="getCustomerName" :get-service-name="getServiceName" :get-service-unit="getServiceUnit" :get-price="getPrice" :format-date="formatDate" @update:search-query="searchQueryTransactions = $event" @open-add="openAddTransaction" @close-form="showTransactionForm = false" @select-search-item="selectSearchItem" @add-item="addTrxItem" @remove-item="removeTrxItem" @save="saveTransaction" @delete="deleteTransaction" />
+                    <TransaksiView v-if="activeTab === 'transaksi'" :transactions="filteredTransactions" :customers="customers" :services="services" :search-query="searchQueryTransactions" :show-form="showTransactionForm" :trx-form="trxForm" :item-search="itemSearchQuery" :selected-item-id="selectedItemId" :selected-item-qty="selectedItemQty" :filtered-search-items="filteredSearchItems" :get-customer-name="getCustomerName" :get-service-name="getServiceName" :get-service-unit="getServiceUnit" :get-price="getPrice" :format-date="formatDate" @update:search-query="searchQueryTransactions = $event" @update:item-search="itemSearchQuery = $event" @update:selected-item-qty="selectedItemQty = $event" @open-add="openAddTransaction" @close-form="showTransactionForm = false" @select-search-item="selectSearchItem" @add-item="addTrxItem" @remove-item="removeTrxItem" @save="saveTransaction" @delete="deleteTransaction" />
                     <TagihanView v-if="activeTab === 'tagihan'" :invoices="filteredInvoices" :customers="customers" :search-query="searchQueryInvoices" :show-form="showInvoiceForm" :invoice-form="invoiceForm" :draft-items="draftInvoiceItems" :draft-total="draftInvoiceTotal" :get-customer-name="getCustomerName" :format-month-year="formatMonthYear" @update:search-query="searchQueryInvoices = $event" @open-add="openAddInvoice" @close-form="showInvoiceForm = false" @calculate="calculateDraftInvoice" @save="saveInvoice" @delete="deleteInvoice" @update-status="updatePaymentStatus" @print="printInvoice" />
                     <LaporanView v-if="activeTab === 'laporan'" :customers="customers" :report-invoices="reportInvoices" :report-totals="reportTotals" :filter-client="reportFilterClient" :filter-month="reportFilterMonth" :get-customer-name="getCustomerName" :format-month-year="formatMonthYear" @update:filter-client="reportFilterClient = $event" @update:filter-month="reportFilterMonth = $event" @export="exportToExcel" />
                     <PelangganView v-if="activeTab === 'pelanggan' || activeTab === 'harga_khusus'" :active-tab="activeTab" :customers="filteredCustomers" :services="services" :selected-customer="selectedCustomer" :temp-prices="tempPrices" :search-query="searchQueryCustomers" :show-form="showCustomerForm" :is-editing="isEditing" :customer-form="customerForm" @update:search-query="searchQueryCustomers = $event" @open-add="openAddCustomer" @open-edit="openEditCustomer" @open-custom="openCustomPrices" @close-form="showCustomerForm = false" @save="saveCustomer" @delete="deleteCustomer" @save-custom="saveCustomPrices" @back-to-list="activeTab = 'pelanggan'" />
@@ -83,13 +97,13 @@ createApp({
                 </main>
             </div>
 
-            <!-- PRINTABLE INVOICE -->
             <InvoicePrintView v-if="printData" :print-data="printData" :profile="profile" :get-customer-name="getCustomerName" :get-customer-address="getCustomerAddress" :format-date="formatDate" :format-month-year="formatMonthYear" />
         </div>
     `,
     setup() {
         const activeTab = ref('dashboard');
         const menuOpen = ref(false);
+        const sidebarCollapsed = ref(false); // State Lipat Sidebar Desktop
         
         const isLoggedIn = ref(false);
         const isApk = ref(false);
@@ -98,6 +112,17 @@ createApp({
         const generatedOtp = ref('');
         const inputOtp = ref('');
         const isLoadingOtp = ref(false);
+
+        // Daftar Menu dengan Ikon Bagus
+        const menuList = [
+            { id: 'dashboard', name: 'Dashboard', icon: '🏠' },
+            { id: 'transaksi', name: 'Transaksi', icon: '📝' },
+            { id: 'tagihan', name: 'Tagihan', icon: '💵' },
+            { id: 'laporan', name: 'Laporan', icon: '📈' },
+            { id: 'pelanggan', name: 'Pelanggan', icon: '👥' },
+            { id: 'layanan', name: 'Master Item', icon: '⚙️' },
+            { id: 'profil', name: 'Profil', icon: '🏢' }
+        ];
 
         const profile = ref({ nama_laundry: '', alamat: '', no_telepon: '', bank_cabang: '', bank_nomor: '', bank_nama: '', logo_url: '', tos: '' });
         const customers = ref([]);
@@ -272,12 +297,22 @@ createApp({
         };
         const deleteCustomer = async (id) => { if (confirm("Hapus pelanggan?")) { try { await deleteDoc(doc(db, "pelanggan", id)); } catch (e) { alert("Error: " + e.message); } } };
 
+        const getServiceCategory = (item) => {
+            if (item.kategori && item.kategori.trim() !== '') return item.kategori;
+            const name = (item.nama_layanan || '').toLowerCase();
+            if (name.includes('express') || name.includes('spotting')) return 'Layanan Khusus';
+            if (name.includes('towel') || name.includes('mat') || name.includes('spa') || name.includes('kimono')) return 'Handuk & Kamar Mandi';
+            if (name.includes('napkin') || name.includes('sofa') || name.includes('cushion')) return 'F&B & Penutup';
+            if (name.includes('shirt') || name.includes('dress') || name.includes('jeans') || name.includes('pajamas') || name.includes('sarung') || name.includes('scarf') || name.includes('topi') || name.includes('boxer') || name.includes('panties') || name.includes('bra') || name.includes('swimsuit') || name.includes('socks') || name.includes('baby')) return 'Pakaian Tamu';
+            return 'Linen Kamar';
+        };
+
         const openAddService = () => { isEditingService.value = false; serviceForm.value = { id: '', nama_layanan: '', satuan: 'Pcs', harga_standar: 0, kategori: 'Linen Kamar' }; showServiceForm.value = true; };
         const openEditService = (item) => { 
             isEditingService.value = true; 
             serviceForm.value = { 
                 ...item, 
-                kategori: item.kategori || 'Linen Kamar'
+                kategori: getServiceCategory(item)
             }; 
             showServiceForm.value = true; 
         };
@@ -402,8 +437,8 @@ createApp({
         };
 
         return {
-            activeTab, menuOpen, changeTab, isLoggedIn, isApk, phoneNumber, otpSent, inputOtp, isLoadingOtp,
-            profile, customers, services, transactions, invoices, unbilledTransactionsCount,
+            activeTab, menuOpen, sidebarCollapsed, changeTab, isLoggedIn, isApk, phoneNumber, otpSent, inputOtp, isLoadingOtp,
+            menuList, profile, customers, services, transactions, invoices, unbilledTransactionsCount,
             searchQueryCustomers, searchQueryTransactions, searchQueryInvoices,
             reportFilterClient, reportFilterMonth, reportInvoices, reportTotals,
             filteredCustomers, filteredTransactions, filteredInvoices,

@@ -1,7 +1,7 @@
 export default {
     name: 'TransaksiView',
     props: [
-        'unbilledTransactions', 'billedTransactions', 'customers', 'services', 
+        'transactions', 'customers', 'services', 
         'searchQuery', 'filterStartDate', 'filterEndDate', 'showForm', 'isEditingTrx', 
         'editingTrxId', 'trxForm', 'itemSearch', 'selectedItemId', 'selectedItemQty', 
         'filteredSearchItems', 'getCustomerName', 'getServiceName', 'getServiceUnit', 
@@ -12,11 +12,22 @@ export default {
         'update:itemSearch', 'update:selectedItemQty', 'openAdd', 'openEdit', 
         'closeForm', 'selectSearchItem', 'addItem', 'removeItem', 'save', 'delete', 'printA5'
     ],
-    setup() {
+    setup(props) {
         const openUnbilled = Vue.ref(true); // Default Terbuka
         const openBilled = Vue.ref(false);  // Default Tertutup
 
-        return { openUnbilled, openBilled };
+        // Mengelompokkan transaksi secara internal dari props.transactions
+        const unbilledList = Vue.computed(() => {
+            if (!props.transactions) return [];
+            return props.transactions.filter(t => t.status_tagihan === 'belum_ditagih');
+        });
+
+        const billedList = Vue.computed(() => {
+            if (!props.transactions) return [];
+            return props.transactions.filter(t => t.status_tagihan === 'sudah_ditagih');
+        });
+
+        return { openUnbilled, openBilled, unbilledList, billedList };
     },
     template: `
         <section class="space-y-3">
@@ -41,7 +52,7 @@ export default {
                 </div>
             </div>
 
-            <!-- Form Transaksi (Tambah / Edit) -->
+            <!-- Form Transaksi (Tambah / Edit Cart-Style) -->
             <div v-if="showForm" class="bg-white p-4 rounded-xl border border-slate-200 space-y-3">
                 <div class="flex justify-between items-center">
                     <h3 class="font-bold text-slate-700 text-xs">{{ isEditingTrx ? 'Ubah Catatan Transaksi' : 'Form Pencatatan Laundry' }}</h3>
@@ -119,7 +130,7 @@ export default {
                 </div>
             </div>
 
-            <!-- ACCORDION TRANSAKSI -->
+            <!-- ACCORDION TRANSAKSI (Membaca unbilledList & billedList secara Internal) -->
             <div v-if="!showForm" class="space-y-3">
                 
                 <!-- 1. GROUP BELUM DITAGIH (Default Terbuka) -->
@@ -127,13 +138,13 @@ export default {
                     <button @click="openUnbilled = !openUnbilled" type="button" class="w-full p-3 bg-amber-50 hover:bg-amber-100/80 flex justify-between items-center border-b border-amber-100">
                         <div class="flex items-center space-x-2">
                             <span class="font-bold text-amber-900 text-xs">⏳ BELUM DITAGIH</span>
-                            <span class="bg-amber-200 text-amber-900 px-2 py-0.5 rounded-full text-[10px] font-extrabold">{{ unbilledTransactions.length }}</span>
+                            <span class="bg-amber-200 text-amber-900 px-2 py-0.5 rounded-full text-[10px] font-extrabold">{{ unbilledList.length }}</span>
                         </div>
                         <span class="text-amber-700 font-bold text-xs">{{ openUnbilled ? '▲' : '▼' }}</span>
                     </button>
 
                     <div v-show="openUnbilled" class="p-3 space-y-2 bg-white">
-                        <div v-for="t in unbilledTransactions" :key="t.id" class="bg-slate-50 p-3 rounded-xl border border-slate-100 shadow-sm space-y-2">
+                        <div v-for="t in unbilledList" :key="t.id" class="bg-slate-50 p-3 rounded-xl border border-slate-100 shadow-sm space-y-2">
                             <div class="flex justify-between items-start">
                                 <div>
                                     <h4 class="font-bold text-slate-800 text-xs">{{ getCustomerName(t.id_pelanggan) }}</h4>
@@ -151,7 +162,7 @@ export default {
                                 <button @click="$emit('openEdit', t)" class="text-amber-700 font-semibold hover:underline">✏️ Edit</button>
                             </div>
                         </div>
-                        <div v-if="unbilledTransactions.length === 0" class="p-6 text-center text-slate-400 italic">
+                        <div v-if="unbilledList.length === 0" class="p-6 text-center text-slate-400 italic">
                             Tidak ada transaksi yang belum ditagih.
                         </div>
                     </div>
@@ -162,13 +173,13 @@ export default {
                     <button @click="openBilled = !openBilled" type="button" class="w-full p-3 bg-emerald-50 hover:bg-emerald-100/80 flex justify-between items-center border-b border-emerald-100">
                         <div class="flex items-center space-x-2">
                             <span class="font-bold text-emerald-900 text-xs">✅ SUDAH DITAGIH</span>
-                            <span class="bg-emerald-200 text-emerald-900 px-2 py-0.5 rounded-full text-[10px] font-extrabold">{{ billedTransactions.length }}</span>
+                            <span class="bg-emerald-200 text-emerald-900 px-2 py-0.5 rounded-full text-[10px] font-extrabold">{{ billedList.length }}</span>
                         </div>
                         <span class="text-emerald-700 font-bold text-xs">{{ openBilled ? '▲' : '▼' }}</span>
                     </button>
 
                     <div v-show="openBilled" class="p-3 space-y-2 bg-white">
-                        <div v-for="t in billedTransactions" :key="t.id" class="bg-slate-50 p-3 rounded-xl border border-slate-100 shadow-sm space-y-2">
+                        <div v-for="t in billedList" :key="t.id" class="bg-slate-50 p-3 rounded-xl border border-slate-100 shadow-sm space-y-2">
                             <div class="flex justify-between items-start">
                                 <div>
                                     <h4 class="font-bold text-slate-800 text-xs">{{ getCustomerName(t.id_pelanggan) }}</h4>
@@ -185,7 +196,7 @@ export default {
                                 <button @click="$emit('printA5', t)" class="text-indigo-600 font-semibold hover:underline">📄 Cetak A5</button>
                             </div>
                         </div>
-                        <div v-if="billedTransactions.length === 0" class="p-6 text-center text-slate-400 italic">
+                        <div v-if="billedList.length === 0" class="p-6 text-center text-slate-400 italic">
                             Belum ada riwayat transaksi yang sudah ditagih.
                         </div>
                     </div>

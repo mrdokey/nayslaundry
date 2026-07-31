@@ -257,11 +257,16 @@ createApp({
 
         const showForm = computed(() => transaksi.showTransactionForm.value || pelanggan.showCustomerForm.value || layanan.showServiceForm.value);
 
-        const changeTab = (tab) => { 
-            activeTab.value = tab; 
-            localStorage.setItem('nays_active_tab', tab); 
-            menuOpen.value = false; 
-        };
+        // Ganti fungsi changeTab di dalam setup() pada file app.js menjadi:
+const changeTab = (tab) => { 
+    activeTab.value = tab; 
+    localStorage.setItem('nays_active_tab', tab); 
+    menuOpen.value = false; 
+
+    // Otomatis reset posisi scroll ke paling atas (0) setiap kali ganti menu
+    const mainEl = document.querySelector('main');
+    if (mainEl) mainEl.scrollTop = 0;
+};
 
         const triggerAdd = () => {
             if (activeTab.value === 'transaksi') transaksi.openAddTransaction();

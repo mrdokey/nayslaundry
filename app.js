@@ -166,7 +166,9 @@ createApp({
                         @save="saveInvoice" 
                         @delete="deleteInvoice" 
                         @update-status="updatePaymentStatus" 
-                        @print="printInvoice" @print-kwitansi="printKwitansi"
+                        @print="printInvoice" 
+    @print-date="printDateInvoice"
+    @print-kwitansi="printKwitansi" />
                         />
                     
                     <LaporanView v-if="activeTab === 'laporan'" :customers="customers" :report-invoices="reportInvoices" :report-totals="reportTotals" :filter-client="reportFilterClient" :filter-month="reportFilterMonth" :get-customer-name="getCustomerName" :format-month-year="formatMonthYear" @update:filter-client="reportFilterClient = $event" @update:filter-month="reportFilterMonth = $event" @export="exportToExcel" />
@@ -197,10 +199,11 @@ createApp({
             </div>
 
 <!-- Sesuaikan tag <InvoicePrintView> di app.js Anda menjadi seperti ini: -->
-<InvoicePrintView v-if="printData || printA5Data || printKwitansiData" 
+<InvoicePrintView v-if="printData || printA5Data || printKwitansiData || printDateData" 
     :print-data="printData" 
     :print-a5-data="printA5Data" 
     :print-kwitansi-data="printKwitansiData"
+    :print-date-data="printDateData"
     :profile="profile" 
     :get-customer-name="getCustomerName" 
     :get-customer-address="getCustomerAddress" 
@@ -211,7 +214,6 @@ createApp({
     :format-date="formatDate" 
     :format-month-year="formatMonthYear"
     :terbilang="terbilang" />
-        </div>
     `,
     setup() {
         const savedTab = localStorage.getItem('nays_active_tab');

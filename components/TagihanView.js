@@ -11,7 +11,7 @@ export default {
         'update:searchQuery', 'update:selectedFilterMonth', 'update:selectedFilterYear', 
         'update:manualSubtotal', 'update:discountAmount', 
         'openAdd', 'openEdit', 'closeForm', 'calculate', 'selectAllTrx', 'deselectAllTrx', 
-        'save', 'delete', 'updateStatus', 'print', 'printKwitansi'
+        'save', 'delete', 'updateStatus', 'print', 'printDate', 'printKwitansi'
     ],
     setup() {
         const openUnpaid = Vue.ref(true);
@@ -78,7 +78,6 @@ export default {
                     </div>
                 </div>
 
-                <!-- DAFTAR CEKLIST TRANSAKSI HARIAN -->
                 <div v-if="invoiceForm.id_pelanggan" class="border p-3 rounded-lg bg-slate-50 space-y-2">
                     <div class="flex justify-between items-center">
                         <h4 class="font-bold text-xs text-indigo-900 uppercase">Pilih Transaksi Harian yang Ditagihkan:</h4>
@@ -107,7 +106,6 @@ export default {
                     </div>
                 </div>
 
-                <!-- DRAFT & SUBTOTAL -->
                 <div v-if="draftInvoiceItems.length > 0" class="border-t pt-3 space-y-3">
                     <h4 class="font-bold text-xs text-slate-700">Rincian & Penyesuaian Nilai Tagihan:</h4>
                     
@@ -181,16 +179,20 @@ export default {
                             </div>
                             <div class="flex justify-between items-center pt-1.5 border-t text-[11px]">
                                 <span class="font-bold text-slate-700">Total: Rp {{ inv.total_tagihan.toLocaleString() }}</span>
-                                <div class="flex space-x-3">
-                                    <button @click="$emit('print', inv)" class="text-indigo-600 font-semibold hover:underline">📄 Cetak PDF</button>
+                                <div class="flex space-x-2 text-[10px]">
+                                    <button @click="$emit('print', inv)" class="text-indigo-600 font-semibold hover:underline">📄 Per Item</button>
+                                    <button @click="$emit('printDate', inv)" class="text-purple-700 font-semibold hover:underline">📅 Per Tanggal</button>
                                     <button @click="$emit('openEdit', inv)" class="text-amber-700 font-semibold hover:underline">✏️ Edit</button>
                                 </div>
                             </div>
                         </div>
+                        <div v-if="unpaidInvoices.length === 0" class="p-6 text-center text-slate-400 italic text-xs">
+                            Tidak ada tagihan yang belum lunas.
+                        </div>
                     </div>
                 </div>
 
-                <!-- 2. KELOMPOK SUDAH LUNAS (DILENGKAPI TOMBOL CETAK KWITANSI) -->
+                <!-- 2. KELOMPOK SUDAH LUNAS -->
                 <div class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
                     <button @click="openPaid = !openPaid" type="button" class="w-full p-3 bg-emerald-50 hover:bg-emerald-100/80 flex justify-between items-center border-b border-emerald-100">
                         <div class="flex items-center space-x-2">
@@ -217,12 +219,10 @@ export default {
                             </div>
                             <div class="flex justify-between items-center pt-1.5 border-t text-[11px]">
                                 <span class="font-bold text-slate-700">Total: Rp {{ inv.total_tagihan.toLocaleString() }}</span>
-                                <div class="flex space-x-3">
-                                    <!-- TOMBOL CETAK KWITANSI OTOMATIS MUNCUL DI TAGIHAN LUNAS -->
-                                    <button @click="$emit('printKwitansi', inv)" class="text-emerald-600 font-bold hover:underline flex items-center space-x-1">
-                                        <span>🧾 Cetak Kwitansi</span>
-                                    </button>
-                                    <button @click="$emit('print', inv)" class="text-indigo-600 font-semibold hover:underline">📄 Cetak PDF</button>
+                                <div class="flex space-x-2 text-[10px]">
+                                    <button @click="$emit('printKwitansi', inv)" class="text-emerald-600 font-bold hover:underline">🧾 Kwitansi</button>
+                                    <button @click="$emit('print', inv)" class="text-indigo-600 font-semibold hover:underline">📄 Per Item</button>
+                                    <button @click="$emit('printDate', inv)" class="text-purple-700 font-semibold hover:underline">📅 Per Tanggal</button>
                                     <button @click="$emit('openEdit', inv)" class="text-amber-700 font-semibold hover:underline">✏️ Edit</button>
                                 </div>
                             </div>

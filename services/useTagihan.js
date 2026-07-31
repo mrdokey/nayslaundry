@@ -4,8 +4,8 @@ export function useTagihan(transactions, getPrice, getServiceName, getServiceUni
     const { ref, onMounted, computed, watch } = Vue;
     const invoices = ref([]);
     const searchQueryInvoices = ref('');
-    const selectedFilterMonth = ref('');
-    const selectedFilterYear = ref(new Date().getFullYear().toString());
+    const selectedFilterMonth = ref(''); // '' = Semua Bulan, '01'..'12'
+    const selectedFilterYear = ref(new Date().getFullYear().toString()); // Otomatis tahun berjalan
 
     const showInvoiceForm = ref(false);
     const isEditingInvoice = ref(false);
@@ -18,14 +18,13 @@ export function useTagihan(transactions, getPrice, getServiceName, getServiceUni
     
     const printData = ref(null);
     const printKwitansiData = ref(null); // State cetak Kwitansi
+    const printDateData = ref(null);     // State cetak Format 2 (Per Tanggal Nota)
 
-    // HELPER KONVERSI ANGKA KE KALIMAT TERBILANG (RUPIAH)
+    // HELPER KONVERSI TERBILANG RUPIAH
     const terbilang = (angka) => {
         angka = Math.floor(Math.abs(Number(angka))) || 0;
         if (angka === 0) return "Nol Rupiah";
-        
         const satuan = ["", "Satu", "Dua", "Tiga", "Empat", "Lima", "Enam", "Tujuh", "Delapan", "Sembilan", "Sepuluh", "Sebelas"];
-        
         function konversi(n) {
             if (n < 12) return satuan[n];
             if (n < 20) return konversi(n - 10) + " Belas";
@@ -38,7 +37,6 @@ export function useTagihan(transactions, getPrice, getServiceName, getServiceUni
             if (n < 1000000000000) return konversi(Math.floor(n / 1000000000)) + " Milyar " + konversi(n % 1000000000);
             return "";
         }
-        
         return (konversi(angka) + " Rupiah").replace(/\s+/g, ' ').trim();
     };
 
@@ -290,15 +288,26 @@ export function useTagihan(transactions, getPrice, getServiceName, getServiceUni
         try { await updateDoc(doc(db, "tagihan", id), { status_pembayaran: ns }); } catch (e) { alert("Error: " + e.message); }
     };
 
+    // FUNGSI CETAK FORMAT 1: REKAP PER ITEM
     const printInvoice = (inv) => {
-        printKwitansiData.value = null; // Reset kwitansi
+        printKwitansiData.value = null; 
+        printDateData.value = null;
         printData.value = inv;
         setTimeout(() => { window.print(); }, 300);
     };
 
-    // FUNGSI KHUSUS CETAK KWITANSI PEMBAYARAN
+    // FUNGSI CETAK FORMAT 2: REKAP PER TANGGAL NOTA HARIAN (PERMINTAAN PAK MADE)
+    const printDateInvoice = (inv) => {
+        printData.value = null; 
+        printKwitansiData.value = null;
+        printDateData.value = inv;
+        setTimeout(() => { window.print(); }, 300);
+    };
+
+    // FUNGSI CETAK KWITANSI PEMBAYARAN RESMI
     const printKwitansi = (inv) => {
-        printData.value = null; // Reset invoice
+        printData.value = null; 
+        printDateData.value = null;
         printKwitansiData.value = inv;
         setTimeout(() => { window.print(); }, 300);
     };
@@ -306,8 +315,8 @@ export function useTagihan(transactions, getPrice, getServiceName, getServiceUni
     return {
         invoices, searchQueryInvoices, selectedFilterMonth, selectedFilterYear, availableYears,
         showInvoiceForm, isEditingInvoice, editingInvoiceId, invoiceForm,
-        selectedTrxIds, manualSubtotal, discountAmount, printData, printKwitansiData, availableTrxForDraft, draftInvoiceItems,
+        selectedTrxIds, manualSubtotal, discountAmount, printData, printKwitansiData, printDateData, availableTrxForDraft, draftInvoiceItems,
         calculatedSubtotal, grandTotal, unpaidInvoices, paidInvoices, filteredInvoices, formatMonthYear, terbilang,
-        openAddInvoice, openEditInvoice, selectAllTrx, deselectAllTrx, saveInvoice, deleteInvoice, updatePaymentStatus, printInvoice, printKwitansi
+        openAddInvoice, openEditInvoice, selectAllTrx, deselectAllTrx, saveInvoice, deleteInvoice, updatePaymentStatus, printInvoice, printDateInvoice, printKwitansi
     };
 }

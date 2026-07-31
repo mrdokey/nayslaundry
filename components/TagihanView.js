@@ -78,6 +78,7 @@ export default {
                     </div>
                 </div>
 
+                <!-- DAFTAR CEKLIST TRANSAKSI HARIAN -->
                 <div v-if="invoiceForm.id_pelanggan" class="border p-3 rounded-lg bg-slate-50 space-y-2">
                     <div class="flex justify-between items-center">
                         <h4 class="font-bold text-xs text-indigo-900 uppercase">Pilih Transaksi Harian yang Ditagihkan:</h4>
@@ -106,6 +107,7 @@ export default {
                     </div>
                 </div>
 
+                <!-- DRAFT & SUBTOTAL -->
                 <div v-if="draftInvoiceItems.length > 0" class="border-t pt-3 space-y-3">
                     <h4 class="font-bold text-xs text-slate-700">Rincian & Penyesuaian Nilai Tagihan:</h4>
                     
@@ -227,9 +229,13 @@ export default {
                                 </div>
                             </div>
                         </div>
+                        <div v-if="paidInvoices.length === 0" class="p-6 text-center text-slate-400 italic text-xs">
+                            Belum ada riwayat tagihan yang sudah lunas.
+                        </div>
                     </div>
                 </div>
 
+            </div>
         </section>
     `
 };

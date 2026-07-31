@@ -166,7 +166,8 @@ createApp({
                         @save="saveInvoice" 
                         @delete="deleteInvoice" 
                         @update-status="updatePaymentStatus" 
-                        @print="printInvoice" />
+                        @print="printInvoice" @print-kwitansi="printKwitansi"
+                        />
                     
                     <LaporanView v-if="activeTab === 'laporan'" :customers="customers" :report-invoices="reportInvoices" :report-totals="reportTotals" :filter-client="reportFilterClient" :filter-month="reportFilterMonth" :get-customer-name="getCustomerName" :format-month-year="formatMonthYear" @update:filter-client="reportFilterClient = $event" @update:filter-month="reportFilterMonth = $event" @export="exportToExcel" />
                     
@@ -196,9 +197,10 @@ createApp({
             </div>
 
 <!-- Sesuaikan tag <InvoicePrintView> di app.js Anda menjadi seperti ini: -->
-<InvoicePrintView v-if="printData || printA5Data" 
+<InvoicePrintView v-if="printData || printA5Data || printKwitansiData" 
     :print-data="printData" 
     :print-a5-data="printA5Data" 
+    :print-kwitansi-data="printKwitansiData"
     :profile="profile" 
     :get-customer-name="getCustomerName" 
     :get-customer-address="getCustomerAddress" 
@@ -207,7 +209,8 @@ createApp({
     :get-service-unit="getServiceUnit" 
     :get-price="getPrice"
     :format-date="formatDate" 
-    :format-month-year="formatMonthYear" />
+    :format-month-year="formatMonthYear"
+    :terbilang="terbilang" />
         </div>
     `,
     setup() {

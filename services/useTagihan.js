@@ -4,8 +4,8 @@ export function useTagihan(transactions, getPrice, getServiceName, getServiceUni
     const { ref, onMounted, computed, watch } = Vue;
     const invoices = ref([]);
     const searchQueryInvoices = ref('');
-    const selectedFilterMonth = ref(''); // '' = Semua Bulan, '01'..'12'
-    const selectedFilterYear = ref(new Date().getFullYear().toString()); // Otomatis tahun berjalan
+    const selectedFilterMonth = ref('');
+    const selectedFilterYear = ref(new Date().getFullYear().toString());
 
     const showInvoiceForm = ref(false);
     const isEditingInvoice = ref(false);
@@ -15,9 +15,33 @@ export function useTagihan(transactions, getPrice, getServiceName, getServiceUni
     const selectedTrxIds = ref([]);
     const manualSubtotal = ref(0);
     const discountAmount = ref(0);
+    
     const printData = ref(null);
+    const printKwitansiData = ref(null); // State cetak Kwitansi
 
-    // HELPER FORMAT TANGGAL KHUSUS DRAFT INVOICE (Mencegah Error formatDate is not defined)
+    // HELPER KONVERSI ANGKA KE KALIMAT TERBILANG (RUPIAH)
+    const terbilang = (angka) => {
+        angka = Math.floor(Math.abs(Number(angka))) || 0;
+        if (angka === 0) return "Nol Rupiah";
+        
+        const satuan = ["", "Satu", "Dua", "Tiga", "Empat", "Lima", "Enam", "Tujuh", "Delapan", "Sembilan", "Sepuluh", "Sebelas"];
+        
+        function konversi(n) {
+            if (n < 12) return satuan[n];
+            if (n < 20) return konversi(n - 10) + " Belas";
+            if (n < 100) return konversi(Math.floor(n / 10)) + " Puluh " + konversi(n % 10);
+            if (n < 200) return "Seratus " + konversi(n - 100);
+            if (n < 1000) return konversi(Math.floor(n / 100)) + " Ratus " + konversi(n % 100);
+            if (n < 2000) return "Seribu " + konversi(n - 1000);
+            if (n < 1000000) return konversi(Math.floor(n / 1000)) + " Ribu " + konversi(n % 1000);
+            if (n < 1000000000) return konversi(Math.floor(n / 1000000)) + " Juta " + konversi(n % 1000000);
+            if (n < 1000000000000) return konversi(Math.floor(n / 1000000000)) + " Milyar " + konversi(n % 1000000000);
+            return "";
+        }
+        
+        return (konversi(angka) + " Rupiah").replace(/\s+/g, ' ').trim();
+    };
+
     const formatDate = (ds) => {
         if (!ds) return '-';
         if (ds.includes('T')) ds = ds.split('T')[0];
@@ -38,7 +62,6 @@ export function useTagihan(transactions, getPrice, getServiceName, getServiceUni
         });
     });
 
-    // Daftar tahun otomatis terkelola dinamis
     const availableYears = computed(() => {
         const currentY = new Date().getFullYear();
         const years = [];
@@ -48,7 +71,6 @@ export function useTagihan(transactions, getPrice, getServiceName, getServiceUni
         return years;
     });
 
-    // Filter invoice aman tanpa crash (safe check)
     const filteredInvoices = computed(() => {
         return invoices.value.filter(inv => {
             const q = searchQueryInvoices.value.toLowerCase().trim();
@@ -91,7 +113,6 @@ export function useTagihan(transactions, getPrice, getServiceName, getServiceUni
         const selectedTrxList = availableTrxForDraft.value.filter(t => selectedTrxIds.value.includes(t.id));
         const mapItems = {};
 
-        // Mengelompokkan item berdasarkan jenisnya & merinci tanggal pengambilannya
         selectedTrxList.forEach(t => {
             const formattedDate = formatDate(t.tanggal);
             (t.items || []).forEach(item => {
@@ -257,7 +278,7 @@ export function useTagihan(transactions, getPrice, getServiceName, getServiceUni
 
                 await deleteDoc(doc(db, "tagihan", id));
 
-                alert("Invoice berhasil dihapus dan transaksi harian telah dikembalikan ke status 'Belum Ditagih'!");
+                alert("Invoice berhasil dihapus!");
                 showInvoiceForm.value = false;
             } catch (e) {
                 alert("Gagal menghapus invoice: " + e.message);
@@ -270,15 +291,23 @@ export function useTagihan(transactions, getPrice, getServiceName, getServiceUni
     };
 
     const printInvoice = (inv) => {
+        printKwitansiData.value = null; // Reset kwitansi
         printData.value = inv;
+        setTimeout(() => { window.print(); }, 300);
+    };
+
+    // FUNGSI KHUSUS CETAK KWITANSI PEMBAYARAN
+    const printKwitansi = (inv) => {
+        printData.value = null; // Reset invoice
+        printKwitansiData.value = inv;
         setTimeout(() => { window.print(); }, 300);
     };
 
     return {
         invoices, searchQueryInvoices, selectedFilterMonth, selectedFilterYear, availableYears,
         showInvoiceForm, isEditingInvoice, editingInvoiceId, invoiceForm,
-        selectedTrxIds, manualSubtotal, discountAmount, printData, availableTrxForDraft, draftInvoiceItems,
-        calculatedSubtotal, grandTotal, unpaidInvoices, paidInvoices, filteredInvoices, formatMonthYear,
-        openAddInvoice, openEditInvoice, selectAllTrx, deselectAllTrx, saveInvoice, deleteInvoice, updatePaymentStatus, printInvoice
+        selectedTrxIds, manualSubtotal, discountAmount, printData, printKwitansiData, availableTrxForDraft, draftInvoiceItems,
+        calculatedSubtotal, grandTotal, unpaidInvoices, paidInvoices, filteredInvoices, formatMonthYear, terbilang,
+        openAddInvoice, openEditInvoice, selectAllTrx, deselectAllTrx, saveInvoice, deleteInvoice, updatePaymentStatus, printInvoice, printKwitansi
     };
 }

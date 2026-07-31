@@ -11,7 +11,7 @@ export default {
         'update:searchQuery', 'update:selectedFilterMonth', 'update:selectedFilterYear', 
         'update:manualSubtotal', 'update:discountAmount', 
         'openAdd', 'openEdit', 'closeForm', 'calculate', 'selectAllTrx', 'deselectAllTrx', 
-        'save', 'delete', 'updateStatus', 'print'
+        'save', 'delete', 'updateStatus', 'print', 'printKwitansi'
     ],
     setup() {
         const openUnpaid = Vue.ref(true);
@@ -36,7 +36,7 @@ export default {
                 <button v-if="!showForm" @click="$emit('openAdd')" class="bg-indigo-600 text-white px-3 py-1.5 rounded-lg font-semibold hover:bg-indigo-700 shadow text-xs">💵 Buat Tagihan Baru</button>
             </div>
 
-            <!-- Panel Filter Pencarian, Bulan & Tahun -->
+            <!-- Panel Filter -->
             <div v-if="!showForm" class="bg-white p-3 rounded-xl border border-slate-200 grid grid-cols-1 sm:grid-cols-3 gap-2">
                 <div>
                     <label class="block text-[10px] font-semibold text-slate-400 mb-0.5">Cari Invoice / Klien</label>
@@ -57,7 +57,7 @@ export default {
                 </div>
             </div>
 
-            <!-- Form Pembuatan & Edit Tagihan -->
+            <!-- Form Tagihan -->
             <div v-if="showForm" class="bg-white p-4 rounded-xl border border-slate-200 space-y-4">
                 <div class="flex justify-between items-center">
                     <h3 class="font-bold text-slate-700 text-xs">{{ isEditingInvoice ? 'Ubah Tagihan Invoice' : 'Generate Invoice Bulanan' }}</h3>
@@ -107,7 +107,7 @@ export default {
                     </div>
                 </div>
 
-                <!-- DRAFT AKUMULASI ITEM & INPUT EDITABLE SUBTOTAL / DISKON -->
+                <!-- DRAFT & SUBTOTAL -->
                 <div v-if="draftInvoiceItems.length > 0" class="border-t pt-3 space-y-3">
                     <h4 class="font-bold text-xs text-slate-700">Rincian & Penyesuaian Nilai Tagihan:</h4>
                     
@@ -122,7 +122,6 @@ export default {
                         </div>
                     </div>
 
-                    <!-- PENYESUAIAN MANUAL SUBTOTAL & DISKON -->
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-indigo-50/50 p-3 rounded-xl border border-indigo-100">
                         <div>
                             <label class="block text-[10px] font-bold text-indigo-900 uppercase mb-1">Subtotal Tagihan (Editable Rp)</label>
@@ -155,9 +154,8 @@ export default {
                 </div>
             </div>
 
-            <!-- ACCORDION TAGIHAN (2 KELOMPOK: BELUM LUNAS VS SUDAH LUNAS) -->
+            <!-- ACCORDION TAGIHAN -->
             <div v-if="!showForm" class="space-y-3">
-                
                 <!-- 1. KELOMPOK BELUM LUNAS -->
                 <div class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
                     <button @click="openUnpaid = !openUnpaid" type="button" class="w-full p-3 bg-red-50 hover:bg-red-100/80 flex justify-between items-center border-b border-red-100">
@@ -189,13 +187,10 @@ export default {
                                 </div>
                             </div>
                         </div>
-                        <div v-if="unpaidInvoices.length === 0" class="p-6 text-center text-slate-400 italic text-xs">
-                            Tidak ada tagihan yang belum lunas.
-                        </div>
                     </div>
                 </div>
 
-                <!-- 2. KELOMPOK SUDAH LUNAS -->
+                <!-- 2. KELOMPOK SUDAH LUNAS (DILENGKAPI TOMBOL CETAK KWITANSI) -->
                 <div class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
                     <button @click="openPaid = !openPaid" type="button" class="w-full p-3 bg-emerald-50 hover:bg-emerald-100/80 flex justify-between items-center border-b border-emerald-100">
                         <div class="flex items-center space-x-2">
@@ -223,13 +218,14 @@ export default {
                             <div class="flex justify-between items-center pt-1.5 border-t text-[11px]">
                                 <span class="font-bold text-slate-700">Total: Rp {{ inv.total_tagihan.toLocaleString() }}</span>
                                 <div class="flex space-x-3">
+                                    <!-- TOMBOL CETAK KWITANSI OTOMATIS MUNCUL DI TAGIHAN LUNAS -->
+                                    <button @click="$emit('printKwitansi', inv)" class="text-emerald-600 font-bold hover:underline flex items-center space-x-1">
+                                        <span>🧾 Cetak Kwitansi</span>
+                                    </button>
                                     <button @click="$emit('print', inv)" class="text-indigo-600 font-semibold hover:underline">📄 Cetak PDF</button>
                                     <button @click="$emit('openEdit', inv)" class="text-amber-700 font-semibold hover:underline">✏️ Edit</button>
                                 </div>
                             </div>
-                        </div>
-                        <div v-if="paidInvoices.length === 0" class="p-6 text-center text-slate-400 italic text-xs">
-                            Belum ada riwayat tagihan yang sudah lunas.
                         </div>
                     </div>
                 </div>

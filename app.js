@@ -169,7 +169,7 @@ createApp({
                         @print="printInvoice" 
     @print-date="printDateInvoice"
     @print-kwitansi="printKwitansi" />
-                        />
+                        
                     
                     <LaporanView v-if="activeTab === 'laporan'" :customers="customers" :report-invoices="reportInvoices" :report-totals="reportTotals" :filter-client="reportFilterClient" :filter-month="reportFilterMonth" :get-customer-name="getCustomerName" :format-month-year="formatMonthYear" @update:filter-client="reportFilterClient = $event" @update:filter-month="reportFilterMonth = $event" @export="exportToExcel" />
                     

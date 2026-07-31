@@ -29,7 +29,7 @@ createApp({
                 @send-otp="sendOtpCode" @verify-otp="verifyOtpCode" />
 
             <!-- MAIN APPLICATION -->
-            <div v-else class="flex flex-col md:flex-row w-full min-h-screen print:hidden pb-16 md:pb-0">
+            <div v-else class="flex flex-col md:flex-row w-full h-screen overflow-hidden print:hidden">
                 <!-- FAB MOBILE -->
                 <button v-if="['transaksi', 'pelanggan', 'layanan'].includes(activeTab) && !showForm" 
                         @click="triggerAdd" class="md:hidden fixed bottom-20 right-4 bg-indigo-600 text-white rounded-full w-12 h-12 flex items-center justify-center shadow-lg z-40 text-xl font-bold">+</button>
@@ -56,7 +56,7 @@ createApp({
                 </aside>
 
                 <!-- SIDEBAR DESKTOP -->
-                <aside :class="sidebarCollapsed ? 'w-16' : 'w-56'" class="hidden md:flex bg-indigo-900 text-white flex-col shadow-lg shrink-0 transition-all duration-200">
+                <aside :class="sidebarCollapsed ? 'w-16' : 'w-56'" class="hidden md:flex bg-indigo-900 text-white flex-col shadow-lg shrink-0 h-full overflow-y-auto transition-all duration-200">
                     <div class="p-3 border-b border-indigo-800 flex items-center justify-between">
                         <div v-if="!sidebarCollapsed" class="flex items-center space-x-2 overflow-hidden">
                             <img v-if="profile.logo_url" :src="profile.logo_url" class="w-7 h-7 rounded-full object-cover bg-white shrink-0">
@@ -89,7 +89,7 @@ createApp({
                     <button @click="changeTab('layanan')" :class="activeTab==='layanan'?'text-white font-bold':'text-indigo-300'" class="flex flex-col items-center text-[9px]"><span class="text-base">⚙️</span><span>Item</span></button>
                 </nav>
 
-                <main class="flex-1 p-4 pt-20 md:pt-4 overflow-y-auto">
+                <main class="flex-1 p-4 pt-16 md:pt-6 pb-20 md:pb-6 h-full overflow-y-auto">
                     <DashboardView v-if="activeTab === 'dashboard'" :customers="customers" :services="services" :unbilled-count="unbilledTransactionsCount" :has-unbilled="hasUnbilledCustomers" :get-unbilled-total="getCustomerUnbilledTotal" />
                     
                     <TransaksiView v-if="activeTab === 'transaksi'" 

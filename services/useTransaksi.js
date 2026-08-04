@@ -10,7 +10,7 @@ export function useTransaksi(customers, services, getPrice, getCustomerName) {
     const showTransactionForm = ref(false);
     const isEditingTrx = ref(false);
     const editingTrxId = ref('');
-    const trxForm = ref({ id_pelanggan: '', tanggal: '', nama_tamu: '', nomor_kamar: '', items: [] });
+    const trxForm = ref({ id_pelanggan: '', tanggal: '', nama_tamu: '', nomor_kamar: '', no_nota: '', items: [] });
     
     const itemSearchQuery = ref('');
     const selectedItemId = ref('');
@@ -62,7 +62,8 @@ export function useTransaksi(customers, services, getPrice, getCustomerName) {
     const filteredTransactions = computed(() => {
         return transactions.value.filter(t => {
             const q = searchQueryTransactions.value.toLowerCase().trim();
-            const matchName = !q || getCustomerName(t.id_pelanggan).toLowerCase().includes(q) || (t.nama_tamu && t.nama_tamu.toLowerCase().includes(q));
+            const noSj = (t.no_nota || '').toLowerCase();
+            const matchName = !q || getCustomerName(t.id_pelanggan).toLowerCase().includes(q) || (t.nama_tamu && t.nama_tamu.toLowerCase().includes(q)) || noSj.includes(q);
             const isoDate = toIso(t.tanggal);
             const matchStart = !filterStartDate.value || isoDate >= filterStartDate.value;
             const matchEnd = !filterEndDate.value || isoDate <= filterEndDate.value;
@@ -73,7 +74,7 @@ export function useTransaksi(customers, services, getPrice, getCustomerName) {
     const openAddTransaction = () => {
         isEditingTrx.value = false;
         editingTrxId.value = '';
-        trxForm.value = { id_pelanggan: '', tanggal: new Date().toISOString().split('T')[0], nama_tamu: '', nomor_kamar: '', items: [] };
+        trxForm.value = { id_pelanggan: '', tanggal: new Date().toISOString().split('T')[0], nama_tamu: '', nomor_kamar: '', no_nota: '', items: [] };
         itemSearchQuery.value = ''; selectedItemId.value = ''; selectedItemQty.value = ''; selectedItemPrice.value = 0;
         showTransactionForm.value = true;
     };
@@ -86,6 +87,7 @@ export function useTransaksi(customers, services, getPrice, getCustomerName) {
             tanggal: t.tanggal,
             nama_tamu: t.nama_tamu || '',
             nomor_kamar: t.nomor_kamar || '',
+            no_nota: t.no_nota || '',
             items: JSON.parse(JSON.stringify(t.items))
         };
         itemSearchQuery.value = ''; selectedItemId.value = ''; selectedItemQty.value = ''; selectedItemPrice.value = 0;
@@ -130,11 +132,20 @@ export function useTransaksi(customers, services, getPrice, getCustomerName) {
         if (trxForm.value.items.length === 0) { alert("Isi minimal 1 item."); return; }
 
         try {
+            // Otomatisasi Pembuatan No. Surat Jalan (SJ) Unik jika Transaksi Baru
+            let sjNumber = trxForm.value.no_nota;
+            if (!isEditingTrx.value || !sjNumber) {
+                const randomNum = Math.floor(100 + Math.random() * 900);
+                const dateCode = trxForm.value.tanggal.replace(/-/g, '').slice(2); // YYYYMMDD -> YYMMDD
+                sjNumber = `SJ/${dateCode}/${randomNum}`;
+            }
+
             let savedData = {
                 id_pelanggan: trxForm.value.id_pelanggan,
                 tanggal: trxForm.value.tanggal,
                 nama_tamu: trxForm.value.nama_tamu || '',
                 nomor_kamar: trxForm.value.nomor_kamar || '',
+                no_nota: sjNumber, // Menyimpan Nomor Surat Jalan
                 items: trxForm.value.items,
                 status_tagihan: isEditingTrx.value ? undefined : 'belum_ditagih'
             };
@@ -147,7 +158,7 @@ export function useTransaksi(customers, services, getPrice, getCustomerName) {
             } else {
                 const docRef = await addDoc(collection(db, "transaksi"), savedData);
                 savedData.id = docRef.id;
-                alert("Transaksi berhasil disimpan!");
+                alert(`Transaksi disimpan dengan No. SJ: ${sjNumber}`);
             }
 
             showTransactionForm.value = false;

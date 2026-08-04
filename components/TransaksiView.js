@@ -89,8 +89,8 @@ export default {
             <!-- Panel Filter -->
             <div v-if="!showForm" class="bg-white p-3 rounded-xl border border-slate-200 grid grid-cols-1 sm:grid-cols-3 gap-2">
                 <div>
-                    <label class="block text-[10px] font-semibold text-slate-400 mb-0.5">Cari Pelanggan / Tamu</label>
-                    <input :value="searchQuery" @input="$emit('update:searchQuery', $event.target.value)" type="text" placeholder="🔍 Ketik nama hotel atau tamu..." class="w-full px-2.5 py-1 border rounded-lg text-xs focus:outline-indigo-500">
+                    <label class="block text-[10px] font-semibold text-slate-400 mb-0.5">Cari Pelanggan / No. SJ</label>
+                    <input :value="searchQuery" @input="$emit('update:searchQuery', $event.target.value)" type="text" placeholder="🔍 Ketik nama hotel atau No. SJ..." class="w-full px-2.5 py-1 border rounded-lg text-xs focus:outline-indigo-500">
                 </div>
                 <div>
                     <label class="block text-[10px] font-semibold text-slate-400 mb-0.5">Dari Tanggal</label>
@@ -128,7 +128,6 @@ export default {
                         <label class="block text-xs font-semibold text-slate-500 mb-1">Tanggal Pengambilan</label>
                         <input v-model="trxForm.tanggal" type="date" class="w-full p-2 border rounded text-xs">
                     </div>
-                    <!-- INPUT NAMA TAMU & NOMOR KAMAR (GUEST LAUNDRY) -->
                     <div>
                         <label class="block text-xs font-semibold text-slate-500 mb-1">Nama Tamu / Guest (Opsional)</label>
                         <input v-model="trxForm.nama_tamu" type="text" placeholder="Contoh: Mr. John Smith" class="w-full p-2 border rounded text-xs focus:outline-indigo-500">
@@ -219,8 +218,14 @@ export default {
                                 <div class="flex items-center space-x-2.5">
                                     <input v-if="t.status_tagihan !== 'sudah_ditagih'" type="checkbox" :value="t.id" v-model="checkedTrxIds" class="w-4 h-4 text-indigo-600 rounded cursor-pointer">
                                     <div>
-                                        <h4 class="font-bold text-slate-800 text-xs">{{ getCustomerName(t.id_pelanggan) }}</h4>
-                                        <div class="text-slate-400 text-[10px] space-x-2">
+                                        <div class="flex items-center space-x-2">
+                                            <h4 class="font-bold text-slate-800 text-xs">{{ getCustomerName(t.id_pelanggan) }}</h4>
+                                            <!-- MENAMPILKAN NO SURAT JALAN / NOTA -->
+                                            <span v-if="t.no_nota" class="bg-indigo-100 text-indigo-900 px-1.5 py-0.5 rounded text-[9px] font-extrabold">
+                                                {{ t.no_nota }}
+                                            </span>
+                                        </div>
+                                        <div class="text-slate-400 text-[10px] space-x-2 mt-0.5">
                                             <span>📅 {{ formatDate(t.tanggal) }}</span>
                                             <span v-if="t.nama_tamu" class="font-semibold text-indigo-900">👤 {{ t.nama_tamu }}</span>
                                             <span v-if="t.nomor_kamar" class="font-semibold text-indigo-900">🔑 {{ t.nomor_kamar }}</span>

@@ -4,8 +4,8 @@ export function useTagihan(transactions, getPrice, getServiceName, getServiceUni
     const { ref, onMounted, computed, watch } = Vue;
     const invoices = ref([]);
     const searchQueryInvoices = ref('');
-    const selectedFilterMonth = ref(''); // '' = Semua Bulan, '01'..'12'
-    const selectedFilterYear = ref(new Date().getFullYear().toString()); // Otomatis tahun berjalan
+    const selectedFilterMonth = ref('');
+    const selectedFilterYear = ref(new Date().getFullYear().toString());
 
     const showInvoiceForm = ref(false);
     const isEditingInvoice = ref(false);
@@ -17,10 +17,9 @@ export function useTagihan(transactions, getPrice, getServiceName, getServiceUni
     const discountAmount = ref(0);
     
     const printData = ref(null);
-    const printKwitansiData = ref(null); // State cetak Kwitansi
-    const printDateData = ref(null);     // State cetak Format 2 (Per Tanggal Nota)
+    const printKwitansiData = ref(null);
+    const printDateData = ref(null);
 
-    // HELPER KONVERSI TERBILANG RUPIAH
     const terbilang = (angka) => {
         angka = Math.floor(Math.abs(Number(angka))) || 0;
         if (angka === 0) return "Nol Rupiah";
@@ -63,9 +62,7 @@ export function useTagihan(transactions, getPrice, getServiceName, getServiceUni
     const availableYears = computed(() => {
         const currentY = new Date().getFullYear();
         const years = [];
-        for (let y = currentY - 2; y <= currentY + 3; y++) {
-            years.push(y.toString());
-        }
+        for (let y = currentY - 2; y <= currentY + 3; y++) { years.push(y.toString()); }
         return years;
     });
 
@@ -83,7 +80,6 @@ export function useTagihan(transactions, getPrice, getServiceName, getServiceUni
                 const matchM = !selectedFilterMonth.value || invMonth === selectedFilterMonth.value;
                 matchDate = matchY && matchM;
             }
-
             return matchQuery && matchDate;
         });
     });
@@ -113,6 +109,8 @@ export function useTagihan(transactions, getPrice, getServiceName, getServiceUni
 
         selectedTrxList.forEach(t => {
             const formattedDate = formatDate(t.tanggal);
+            const sjNumber = t.no_nota || '-';
+
             (t.items || []).forEach(item => {
                 const k = item.id_layanan;
                 const qty = Number(item.qty);
@@ -132,6 +130,7 @@ export function useTagihan(transactions, getPrice, getServiceName, getServiceUni
                 mapItems[k].total_qty += qty;
                 mapItems[k].dates.push({
                     tanggal: formattedDate,
+                    no_nota: sjNumber, // Menyimpan Nomor Surat Jalan pada rincian tanggal
                     qty: qty
                 });
             });
@@ -156,72 +155,38 @@ export function useTagihan(transactions, getPrice, getServiceName, getServiceUni
         return list.sort((a, b) => a.nama_layanan.localeCompare(b.nama_layanan));
     });
 
-    const calculatedSubtotal = computed(() => {
-        return draftInvoiceItems.value.reduce((acc, i) => acc + i.subtotal, 0);
-    });
-
-    const grandTotal = computed(() => {
-        const sub = Number(manualSubtotal.value) || 0;
-        const disc = Number(discountAmount.value) || 0;
-        return Math.max(0, sub - disc);
-    });
+    const calculatedSubtotal = computed(() => draftInvoiceItems.value.reduce((acc, i) => acc + i.subtotal, 0));
+    const grandTotal = computed(() => Math.max(0, (Number(manualSubtotal.value) || 0) - (Number(discountAmount.value) || 0)));
 
     watch(calculatedSubtotal, (newSub) => {
-        if (!isEditingInvoice.value) {
-            manualSubtotal.value = newSub;
-        }
+        if (!isEditingInvoice.value) manualSubtotal.value = newSub;
     });
 
     const openAddInvoice = () => {
-        isEditingInvoice.value = false;
-        editingInvoiceId.value = '';
-        const currentMonth = new Date().toISOString().slice(0, 7);
-        invoiceForm.value = { id_pelanggan: '', periode: currentMonth };
-        selectedTrxIds.value = [];
-        manualSubtotal.value = 0;
-        discountAmount.value = 0;
-        showInvoiceForm.value = true;
+        isEditingInvoice.value = false; editingInvoiceId.value = '';
+        invoiceForm.value = { id_pelanggan: '', periode: new Date().toISOString().slice(0, 7) };
+        selectedTrxIds.value = []; manualSubtotal.value = 0; discountAmount.value = 0; showInvoiceForm.value = true;
     };
 
     const openEditInvoice = (inv) => {
-        isEditingInvoice.value = true;
-        editingInvoiceId.value = inv.id;
+        isEditingInvoice.value = true; editingInvoiceId.value = inv.id;
         invoiceForm.value = { id_pelanggan: inv.id_pelanggan, periode: inv.periode };
         manualSubtotal.value = inv.subtotal_penyesuaian !== undefined ? inv.subtotal_penyesuaian : inv.total_tagihan;
         discountAmount.value = inv.diskon || 0;
-        
-        selectedTrxIds.value = transactions.value
-            .filter(t => t.id_pelanggan === inv.id_pelanggan && (t.tanggal || '').startsWith(inv.periode))
-            .map(t => t.id);
-        
+        selectedTrxIds.value = transactions.value.filter(t => t.id_pelanggan === inv.id_pelanggan && (t.tanggal || '').startsWith(inv.periode)).map(t => t.id);
         showInvoiceForm.value = true;
     };
 
-    const selectAllTrx = () => {
-        selectedTrxIds.value = availableTrxForDraft.value.map(t => t.id);
-        manualSubtotal.value = calculatedSubtotal.value;
-    };
-
-    const deselectAllTrx = () => {
-        selectedTrxIds.value = [];
-        manualSubtotal.value = 0;
-    };
+    const selectAllTrx = () => { selectedTrxIds.value = availableTrxForDraft.value.map(t => t.id); manualSubtotal.value = calculatedSubtotal.value; };
+    const deselectAllTrx = () => { selectedTrxIds.value = []; manualSubtotal.value = 0; };
 
     const saveInvoice = async () => {
-        if (selectedTrxIds.value.length === 0 && draftInvoiceItems.value.length === 0) {
-            alert("Harap pilih minimal satu transaksi."); return;
-        }
-
+        if (selectedTrxIds.value.length === 0 && draftInvoiceItems.value.length === 0) { alert("Harap pilih minimal satu transaksi."); return; }
         try {
             let savedData = {
-                id_pelanggan: invoiceForm.value.id_pelanggan,
-                periode: invoiceForm.value.periode,
-                subtotal_awal: calculatedSubtotal.value,
-                subtotal_penyesuaian: Number(manualSubtotal.value),
-                diskon: Number(discountAmount.value),
-                total_tagihan: grandTotal.value,
-                items: draftInvoiceItems.value,
-                trx_ids: selectedTrxIds.value
+                id_pelanggan: invoiceForm.value.id_pelanggan, periode: invoiceForm.value.periode,
+                subtotal_awal: calculatedSubtotal.value, subtotal_penyesuaian: Number(manualSubtotal.value),
+                diskon: Number(discountAmount.value), total_tagihan: grandTotal.value, items: draftInvoiceItems.value, trx_ids: selectedTrxIds.value
             };
 
             if (isEditingInvoice.value) {
@@ -233,90 +198,58 @@ export function useTagihan(transactions, getPrice, getServiceName, getServiceUni
                 alert("Invoice berhasil diperbarui!");
             } else {
                 const randomId = Math.floor(100 + Math.random() * 900);
-                const cleanPeriod = invoiceForm.value.periode.replace('-', '');
-                savedData.no_invoice = `INV/${cleanPeriod}/${randomId}`;
+                savedData.no_invoice = `INV/${invoiceForm.value.periode.replace('-', '')}/${randomId}`;
                 savedData.tanggal_buat = new Date().toISOString();
                 savedData.status_pembayaran = 'belum_lunas';
-
                 const docRef = await addDoc(collection(db, "tagihan"), savedData);
                 savedData.id = docRef.id;
-
-                const batchTrx = selectedTrxIds.value.map(id => updateDoc(doc(db, "transaksi", id), { status_tagihan: 'sudah_ditagih' }));
-                await Promise.all(batchTrx);
-
+                await Promise.all(selectedTrxIds.value.map(id => updateDoc(doc(db, "transaksi", id), { status_tagihan: 'sudah_ditagih' })));
                 alert("Tagihan bulanan berhasil diterbitkan!");
             }
-
             showInvoiceForm.value = false;
-
-            if (confirm("Apakah Anda ingin langsung mencetak/mengunduh Invoice PDF ini?")) {
-                printInvoice(savedData);
-            }
+            if (confirm("Apakah Anda ingin langsung mencetak/mengunduh Invoice PDF ini?")) printInvoice(savedData);
         } catch (e) { alert("Error: " + e.message); }
     };
 
     const deleteInvoice = async (id) => {
         const inv = invoices.value.find(i => i.id === id);
         if (!inv) return;
-
         if (confirm(`Hapus invoice ${inv.no_invoice}? Seluruh transaksi harian terkait akan otomatis dikembalikan menjadi 'Belum Ditagih'.`)) {
             try {
-                let idsToReset = inv.trx_ids || [];
-
-                if (idsToReset.length === 0) {
-                    idsToReset = transactions.value
-                        .filter(t => t.id_pelanggan === inv.id_pelanggan && (t.tanggal || '').startsWith(inv.periode) && t.status_tagihan === 'sudah_ditagih')
-                        .map(t => t.id);
-                }
-
-                const resetPromises = idsToReset.map(trxId => {
-                    return updateDoc(doc(db, "transaksi", trxId), { status_tagihan: 'belum_ditagih' });
-                });
-                await Promise.all(resetPromises);
-
+                let idsToReset = inv.trx_ids || transactions.value.filter(t => t.id_pelanggan === inv.id_pelanggan && (t.tanggal || '').startsWith(inv.periode) && t.status_tagihan === 'sudah_ditagih').map(t => t.id);
+                await Promise.all(idsToReset.map(trxId => updateDoc(doc(db, "transaksi", trxId), { status_tagihan: 'belum_ditagih' })));
                 await deleteDoc(doc(db, "tagihan", id));
-
-                alert("Invoice berhasil dihapus!");
-                showInvoiceForm.value = false;
-            } catch (e) {
-                alert("Gagal menghapus invoice: " + e.message);
-            }
+                alert("Invoice berhasil dihapus!"); showInvoiceForm.value = false;
+            } catch (e) { alert("Error: " + e.message); }
         }
     };
 
-    const updatePaymentStatus = async (id, ns) => {
-        try { await updateDoc(doc(db, "tagihan", id), { status_pembayaran: ns }); } catch (e) { alert("Error: " + e.message); }
-    };
+    const updatePaymentStatus = async (id, ns) => { try { await updateDoc(doc(db, "tagihan", id), { status_pembayaran: ns }); } catch (e) { alert("Error: " + e.message); } };
 
-    // FUNGSI CETAK FORMAT 1: REKAP PER ITEM
     const printInvoice = (inv) => {
-        printKwitansiData.value = null; 
-        printDateData.value = null;
+        printKwitansiData.value = null; printDateData.value = null;
         printData.value = inv;
         setTimeout(() => { window.print(); }, 300);
     };
 
-    // FUNGSI CETAK FORMAT 2: REKAP PER TANGGAL NOTA HARIAN (PERMINTAAN PAK MADE)
     const printDateInvoice = (inv) => {
-        printData.value = null; 
-        printKwitansiData.value = null;
+        printData.value = null; printKwitansiData.value = null;
         printDateData.value = inv;
         setTimeout(() => { window.print(); }, 300);
     };
 
-    // FUNGSI CETAK KWITANSI PEMBAYARAN RESMI
     const printKwitansi = (inv) => {
-        printData.value = null; 
-        printDateData.value = null;
+        printData.value = null; printDateData.value = null;
         printKwitansiData.value = inv;
         setTimeout(() => { window.print(); }, 300);
     };
 
     return {
         invoices, searchQueryInvoices, selectedFilterMonth, selectedFilterYear, availableYears,
-        showInvoiceForm, isEditingInvoice, editingInvoiceId, invoiceForm,
-        selectedTrxIds, manualSubtotal, discountAmount, printData, printKwitansiData, printDateData, availableTrxForDraft, draftInvoiceItems,
-        calculatedSubtotal, grandTotal, unpaidInvoices, paidInvoices, filteredInvoices, formatMonthYear, terbilang,
-        openAddInvoice, openEditInvoice, selectAllTrx, deselectAllTrx, saveInvoice, deleteInvoice, updatePaymentStatus, printInvoice, printDateInvoice, printKwitansi
+        showInvoiceForm, isEditingInvoice, editingInvoiceId, invoiceForm, selectedTrxIds, manualSubtotal, discountAmount,
+        printData, printKwitansiData, printDateData, availableTrxForDraft, draftInvoiceItems, calculatedSubtotal, grandTotal,
+        unpaidInvoices, paidInvoices, filteredInvoices, formatMonthYear, terbilang,
+        openAddInvoice, openEditInvoice, selectAllTrx, deselectAllTrx, saveInvoice, deleteInvoice, updatePaymentStatus,
+        printInvoice, printDateInvoice, printKwitansi
     };
 }

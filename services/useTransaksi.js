@@ -10,12 +10,12 @@ export function useTransaksi(customers, services, getPrice, getCustomerName) {
     const showTransactionForm = ref(false);
     const isEditingTrx = ref(false);
     const editingTrxId = ref('');
-    const trxForm = ref({ id_pelanggan: '', tanggal: '', items: [] });
+    const trxForm = ref({ id_pelanggan: '', tanggal: '', nama_tamu: '', nomor_kamar: '', items: [] });
     
     const itemSearchQuery = ref('');
     const selectedItemId = ref('');
     const selectedItemQty = ref('');
-    const selectedItemPrice = ref(0); // State Harga Editable saat input
+    const selectedItemPrice = ref(0);
 
     const printA5Data = ref(null);
 
@@ -62,7 +62,7 @@ export function useTransaksi(customers, services, getPrice, getCustomerName) {
     const filteredTransactions = computed(() => {
         return transactions.value.filter(t => {
             const q = searchQueryTransactions.value.toLowerCase().trim();
-            const matchName = !q || getCustomerName(t.id_pelanggan).toLowerCase().includes(q);
+            const matchName = !q || getCustomerName(t.id_pelanggan).toLowerCase().includes(q) || (t.nama_tamu && t.nama_tamu.toLowerCase().includes(q));
             const isoDate = toIso(t.tanggal);
             const matchStart = !filterStartDate.value || isoDate >= filterStartDate.value;
             const matchEnd = !filterEndDate.value || isoDate <= filterEndDate.value;
@@ -73,7 +73,7 @@ export function useTransaksi(customers, services, getPrice, getCustomerName) {
     const openAddTransaction = () => {
         isEditingTrx.value = false;
         editingTrxId.value = '';
-        trxForm.value = { id_pelanggan: '', tanggal: new Date().toISOString().split('T')[0], items: [] };
+        trxForm.value = { id_pelanggan: '', tanggal: new Date().toISOString().split('T')[0], nama_tamu: '', nomor_kamar: '', items: [] };
         itemSearchQuery.value = ''; selectedItemId.value = ''; selectedItemQty.value = ''; selectedItemPrice.value = 0;
         showTransactionForm.value = true;
     };
@@ -84,6 +84,8 @@ export function useTransaksi(customers, services, getPrice, getCustomerName) {
         trxForm.value = {
             id_pelanggan: t.id_pelanggan,
             tanggal: t.tanggal,
+            nama_tamu: t.nama_tamu || '',
+            nomor_kamar: t.nomor_kamar || '',
             items: JSON.parse(JSON.stringify(t.items))
         };
         itemSearchQuery.value = ''; selectedItemId.value = ''; selectedItemQty.value = ''; selectedItemPrice.value = 0;
@@ -95,7 +97,6 @@ export function useTransaksi(customers, services, getPrice, getCustomerName) {
         return !q ? services.value : services.value.filter(s => s.nama_layanan.toLowerCase().includes(q));
     });
 
-    // Otomatis mengisi harga default saat barang dipilih, namun tetap bisa diubah mandiri
     const selectSearchItem = (i) => { 
         selectedItemId.value = i.id; 
         itemSearchQuery.value = i.nama_layanan; 
@@ -111,12 +112,12 @@ export function useTransaksi(customers, services, getPrice, getCustomerName) {
         const ex = trxForm.value.items.find(x => x.id_layanan === selectedItemId.value);
         if (ex) {
             ex.qty += Number(selectedItemQty.value);
-            ex.harga_satuan = priceToUse; // Menggunakan harga editable
+            ex.harga_satuan = priceToUse;
         } else {
             trxForm.value.items.push({ 
                 id_layanan: selectedItemId.value, 
                 qty: Number(selectedItemQty.value),
-                harga_satuan: priceToUse // Menggunakan harga editable
+                harga_satuan: priceToUse
             });
         }
         selectedItemId.value = ''; selectedItemQty.value = ''; itemSearchQuery.value = ''; selectedItemPrice.value = 0;
@@ -127,15 +128,17 @@ export function useTransaksi(customers, services, getPrice, getCustomerName) {
     const saveTransaction = async () => {
         if (!trxForm.value.id_pelanggan || !trxForm.value.tanggal) { alert("Harap isi data."); return; }
         if (trxForm.value.items.length === 0) { alert("Isi minimal 1 item."); return; }
+
         try {
             let savedData = {
                 id_pelanggan: trxForm.value.id_pelanggan,
                 tanggal: trxForm.value.tanggal,
+                nama_tamu: trxForm.value.nama_tamu || '',
+                nomor_kamar: trxForm.value.nomor_kamar || '',
                 items: trxForm.value.items,
                 status_tagihan: isEditingTrx.value ? undefined : 'belum_ditagih'
             };
 
-            // Hapus field undefined jika mode edit agar tidak menimpa status_tagihan yang ada
             if (isEditingTrx.value) {
                 delete savedData.status_tagihan;
                 await updateDoc(doc(db, "transaksi", editingTrxId.value), savedData);
@@ -155,7 +158,6 @@ export function useTransaksi(customers, services, getPrice, getCustomerName) {
         } catch (e) { alert("Error: " + e.message); }
     };
 
-    // Bebas hapus/revisi transaksi kapan saja
     const deleteTransaction = async (id) => {
         if (confirm("Apakah Anda yakin ingin menghapus catatan transaksi ini?")) {
             try { 

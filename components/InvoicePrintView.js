@@ -19,7 +19,6 @@ export default {
             return Math.round(basePrice * (1 + (markup / 100)));
         };
 
-        // HELPER KHUSUS MENGELOMPOKKAN ITEM BERDASARKAN TANGGAL NOTA HARIAN (FORMAT 2)
         const getItemsByDate = (items) => {
             if (!items) return [];
             const dateMap = {};
@@ -54,7 +53,7 @@ export default {
     },
     template: `
         <div>
-            <!-- 1. DOKUMEN INVOICE FORMAT 1: REKAP PER ITEM (A4) -->
+            <!-- 1. DOKUMEN INVOICE BULANAN FORMAT 1 (A4) -->
             <div v-if="printData" class="hidden print:block w-full max-w-4xl p-4 bg-white text-black text-[11px] print-page">
                 <div class="flex justify-between items-start border-b-2 border-indigo-900 pb-2 mb-3">
                     <div class="flex items-center space-x-3">
@@ -145,7 +144,7 @@ export default {
                 </div>
             </div>
 
-            <!-- 2. DOKUMEN INVOICE FORMAT 2: REKAP PER TANGGAL NOTA HARIAN (A4 TERBARU) -->
+            <!-- 2. DOKUMEN INVOICE FORMAT 2: REKAP PER TANGGAL NOTA HARIAN (A4) -->
             <div v-if="printDateData" class="hidden print:block w-full max-w-4xl p-4 bg-white text-black text-[11px] print-page">
                 <div class="flex justify-between items-start border-b-2 border-indigo-900 pb-2 mb-3">
                     <div class="flex items-center space-x-3">
@@ -176,7 +175,6 @@ export default {
                     </div>
                 </div>
 
-                <!-- Tabel Rekap Berdasarkan Urutan Tanggal Nota Harian -->
                 <table class="w-full text-left border-collapse border border-slate-200 text-[10px] mb-3">
                     <thead>
                         <tr class="bg-indigo-900 text-white font-semibold text-[9px]">
@@ -234,140 +232,149 @@ export default {
                 </div>
             </div>
 
-            <!-- 3. DOKUMEN NOTA SURAT JALAN HARIAN (A5) -->
+            <!-- 3. DOKUMEN NOTA SURAT JALAN HARIAN (A5 DENGAN NAMA TAMU & NOMOR KAMAR) -->
             <div v-if="printA5Data" class="hidden print:block w-full max-w-xl p-4 bg-white text-black text-xs print-page">
-                <div class="flex justify-between items-start border-b-2 border-indigo-900 pb-2 mb-3">
-                    <div class="flex items-center space-x-2">
-                        <img v-if="profile.logo_url" :src="profile.logo_url" class="w-10 h-10 object-cover rounded-full bg-slate-50 p-0.5 shrink-0">
-                        <div class="leading-tight">
-                            <h1 class="text-base font-bold text-indigo-900 uppercase leading-none">{{ profile.nama_laundry || 'Nays Laundry' }}</h1>
-                            <p class="text-[9px] text-slate-600 whitespace-pre-line leading-tight">{{ profile.alamat }}</p>
-                            <p class="text-[9px] text-slate-600 leading-tight">Telp: {{ profile.no_telepon }}</p>
+                
+                <!-- LEMBAR 1: NOTA HOUSEKEEPING / ASLI -->
+                <div class="p-4 print-page">
+                    <div class="flex justify-between items-start border-b-2 border-indigo-900 pb-2 mb-3">
+                        <div class="flex items-center space-x-2">
+                            <img v-if="profile.logo_url" :src="profile.logo_url" class="w-10 h-10 object-cover rounded-full bg-slate-50 p-0.5 shrink-0">
+                            <div class="leading-tight">
+                                <h1 class="text-base font-bold text-indigo-900 uppercase leading-none">{{ profile.nama_laundry || 'Nays Laundry' }}</h1>
+                                <p class="text-[9px] text-slate-600 whitespace-pre-line leading-tight">{{ profile.alamat }}</p>
+                                <p class="text-[9px] text-slate-600 leading-tight">Telp: {{ profile.no_telepon }}</p>
+                            </div>
+                        </div>
+                        <div class="text-right leading-tight">
+                            <h2 class="text-base font-extrabold text-slate-700 tracking-wider">NOTA HOUSEKEEPING</h2>
+                            <p class="text-[9px] text-slate-500 mt-0.5">Tgl: {{ formatDate(printA5Data.tanggal) }}</p>
                         </div>
                     </div>
-                    <div class="text-right leading-tight">
-                        <h2 class="text-base font-extrabold text-slate-700 tracking-wider">SURAT JALAN / NOTA</h2>
-                        <p class="text-[9px] text-slate-500 mt-0.5">Tgl: {{ formatDate(printA5Data.tanggal) }}</p>
-                    </div>
-                </div>
 
-                <div class="mb-3">
-                    <p class="text-[10px]"><span class="font-bold text-indigo-900">Pelanggan:</span> <strong class="text-sm text-slate-800">{{ getCustomerName(printA5Data.id_pelanggan) }}</strong></p>
-                    <p class="text-[9px] text-slate-500">{{ getCustomerAddress(printA5Data.id_pelanggan) }}</p>
-                </div>
-
-                <table class="w-full text-left border-collapse border border-slate-300 text-[10px] mb-3">
-                    <thead>
-                        <tr class="bg-indigo-900 text-white font-semibold">
-                            <th class="p-1 border text-center">No.</th>
-                            <th class="p-1 border">Nama Item Linen / Cucian</th>
-                            <th class="p-1 border text-center">Satuan</th>
-                            <th class="p-1 border text-center">Qty</th>
-                            <th class="p-1 border text-right">Harga Satuan</th>
-                            <th class="p-1 border text-right">Subtotal</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr v-for="(item, idx) in printA5Data.items" :key="item.id_layanan">
-                            <td class="p-1 border text-center">{{ idx + 1 }}</td>
-                            <td class="p-1 border font-semibold text-slate-800">{{ getServiceName(item.id_layanan) }}</td>
-                            <td class="p-1 border text-center text-slate-600">{{ getServiceUnit(item.id_layanan) }}</td>
-                            <td class="p-1 border text-center font-bold text-slate-900">{{ item.qty }}</td>
-                            <td class="p-1 border text-right text-slate-600">
-                                Rp {{ (item.harga_satuan !== undefined ? item.harga_satuan : (getPrice ? getPrice(printA5Data.id_pelanggan, item.id_layanan) : 0)).toLocaleString() }}
-                            </td>
-                            <td class="p-1 border text-right font-bold text-slate-800">
-                                Rp {{ ((item.harga_satuan !== undefined ? item.harga_satuan : (getPrice ? getPrice(printA5Data.id_pelanggan, item.id_layanan) : 0)) * item.qty).toLocaleString() }}
-                            </td>
-                        </tr>
-                        <tr class="bg-indigo-50 font-bold">
-                            <td colspan="5" class="p-1.5 text-right text-indigo-900 border">TOTAL TRANSAKSI:</td>
-                            <td class="p-1.5 text-right text-indigo-900 border">
-                                Rp {{ calculateA5Total(printA5Data.items, printA5Data.id_pelanggan, false).toLocaleString() }}
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-
-                <div class="grid grid-cols-2 gap-4 mt-6 text-center text-[10px]">
-                    <div>
-                        <p class="text-slate-500 mb-8">Penerima (Hotel/Vila),</p>
-                        <p class="border-t border-slate-400 pt-0.5 inline-block px-6">( ............................ )</p>
-                    </div>
-                    <div>
-                        <p class="text-slate-500 mb-8">Petugas / Driver,</p>
-                        <p class="border-t border-slate-400 pt-0.5 inline-block px-6">( ............................ )</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 4. DOKUMEN GUEST LAUNDRY RECEIPT (HANYA MUNCUL JIKA MARKUP > 0) -->
-            <div v-if="printA5Data && getCustomerMarkup && getCustomerMarkup(printA5Data.id_pelanggan) > 0" class="hidden print:block w-full max-w-xl p-4 bg-white text-black text-xs print-page border-t-2 border-dashed border-slate-300 pt-8">
-                <div class="flex justify-between items-start border-b-2 border-indigo-900 pb-2 mb-3">
-                    <div class="flex items-center space-x-2">
-                        <img v-if="profile.logo_url" :src="profile.logo_url" class="w-10 h-10 object-cover rounded-full bg-slate-50 p-0.5 shrink-0">
-                        <div class="leading-tight">
-                            <h1 class="text-base font-bold text-indigo-900 uppercase leading-none">{{ profile.nama_laundry || 'Nays Laundry' }}</h1>
-                            <p class="text-[9px] text-slate-600 whitespace-pre-line leading-tight">{{ profile.alamat }}</p>
-                            <p class="text-[9px] text-slate-600 leading-tight">Telp: {{ profile.no_telepon }}</p>
+                    <!-- DITAMBAHKAN TAMPILAN NAMA TAMU & NOMOR KAMAR -->
+                    <div class="mb-3 flex justify-between items-start text-[10px]">
+                        <div>
+                            <p><span class="font-bold text-indigo-900">Pelanggan:</span> <strong class="text-sm text-slate-800">{{ getCustomerName(printA5Data.id_pelanggan) }}</strong></p>
+                            <p class="text-[9px] text-slate-500">{{ getCustomerAddress(printA5Data.id_pelanggan) }}</p>
+                        </div>
+                        <div v-if="printA5Data.nama_tamu || printA5Data.nomor_kamar" class="text-right leading-tight bg-slate-50 p-1.5 rounded border border-slate-200">
+                            <p v-if="printA5Data.nama_tamu"><span class="font-bold text-indigo-900">Tamu:</span> <strong>{{ printA5Data.nama_tamu }}</strong></p>
+                            <p v-if="printA5Data.nomor_kamar"><span class="font-bold text-indigo-900">Kamar:</span> <strong>{{ printA5Data.nomor_kamar }}</strong></p>
                         </div>
                     </div>
-                    <div class="text-right leading-tight">
-                        <h2 class="text-base font-extrabold text-indigo-950 tracking-wider">GUEST LAUNDRY RECEIPT</h2>
-                        <p class="text-[9px] text-slate-500 mt-0.5">Tgl: {{ formatDate(printA5Data.tanggal) }}</p>
+
+                    <table class="w-full text-left border-collapse border border-slate-300 text-[10px] mb-3">
+                        <thead>
+                            <tr class="bg-indigo-900 text-white font-semibold">
+                                <th class="p-1 border text-center">No.</th>
+                                <th class="p-1 border">Nama Item Linen / Cucian</th>
+                                <th class="p-1 border text-center">Satuan</th>
+                                <th class="p-1 border text-center">Qty</th>
+                                <th class="p-1 border text-right">Harga Satuan</th>
+                                <th class="p-1 border text-right">Subtotal</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="(item, idx) in printA5Data.items" :key="item.id_layanan">
+                                <td class="p-1 border text-center">{{ idx + 1 }}</td>
+                                <td class="p-1 border font-semibold text-slate-800">{{ getServiceName(item.id_layanan) }}</td>
+                                <td class="p-1 border text-center text-slate-600">{{ getServiceUnit(item.id_layanan) }}</td>
+                                <td class="p-1 border text-center font-bold text-slate-900">{{ item.qty }}</td>
+                                <td class="p-1 border text-right text-slate-600">Rp {{ getItemPriceA5(item, printA5Data.id_pelanggan, false).toLocaleString() }}</td>
+                                <td class="p-1 border text-right font-bold text-slate-800">Rp {{ (getItemPriceA5(item, printA5Data.id_pelanggan, false) * item.qty).toLocaleString() }}</td>
+                            </tr>
+                            <tr class="bg-indigo-50 font-bold">
+                                <td colspan="5" class="p-1.5 text-right text-indigo-900 border">TOTAL TRANSAKSI:</td>
+                                <td class="p-1.5 text-right text-indigo-900 border">Rp {{ calculateA5Total(printA5Data.items, printA5Data.id_pelanggan, false).toLocaleString() }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <div class="grid grid-cols-2 gap-4 mt-6 text-center text-[10px]">
+                        <div>
+                            <p class="text-slate-500 mb-8">Penerima (Hotel/Vila),</p>
+                            <p class="border-t border-slate-400 pt-0.5 inline-block px-6">( ............................ )</p>
+                        </div>
+                        <div>
+                            <p class="text-slate-500 mb-8">Petugas / Driver,</p>
+                            <p class="border-t border-slate-400 pt-0.5 inline-block px-6">( ............................ )</p>
+                        </div>
                     </div>
                 </div>
 
-                <div class="mb-3 flex justify-between items-end">
-                    <div>
-                        <p class="text-[10px]"><span class="font-bold text-indigo-900">Hotel / Resort:</span> <strong class="text-sm text-slate-800">{{ getCustomerName(printA5Data.id_pelanggan) }}</strong></p>
-                        <p class="text-[9px] text-slate-500">{{ getCustomerAddress(printA5Data.id_pelanggan) }}</p>
+                <!-- LEMBAR 2: GUEST LAUNDRY RECEIPT (HANYA MUNCUL JIKA MARKUP > 0) -->
+                <div v-if="getCustomerMarkup && getCustomerMarkup(printA5Data.id_pelanggan) > 0" class="p-4 print-page border-t-2 border-dashed border-slate-300 pt-8">
+                    <div class="flex justify-between items-start border-b-2 border-indigo-900 pb-2 mb-3">
+                        <div class="flex items-center space-x-2">
+                            <img v-if="profile.logo_url" :src="profile.logo_url" class="w-10 h-10 object-cover rounded-full bg-slate-50 p-0.5 shrink-0">
+                            <div class="leading-tight">
+                                <h1 class="text-base font-bold text-indigo-900 uppercase leading-none">{{ profile.nama_laundry || 'Nays Laundry' }}</h1>
+                                <p class="text-[9px] text-slate-600 whitespace-pre-line leading-tight">{{ profile.alamat }}</p>
+                                <p class="text-[9px] text-slate-600 leading-tight">Telp: {{ profile.no_telepon }}</p>
+                            </div>
+                        </div>
+                        <div class="text-right leading-tight">
+                            <h2 class="text-base font-extrabold text-indigo-950 tracking-wider">GUEST LAUNDRY RECEIPT</h2>
+                            <p class="text-[9px] text-slate-500 mt-0.5">Tgl: {{ formatDate(printA5Data.tanggal) }}</p>
+                        </div>
                     </div>
-                    <div class="text-right bg-indigo-50 px-2 py-1 rounded border border-indigo-100">
-                        <span class="text-[9px] font-bold text-indigo-900">Guest Service Rate (+{{ getCustomerMarkup(printA5Data.id_pelanggan) }}%)</span>
+
+                    <!-- DITAMBAHKAN TAMPILAN GUEST NAME & ROOM NO ON LEMBAR 2 -->
+                    <div class="mb-3 flex justify-between items-end text-[10px]">
+                        <div>
+                            <p><span class="font-bold text-indigo-900">Hotel / Resort:</span> <strong class="text-sm text-slate-800">{{ getCustomerName(printA5Data.id_pelanggan) }}</strong></p>
+                            <p class="text-[9px] text-slate-500">{{ getCustomerAddress(printA5Data.id_pelanggan) }}</p>
+                            <p v-if="printA5Data.nama_tamu" class="mt-1"><span class="font-bold text-indigo-900">Guest Name:</span> <strong>{{ printA5Data.nama_tamu }}</strong></p>
+                            <p v-if="printA5Data.nomor_kamar"><span class="font-bold text-indigo-900">Room No:</span> <strong>{{ printA5Data.nomor_kamar }}</strong></p>
+                        </div>
+                        <div class="text-right bg-indigo-50 px-2 py-1 rounded border border-indigo-100">
+                            <span class="text-[9px] font-bold text-indigo-900">Guest Service Rate (+{{ getCustomerMarkup(printA5Data.id_pelanggan) }}%)</span>
+                        </div>
+                    </div>
+
+                    <table class="w-full text-left border-collapse border border-slate-300 text-[10px] mb-3">
+                        <thead>
+                            <tr class="bg-indigo-900 text-white font-semibold">
+                                <th class="p-1 border text-center">No.</th>
+                                <th class="p-1 border">Item Description</th>
+                                <th class="p-1 border text-center">Unit</th>
+                                <th class="p-1 border text-center">Qty</th>
+                                <th class="p-1 border text-right">Unit Price</th>
+                                <th class="p-1 border text-right">Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="(item, idx) in printA5Data.items" :key="item.id_layanan">
+                                <td class="p-1 border text-center">{{ idx + 1 }}</td>
+                                <td class="p-1 border font-semibold text-slate-800">{{ getServiceName(item.id_layanan) }}</td>
+                                <td class="p-1 border text-center text-slate-600">{{ getServiceUnit(item.id_layanan) }}</td>
+                                <td class="p-1 border text-center font-bold text-slate-900">{{ item.qty }}</td>
+                                <td class="p-1 border text-right text-slate-600">Rp {{ getItemPriceA5(item, printA5Data.id_pelanggan, true).toLocaleString() }}</td>
+                                <td class="p-1 border text-right font-bold text-slate-800">Rp {{ (getItemPriceA5(item, printA5Data.id_pelanggan, true) * item.qty).toLocaleString() }}</td>
+                            </tr>
+                            <tr class="bg-indigo-50 font-bold">
+                                <td colspan="5" class="p-1.5 text-right text-indigo-900 border">TOTAL AMOUNT DUE:</td>
+                                <td class="p-1.5 text-right text-indigo-900 border">Rp {{ calculateA5Total(printA5Data.items, printA5Data.id_pelanggan, true).toLocaleString() }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <div class="grid grid-cols-2 gap-4 mt-6 text-center text-[10px]">
+                        <div>
+                            <p class="text-slate-500 mb-8">Guest Signature,</p>
+                            <p class="border-t border-slate-400 pt-0.5 inline-block px-6">( ............................ )</p>
+                        </div>
+                        <div>
+                            <p class="text-slate-500 mb-8">Housekeeping / Front Desk,</p>
+                            <p class="border-t border-slate-400 pt-0.5 inline-block px-6">( ............................ )</p>
+                        </div>
                     </div>
                 </div>
 
-                <table class="w-full text-left border-collapse border border-slate-300 text-[10px] mb-3">
-                    <thead>
-                        <tr class="bg-indigo-900 text-white font-semibold">
-                            <th class="p-1 border text-center">No.</th>
-                            <th class="p-1 border">Item Description</th>
-                            <th class="p-1 border text-center">Unit</th>
-                            <th class="p-1 border text-center">Qty</th>
-                            <th class="p-1 border text-right">Unit Price</th>
-                            <th class="p-1 border text-right">Amount</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr v-for="(item, idx) in printA5Data.items" :key="item.id_layanan">
-                            <td class="p-1 border text-center">{{ idx + 1 }}</td>
-                            <td class="p-1 border font-semibold text-slate-800">{{ getServiceName(item.id_layanan) }}</td>
-                            <td class="p-1 border text-center text-slate-600">{{ getServiceUnit(item.id_layanan) }}</td>
-                            <td class="p-1 border text-center font-bold text-slate-900">{{ item.qty }}</td>
-                            <td class="p-1 border text-right text-slate-600">Rp {{ getItemPriceA5(item, printA5Data.id_pelanggan, true).toLocaleString() }}</td>
-                            <td class="p-1 border text-right font-bold text-slate-800">Rp {{ (getItemPriceA5(item, printA5Data.id_pelanggan, true) * item.qty).toLocaleString() }}</td>
-                        </tr>
-                        <tr class="bg-indigo-50 font-bold">
-                            <td colspan="5" class="p-1.5 text-right text-indigo-900 border">TOTAL AMOUNT DUE:</td>
-                            <td class="p-1.5 text-right text-indigo-900 border">Rp {{ calculateA5Total(printA5Data.items, printA5Data.id_pelanggan, true).toLocaleString() }}</td>
-                        </tr>
-                    </tbody>
-                </table>
-
-                <div class="grid grid-cols-2 gap-4 mt-6 text-center text-[10px]">
-                    <div>
-                        <p class="text-slate-500 mb-8">Guest Signature,</p>
-                        <p class="border-t border-slate-400 pt-0.5 inline-block px-6">( ............................ )</p>
-                    </div>
-                    <div>
-                        <p class="text-slate-500 mb-8">Housekeeping / Front Desk,</p>
-                        <p class="border-t border-slate-400 pt-0.5 inline-block px-6">( ............................ )</p>
-                    </div>
-                </div>
             </div>
 
-            <!-- 5. DOKUMEN KWITANSI PEMBAYARAN RESMI -->
+            <!-- 4. DOKUMEN KWITANSI PEMBAYARAN RESMI -->
             <div v-if="printKwitansiData" class="hidden print:block w-full max-w-xl p-6 bg-white text-black text-xs print-page border-2 border-indigo-900 rounded-xl space-y-4">
                 <div class="flex justify-between items-start border-b-2 border-indigo-900 pb-3">
                     <div class="flex items-center space-x-3">

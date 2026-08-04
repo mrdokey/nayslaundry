@@ -13,10 +13,9 @@ export default {
         'closeForm', 'selectSearchItem', 'addItem', 'removeItem', 'save', 'delete', 'printA5', 'shortcutTagihan'
     ],
     setup(props, { emit }) {
-        const expandedCustomers = Vue.ref([]); // State grup hotel (Default Kosong = Tertutup Semua)
-        const checkedTrxIds = Vue.ref([]);     // State ID transaksi yang dicentang
+        const expandedCustomers = Vue.ref([]);
+        const checkedTrxIds = Vue.ref([]);
 
-        // Mengelompokkan transaksi PER PELANGGAN (Hotel/Vila)
         const groupedByCustomer = Vue.computed(() => {
             if (!props.transactions) return {};
             const groups = {};
@@ -27,7 +26,6 @@ export default {
                 groups[custId].push(t);
             });
 
-            // Urutkan di dalam setiap hotel: Belum Ditagih di ATAS, Sudah Ditagih di BAWAH
             for (const custId in groups) {
                 groups[custId].sort((a, b) => {
                     const aUnbilled = a.status_tagihan !== 'sudah_ditagih' ? 0 : 1;
@@ -45,7 +43,6 @@ export default {
             else expandedCustomers.value.push(custId);
         };
 
-        // DEFAULT TERTUTUP (Kecuali diketuk atau sedang mengetik pencarian)
         const isCustomerExpanded = (custId) => {
             if (props.searchQuery && props.searchQuery.trim() !== '') return true;
             return expandedCustomers.value.includes(custId);
@@ -55,14 +52,12 @@ export default {
             return custTransactions.filter(t => t.status_tagihan !== 'sudah_ditagih').length;
         };
 
-        // Trigger Shortcut Pembuatan Tagihan Langsung dari Centang
         const triggerShortcutTagihan = () => {
             if (checkedTrxIds.value.length === 0) return;
 
             const firstTrx = props.transactions.find(t => checkedTrxIds.value.includes(t.id));
             if (!firstTrx) return;
 
-            // Validasi: Memastikan semua transaksi berasal dari hotel yang sama
             const sameCustomer = checkedTrxIds.value.every(id => {
                 const t = props.transactions.find(x => x.id === id);
                 return t && t.id_pelanggan === firstTrx.id_pelanggan;
@@ -75,11 +70,11 @@ export default {
 
             emit('shortcutTagihan', {
                 id_pelanggan: firstTrx.id_pelanggan,
-                periode: firstTrx.tanggal.slice(0, 7), // Ambil format YYYY-MM
+                periode: firstTrx.tanggal.slice(0, 7),
                 trx_ids: [...checkedTrxIds.value]
             });
 
-            checkedTrxIds.value = []; // Reset centang setelah dialihkan
+            checkedTrxIds.value = [];
         };
 
         return { expandedCustomers, checkedTrxIds, groupedByCustomer, toggleCustomerGroup, isCustomerExpanded, getCustomerUnbilledCount, triggerShortcutTagihan };
@@ -91,11 +86,11 @@ export default {
                 <button v-if="!showForm" @click="$emit('openAdd')" class="hidden md:block bg-indigo-600 text-white px-3 py-1.5 rounded-lg font-semibold hover:bg-indigo-700 shadow text-xs">+ Tambah Transaksi</button>
             </div>
 
-            <!-- Panel Filter Pencarian & Rentang Tanggal -->
+            <!-- Panel Filter -->
             <div v-if="!showForm" class="bg-white p-3 rounded-xl border border-slate-200 grid grid-cols-1 sm:grid-cols-3 gap-2">
                 <div>
-                    <label class="block text-[10px] font-semibold text-slate-400 mb-0.5">Cari Pelanggan</label>
-                    <input :value="searchQuery" @input="$emit('update:searchQuery', $event.target.value)" type="text" placeholder="🔍 Ketik nama hotel/vila..." class="w-full px-2.5 py-1 border rounded-lg text-xs focus:outline-indigo-500">
+                    <label class="block text-[10px] font-semibold text-slate-400 mb-0.5">Cari Pelanggan / Tamu</label>
+                    <input :value="searchQuery" @input="$emit('update:searchQuery', $event.target.value)" type="text" placeholder="🔍 Ketik nama hotel atau tamu..." class="w-full px-2.5 py-1 border rounded-lg text-xs focus:outline-indigo-500">
                 </div>
                 <div>
                     <label class="block text-[10px] font-semibold text-slate-400 mb-0.5">Dari Tanggal</label>
@@ -107,7 +102,6 @@ export default {
                 </div>
             </div>
 
-            <!-- BILAH ACTION SHORTCUT TAGIHAN (Muncul Otomatis Jika Ada Centang) -->
             <div v-if="!showForm && checkedTrxIds.length > 0" class="bg-indigo-950 text-white p-3 rounded-xl flex justify-between items-center shadow-lg border border-indigo-800 animate-pulse my-2">
                 <span class="font-bold text-xs">Terpilih {{ checkedTrxIds.length }} Transaksi Harian</span>
                 <button @click="triggerShortcutTagihan" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg font-bold text-xs shadow">
@@ -115,7 +109,7 @@ export default {
                 </button>
             </div>
 
-            <!-- Form Transaksi (Tambah / Edit Cart-Style) -->
+            <!-- Form Transaksi -->
             <div v-if="showForm" class="bg-white p-4 rounded-xl border border-slate-200 space-y-3">
                 <div class="flex justify-between items-center">
                     <h3 class="font-bold text-slate-700 text-xs">{{ isEditingTrx ? 'Ubah Catatan Transaksi' : 'Form Pencatatan Laundry' }}</h3>
@@ -124,7 +118,7 @@ export default {
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                        <label class="block text-xs font-semibold text-slate-500 mb-1">Pelanggan</label>
+                        <label class="block text-xs font-semibold text-slate-500 mb-1">Pelanggan (Hotel / Vila)</label>
                         <select v-model="trxForm.id_pelanggan" class="w-full p-2 border rounded text-xs">
                             <option value="">-- Pilih Hotel/Vila --</option>
                             <option v-for="c in customers" :key="c.id" :value="c.id">{{ c.nama_pelanggan }}</option>
@@ -133,6 +127,15 @@ export default {
                     <div>
                         <label class="block text-xs font-semibold text-slate-500 mb-1">Tanggal Pengambilan</label>
                         <input v-model="trxForm.tanggal" type="date" class="w-full p-2 border rounded text-xs">
+                    </div>
+                    <!-- INPUT NAMA TAMU & NOMOR KAMAR (GUEST LAUNDRY) -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500 mb-1">Nama Tamu / Guest (Opsional)</label>
+                        <input v-model="trxForm.nama_tamu" type="text" placeholder="Contoh: Mr. John Smith" class="w-full p-2 border rounded text-xs focus:outline-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500 mb-1">Nomor Kamar / Room (Opsional)</label>
+                        <input v-model="trxForm.nomor_kamar" type="text" placeholder="Contoh: Room 204" class="w-full p-2 border rounded text-xs focus:outline-indigo-500">
                     </div>
                 </div>
 
@@ -196,10 +199,9 @@ export default {
                 </div>
             </div>
 
-            <!-- ACCORDION TRANSAKSI PER PELANGGAN (DEFAULT TERTUTUP RAPI) -->
+            <!-- ACCORDION TRANSAKSI PER PELANGGAN -->
             <div v-if="!showForm" class="space-y-3">
                 <div v-for="(transList, custId) in groupedByCustomer" :key="custId" class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
-                    <!-- Header Accordion Pelanggan -->
                     <button @click="toggleCustomerGroup(custId)" type="button" class="w-full p-3 bg-slate-50 hover:bg-slate-100 flex justify-between items-center border-b border-slate-100">
                         <div class="flex items-center space-x-2">
                             <span class="font-bold text-indigo-950 text-xs">{{ getCustomerName(custId) }}</span>
@@ -211,16 +213,18 @@ export default {
                         <span class="text-slate-400 font-bold text-xs">{{ isCustomerExpanded(custId) ? '▲' : '▼' }}</span>
                     </button>
 
-                    <!-- Body Kartu Transaksi -->
                     <div v-show="isCustomerExpanded(custId)" class="p-3 space-y-2 bg-white">
                         <div v-for="t in transList" :key="t.id" class="bg-slate-50 p-3 rounded-xl border border-slate-100 shadow-sm space-y-2">
                             <div class="flex justify-between items-start">
                                 <div class="flex items-center space-x-2.5">
-                                    <!-- KOTAK CENTANG UNTUK SHORTCUT PEMBUATAN TAGIHAN -->
                                     <input v-if="t.status_tagihan !== 'sudah_ditagih'" type="checkbox" :value="t.id" v-model="checkedTrxIds" class="w-4 h-4 text-indigo-600 rounded cursor-pointer">
                                     <div>
                                         <h4 class="font-bold text-slate-800 text-xs">{{ getCustomerName(t.id_pelanggan) }}</h4>
-                                        <span class="text-slate-400 text-[10px]">{{ formatDate(t.tanggal) }}</span>
+                                        <div class="text-slate-400 text-[10px] space-x-2">
+                                            <span>📅 {{ formatDate(t.tanggal) }}</span>
+                                            <span v-if="t.nama_tamu" class="font-semibold text-indigo-900">👤 {{ t.nama_tamu }}</span>
+                                            <span v-if="t.nomor_kamar" class="font-semibold text-indigo-900">🔑 {{ t.nomor_kamar }}</span>
+                                        </div>
                                     </div>
                                 </div>
                                 <span :class="t.status_tagihan==='sudah_ditagih'?'bg-emerald-100 text-emerald-800':'bg-amber-100 text-amber-800'" class="px-2 py-0.5 rounded text-[9px] font-bold">

@@ -55,10 +55,11 @@ export default {
     template: `
         <div>
             <!-- 1. DOKUMEN INVOICE BULANAN FORMAT 1 (A4) -->
-            <div v-if="printData" class="hidden print:block w-full max-w-4xl p-6 mx-auto bg-white text-black text-[11px] print-page border border-slate-200">
+            <div v-if="printData" class="hidden print:block w-full max-w-4xl mx-auto p-6 bg-white text-black text-[11px] print-page border border-slate-200">
                 <div class="flex justify-between items-start border-b-2 border-black pb-3 mb-4 mt-4">
                     <div class="flex items-center space-x-3">
-                        <img v-if="profile.logo_url" :src="profile.logo_url" class="w-12 h-12 object-cover rounded-full bg-slate-100 p-0.5 shrink-0 grayscale">
+                        <!-- LOGO REVISI: rounded (bukan circle), object-contain (tidak terpotong) -->
+                        <img v-if="profile.logo_url" :src="profile.logo_url" class="w-12 h-12 object-contain rounded bg-slate-100 p-0.5 shrink-0 grayscale">
                         <div class="leading-tight">
                             <h1 class="text-base font-extrabold text-black uppercase tracking-wide leading-none mb-0.5">{{ profile.nama_laundry || 'Nays Laundry' }}</h1>
                             <p class="text-[9px] text-slate-700 whitespace-pre-line leading-tight">{{ profile.alamat }}</p>
@@ -139,17 +140,17 @@ export default {
                     </div>
                 </div>
 
-                <div v-if="profile.tos" class="mt-4 border-t border-black pt-2 text-[8px] text-slate-700 leading-tight">
+                <div v-if="profile.tos" class="mt-4 border-t border-slate-200 pt-2 text-[8px] text-slate-700 leading-tight">
                     <p class="font-extrabold text-black mb-0.5">Syarat & Ketentuan (Terms of Service):</p>
                     <p class="whitespace-pre-line pl-2 font-semibold">{{ profile.tos }}</p>
                 </div>
             </div>
 
             <!-- 2. DOKUMEN INVOICE FORMAT 2: REKAP PER TANGGAL NOTA HARIAN (A4) -->
-            <div v-if="printDateData" class="hidden print:block w-full max-w-4xl p-6 mx-auto bg-white text-black text-[11px] print-page border border-slate-200">
+            <div v-if="printDateData" class="hidden print:block w-full max-w-4xl mx-auto p-6 bg-white text-black text-[11px] print-page border border-slate-200">
                 <div class="flex justify-between items-start border-b-2 border-black pb-3 mb-4 mt-4">
                     <div class="flex items-center space-x-3">
-                        <img v-if="profile.logo_url" :src="profile.logo_url" class="w-12 h-12 object-cover rounded-full bg-slate-100 p-0.5 shrink-0 grayscale">
+                        <img v-if="profile.logo_url" :src="profile.logo_url" class="w-12 h-12 object-contain rounded bg-slate-100 p-0.5 shrink-0 grayscale">
                         <div class="leading-tight">
                             <h1 class="text-base font-extrabold text-black uppercase tracking-wide leading-none mb-0.5">{{ profile.nama_laundry || 'Nays Laundry' }}</h1>
                             <p class="text-[9px] text-slate-700 whitespace-pre-line leading-tight">{{ profile.alamat }}</p>
@@ -176,7 +177,6 @@ export default {
                     </div>
                 </div>
 
-                <!-- TABEL FORMAT 2 (Header Hitam Bold, Border Hitam Rapih) -->
                 <table class="w-full text-left border-collapse border border-black text-[10px] mb-4">
                     <thead>
                         <tr class="bg-slate-200 text-black font-extrabold text-[9px] border-b-2 border-black">
@@ -231,7 +231,7 @@ export default {
                     </div>
                 </div>
 
-                <div v-if="profile.tos" class="mt-4 border-t border-black pt-2 text-[8px] text-slate-700 leading-tight">
+                <div v-if="profile.tos" class="mt-4 border-t border-slate-200 pt-2 text-[8px] text-slate-700 leading-tight">
                     <p class="font-extrabold text-black mb-0.5">Syarat & Ketentuan (Terms of Service):</p>
                     <p class="whitespace-pre-line pl-2 font-semibold">{{ profile.tos }}</p>
                 </div>
@@ -244,7 +244,7 @@ export default {
                 <div class="px-8 py-6 min-h-[50vh] flex flex-col justify-center">
                     <div class="flex justify-between items-start border-b border-black pb-2 mb-3">
                         <div class="flex items-center space-x-2">
-                            <img v-if="profile.logo_url" :src="profile.logo_url" class="w-8 h-8 object-cover rounded-full bg-slate-100 p-0.5 shrink-0 grayscale">
+                            <img v-if="profile.logo_url" :src="profile.logo_url" class="w-8 h-8 object-contain rounded bg-slate-100 p-0.5 shrink-0 grayscale">
                             <div class="leading-tight">
                                 <h1 class="text-sm font-extrabold text-black uppercase leading-none">{{ profile.nama_laundry || 'Nays Laundry' }}</h1>
                                 <p class="text-[8px] text-slate-800 font-semibold whitespace-pre-line leading-tight">{{ profile.alamat }}</p>
@@ -311,7 +311,7 @@ export default {
                 <div v-if="getCustomerMarkup && getCustomerMarkup(printA5Data.id_pelanggan) > 0" class="px-8 py-6 min-h-[50vh] flex flex-col justify-center border-t-2 border-dashed border-black">
                     <div class="flex justify-between items-start border-b border-black pb-2 mb-3">
                         <div class="flex items-center space-x-2">
-                            <img v-if="profile.logo_url" :src="profile.logo_url" class="w-8 h-8 object-cover rounded-full bg-slate-100 p-0.5 shrink-0 grayscale">
+                            <img v-if="profile.logo_url" :src="profile.logo_url" class="w-8 h-8 object-contain rounded bg-slate-100 p-0.5 shrink-0 grayscale">
                             <div class="leading-tight">
                                 <h1 class="text-sm font-extrabold text-black uppercase leading-none">{{ profile.nama_laundry || 'Nays Laundry' }}</h1>
                                 <p class="text-[8px] text-slate-800 font-semibold whitespace-pre-line leading-tight">{{ profile.alamat }}</p>
@@ -370,13 +370,14 @@ export default {
                         </div>
                     </div>
                 </div>
+
             </div>
 
             <!-- 4. DOKUMEN KWITANSI PEMBAYARAN RESMI -->
             <div v-if="printKwitansiData" class="hidden print:block w-full max-w-2xl mx-auto p-6 bg-white text-black text-xs print-page border-2 border-black rounded-xl space-y-4 my-8">
                 <div class="flex justify-between items-start border-b-2 border-black pb-3">
                     <div class="flex items-center space-x-3">
-                        <img v-if="profile.logo_url" :src="profile.logo_url" class="w-12 h-12 object-cover rounded-full bg-slate-100 p-0.5 shrink-0 grayscale">
+                        <img v-if="profile.logo_url" :src="profile.logo_url" class="w-12 h-12 object-contain rounded bg-slate-100 p-0.5 shrink-0 grayscale">
                         <div class="leading-tight">
                             <h1 class="text-base font-extrabold text-black uppercase leading-none mb-0.5">{{ profile.nama_laundry || 'Nays Laundry' }}</h1>
                             <p class="text-[9px] text-slate-800 font-semibold whitespace-pre-line leading-tight">{{ profile.alamat }}</p>
